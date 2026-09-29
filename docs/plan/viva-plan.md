@@ -1,10 +1,12 @@
 # Viva — 方案细化（Airwallex PS1 "Getting Good"）
 
-> 状态：**主方案 v2**（29 Sep 2026 下午）。本文件是方案的单一事实来源，幻灯片与 demo 以此为准。版本记录见 docs/README.md。
+> 状态：**主方案 v3**（29 Sep 2026 下午）。本文件是方案的单一事实来源，幻灯片与 demo 以此为准。版本记录见 docs/README.md。
 > 一句话（pitch line）：**"AI took the reps. Viva gives them back — inside the work you already do."**
 > 副标题：**"AI can do the work. Only you can defend it."**
 > 定位：**不是又一道 PR 测验关，而是一台"练习引擎"。** 每一次用 AI 完成的任务都变成一次"先做、做砸、被纠正"的练习：先预测、由真实运行结果揭晓，senior 花 30 秒纠正，几天后换个任务再问一次，能力画像随时间上升。答辩记录自动变成团队本来就要写的文档。
 > 对比竞品的一句话：**"Other tools ask: did you read this PR? We ask: are you getting better?"**
+>
+> **v3 相对 v2 的变化：** 采用团队提出的主干流程（风险 × 新颖度 × 熟练度决定是否答辩，答辩聚焦决策，通过就减少人工审核）；触发改为三因素评分加硬规则，分四档（4.3）；答辩定名为 **Decision Defense**，每次 2–3 道题：解释决策、选择证据、应对一个条件变化（4.2 ③④）；未通过先让本人重答一次，再把具体风险交给 senior（4.4）；demo、数据模型、评委问答同步更新。
 >
 > **v2 相对 v1 的变化：** 在第 1 节末加入竞品与定位；流程从直线改为四个循环（4.1、4.5–4.7）；demo 脚本按"先预测再揭晓"和"senior 纠正"重写（第 9 节）；补充语音、录音与数据安全（4.2 ④、8、13）；新增待拍板项（14）。详细调研见 docs/research/viva-competitors-voice-privacy.md。
 
@@ -68,7 +70,7 @@
 
 | 题目约束（briefing 原话） | Viva 的做法 |
 |---|---|
-| 拖慢学习者就有代价（grade / deadline / output） | 答辩 3–5 分钟，而且**答辩记录自动生成 PR 描述、决策记录或审计备注**，替代原本要手写的文档；按风险抽样触发，而不是每件事都答辩 |
+| 拖慢学习者就有代价（grade / deadline / output） | **分档触发**（4.3）：熟练员工做低风险的熟悉改动基本不被打扰；轻量档只有 1 道题；标准档 2–5 分钟。**答辩记录自动生成 PR 描述、决策记录或审计备注**，替代原本要手写的文档；通过后还能**减少人工审核**，整体上反而更快（v3） |
 | 只有自律的人才接受的麻烦是筛子（filters for people who could already afford to go slower） | 这是**交付关卡**，由团队统一设置，人人适用，不靠个人自觉；支持母语和文字作答，不偏向口才好或英语好的人 |
 | 不要课程、不要导师 | Viva 不教任何东西，只是一道关加一面镜子；学习发生在准备答辩的过程中，用什么工具准备都行。senior 纠正（4.5）只是针对一个具体缺口写一句话、约 30 秒，不是导师制度，也不需要额外排时间（v2） |
 | 不要"少用 AI"的理由 | 任务阶段随便用 AI，准备答辩时也可以让 AI 给你讲懂；我们只要求你**最终自己懂** |
@@ -80,35 +82,42 @@
 
 ## 4. 产品如何运作
 
-### 4.1 总流程（v2：从一条直线改成四个循环）
+### 4.1 总流程（v3：分档触发 + Decision Defense）
 
-v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，和 PR 测验类竞品几乎一样。v2 在单次答辩外面加了循环，让它成为一台练习引擎：
+v3 采用团队提出的主干（按"风险 × 新颖度 × 熟练度"决定要不要答辩，答辩聚焦决策，通过就减少人工审核，未通过就把具体风险交给资深人员），并补上两处：**触发分档**（4.3）和**未通过时先让本人重答一次**（4.4）。v2 的四个循环保留在后台。
 
 ```
-用 AI 完成任务 ─► 提交 ─► [触发判断] 风险 × 个人等级 × 抽样 × 待复查的缺口
-                                        │ 需要答辩
-                                        ▼
-               ① 读入 ─► ② 能力分类 ─► ③ 生成追问（沙箱预算标准答案）
-                                        │
-                                        ▼
-               ④ 答辩 3–5 分钟：先预测 ─► 沙箱揭晓 ─► 自适应追问
-                                        │
-                                        ▼
-               ⑤ 评分（理解层级 + 执行验证 + 逻辑闭环）
-                 ┌──────────────────────┴──────────────────────┐
-               通过                                           有缺口
-                 │                                              │
-   自动生成 PR 描述 / 决策记录                         理解缺口报告 ─► 搞懂后重答
-   放行交付                                                     │
-                 │                                   【循环 A】senior 30 秒纠正
-                 ▼                                              │
-         能力画像更新 ◄──────────────────────────────────────────┘
-          │        │
-          │        └─►【循环 B】间隔复查：几天后在别的任务里再问同一个概念
-          ▼
-   【循环 C】等级提升 ─► 抽查减少（L 牌 → P 牌）
+员工使用任意 AI 完成任务
+        ↓
+系统读取：工单、产出（diff / 决策）、测试结果、变更范围（可选：AI 对话记录）
+        ↓
+豁免检查：纯文档、格式化、重命名、依赖小版本升级且测试全过 → 直接提交
+        ↓
+触发评分 S = 风险 R × 新颖度 N × 熟练度缺口 G（各 1–3 分）+ 硬规则
+并告诉员工"为什么触发、还差多少能降档"
+        ↓
+ ┌────────────┬──────────────┬─────────────────────┬──────────────────────────┐
+免答辩 S≤3      轻量 4–8        标准 9–17               完整 18–27
+正常提交        1 道题          Decision Defense         Decision Defense
+（5% 随机抽查）  PR 评论里异步    2–3 道题，2–5 分钟        + senior 必看审核摘要
+                 └──────────────┴──────────┬──────────┘
+                                           ↓
+               Decision Defense：① 解释决策 ② 选择证据 ③ 应对一个条件变化
+               （③ 先预测，再由测试 / 沙箱揭晓）
+                                           ↓
+               系统运行测试，生成审核摘要（= PR 描述 / 决策记录）
+                                           ↓
+              ┌────────────────────────────┴────────────────────────────┐
+            通过                                                     未通过
+              │                                                         │
+   减少人工审核（按风险分级，见 4.4）                   缺口报告 → 本人搞懂后重答 1 次
+   更新该项能力记录 → 下次更可能降档                                   │ 重答仍未通过
+                                                                        ↓
+                                            具体风险点（题目、原话、代码行、录音片段）交 senior
+                                            senior：写一句纠正（回到本人能力记录）
+                                                    + 决定结对修改 / 担保放行 / 打回
 
-   【循环 D，路线图】线上事故 ─► 调出相关答辩记录 ─► 事故变成全团队的答辩题
+后台循环：间隔复查（到期的概念加进下次答辩）· 能力画像 · 理解负债地图 · 事故回放（路线图）
 ```
 
 ### 4.2 各环节细节
@@ -126,15 +135,20 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
 - 每道题带三个属性：考察的能力类型、追问招式、锚点（对应产出里的哪一行、哪个结论）。
 - **可执行的产出（代码、模型）**：自动生成反事实输入，在沙箱里真正运行，得到标准答案。例如："目标币种换成 JPY，这个函数返回什么？"
 - 不可执行的产出（决策、写作）：用逻辑闭环清单和评分细则打分（见第 5 节）。
-- 每次答辩 4–6 道题，控制在 3–5 分钟。
+- 题量按档位定（v3）：轻量 1 题；标准和完整 2–3 题，控制在 2–5 分钟。每题最多追问 1 次。
 
-**④ 答辩（Interview agent）**
+**④ 答辩：Decision Defense（Interview agent）**
+- **三类题（v3）**：任何任务都被当成一组决策来答辩，代码任务也一样（例如"为什么在这一步舍入"）。
+  1. **解释决策**（必有）："你为什么这样处理 X？"员工用自己的话回答。
+  2. **选择证据**（必有）：系统列出 4–6 条候选证据（测试用例、日志、代码行、文档或监管条款），其中混入无关或不支持结论的。员工点选能支持自己结论的 1–2 条，并说一句为什么。好处：不依赖口才和英语；有标准答案，可以自动判分；也能看出这个人有没有真看过测试。
+  3. **应对一个条件变化**（标准档和完整档必有）：条件变了（例如币种换成 JPY），**先写预测和信心，再由测试或沙箱揭晓**。
+  - 轻量档只出 1 题：可执行的产出优先出第 3 类，否则出第 2 类。
 - **先预测，再揭晓（v2 核心交互）**：预测题和反事实题一律是"你先说结果（加一个信心值），再点运行"。沙箱跑出真实结果后，和你的预测并排显示。这一刻就是"做砸了、被现实纠正"。纠正来自真实运行，不是 LLM 的意见。
 - 文字或语音都可以，两者地位相同。语音为加分项：
   - STT（语音转文字）：按住说话 → 浏览器 `MediaRecorder` 录音 → 后端**本地** faster-whisper 转写（音频不交给第三方；用 `initial_prompt` 提示 JPY、KWD、ISO 4217 等专有词）。不用 Chrome 默认的 Web Speech，因为它会把音频发到云端。
   - TTS（文字转语音）：浏览器自带 `speechSynthesis`，只读问题文本；**问题文字同时显示在屏幕上**。
   - **一次只问一个问题，在代码里强制检查**，不只靠 prompt（NYU 语音口试研究的教训）。
-- **自适应**：回答太浅就往下追一层（最多追 2 次）；回答已经很深就跳到下一题。
+- **自适应**：回答太浅就往下追一层（v3 起每题最多追 1 次，保证 2–5 分钟）；回答已经很深就跳到下一题。
 - 不给提示，不教学。允许说"我不知道"，诚实作答比瞎编得分高。
 - 每题请作答者报一个信心值（低/中/高），用来做校准。
 
@@ -148,19 +162,71 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
 - **给团队**：自动生成的 PR 描述、决策记录或审计备注，内容就是作答者自己的解释。
 - **给组织**：理解负债地图，显示哪些模块、哪些决策目前没有人能讲清；以及团队层面的能力分布。
 
-### 4.3 触发策略（L 牌 → P 牌）
+### 4.3 触发策略 v3：三因素评分 + 硬规则（L 牌 → P 牌）
 
-- **涉及资金流、高影响范围的变更**：始终需要答辩。
-- **其他 AI 参与度高的变更**：按个人在该能力类型上的等级抽样。
-  - 新人阶段：高比例触发。
-  - 某能力类型稳定达到 L3 后：抽样比例逐级下降（具体比例由团队配置；demo 里示意为 100% → 30% → 10%）。
-- 效果：证明了理解，就换来速度。不懂的人会一直被拦下来，这就是"捷径的损失"。
+团队的原始想法：任务简单、风险低、员工熟练，就省略答辩；任务大而复杂、风险高、员工不熟练，就触发答辩。v3 把它做成一套**能自动计算、能向员工解释**的规则。
 
-### 4.4 失败处理
+**第 0 步：豁免（不计分）**
+纯文档、格式化、重命名、锁文件或依赖小版本升级且测试全过：直接提交。竞品也这样处理，否则会被当成噪音。
 
-- 第一次未通过：拿到缺口报告，去搞懂（查文档、问 AI、问同事都可以），然后重答。
-- 第二次仍未通过：标记为"需要 senior 结对"，交付继续推进，但换 senior 来担保。senior 先看 AI 标出的片段（4.5），通常不需要看完整录音。不做任何额外惩罚。
-- 作答者可以对评分提出申诉，由人工复核。
+**第 1 步：三个因素，各 1–3 分，系统自动算，并附上理由**
+
+| 因素 | 1 分 | 2 分 | 3 分 | 数据来源 |
+|---|---|---|---|---|
+| **风险 R**：错了代价多大 | 内部工具、文案；有功能开关可以随时关掉 | 一般业务逻辑；公开接口变更；跨多个模块 | **资金流**（汇率、手续费、清结算、账本）；鉴权和权限；个人信息；合规规则；不可逆的数据迁移 | 团队配置的**风险地图**（目录或文件 → 等级，写法类似 CODEOWNERS）；变更范围；改动行有没有测试覆盖 |
+| **新颖度 N**：对这个人、这份代码有多新 | 这个人改过这个模块，同类改动通过过答辩 | 模块熟、改法新，或者反过来 | 第一次碰这个模块；引入新依赖、新外部接口、新写法 | git 历史；能力记录 |
+| **熟练度缺口 G**：熟练度反过来算 | 在**这个能力 × 这个领域**近期稳定达到 L3 以上 | 有记录但只到 L2，或记录已经过期 | 没有记录，或最近在这里没通过 | 答辩记录。**按领域分开算**；太久没有新记录会自动降一级 |
+
+G 按领域算的原因：前端老手第一次改清结算代码，在支付领域仍然按新手处理。
+
+**第 2 步：分数 S = R × N × G（1–27），分四档**
+
+| S | 档位 | 做什么 | 时间 |
+|---|---|---|---|
+| 1–3 | **免答辩** | 正常提交；其中约 5% 随机抽一道轻量题（防止钻空子，也用来校准评分） | 0 |
+| 4–8 | **轻量** | 1 道题，在 PR 评论里异步作答 | 约 1 分钟 |
+| 9–17 | **标准** | Decision Defense，2–3 道题 | 2–5 分钟 |
+| 18–27 | **完整** | 标准 + senior **无论通过与否**都看一眼审核摘要 | 2–5 分钟，senior 另加 1–2 分钟 |
+
+用乘法而不是加法：任何一个因素很低都会把分数拉下来（熟练员工做低风险的熟悉改动几乎不会被打扰）；三个都高时分数急剧上升。
+
+| 例子 | R × N × G | S | 档位 |
+|---|---|---|---|
+| 熟练员工改内部工具文案 | 1 × 1 × 1 | 1 | 免答辩 |
+| 熟练员工改自己熟悉的手续费逻辑 | 3 × 1 × 1 | 3 | 分数是免答辩，但硬规则要求至少**轻量**（见下） |
+| 中等熟练员工用新写法改一般业务 | 2 × 2 × 2 | 8 | 轻量 |
+| 前端老手第一次改清结算 | 3 × 3 × 3 | 27 | 完整 |
+| Mia（入职 4 个月）第一次改手续费函数 | 3 × 3 × 3 | 27 | 完整 |
+
+**第 3 步：硬规则（覆盖分数）**
+- **R = 3**（资金流、安全、不可逆）：至少轻量。它既是检查，也是审计证据。
+- **有到期的间隔复查概念**：在本次答辩里加 1 题；本次免答辩时，单独推 1 道轻量题。
+- **团队手动指定**：例如上线前夜，某些改动一律要答辩。
+- **防止拆分规避**：把大改动拆成很多小 PR 来压低分数？R 和 N 按这个人最近几天在同一模块的**累计改动**计算。
+
+**第 4 步：对员工透明**
+触发时告诉员工原因，以及离降档还差多少。例如："本次触发：settlement/ 属于高风险路径（R3）；你第一次改这个模块（N3）；你在'构建 · 支付'上还没有记录（G3）。在这个领域再通过 2 次，同类改动会降到轻量档。"这样"懂 = 更快"是看得见的，捷径的代价也看得见。
+
+**刻意不放进公式的：AI 写了多少。** 检测不可靠，还会鼓励员工隐瞒自己用了 AI；题目也明确不要"少用 AI"。我们只看风险、新颖度和这个人是否已经证明过自己懂。
+
+**非代码任务（例如 AML 告警）同样适用：** R 看金额、客户风险等级、是否涉及上报期限；N 看这个人有没有处理过这种类型（typology）；G 看他在"审核 · 合规"上的记录。
+
+### 4.4 结果处理（v3）
+
+**通过：减少人工审核，按风险分级**
+- **R1–R2**：reviewer 只看审核摘要里标出的风险点（轻审）；团队也可以配置为不需要人工复核。
+- **R3**：**保留人工审核**。支付和合规通常要求双人复核（四眼原则），Viva 不取代它，而是让 reviewer 拿到一份带证据的审核摘要，审得更快、更准。
+- 两种情况都会更新该项能力记录，下次同类改动更可能降档。
+
+**未通过：先让本人再试一次，再交给 senior**
+1. 第一次未通过：拿到缺口报告（哪道题、哪句回答、对应哪行代码），去搞懂（查文档、问 AI、问同事都可以），然后**重答一次**。
+2. 重答仍未通过：把**具体风险点**交给 senior，包括题目、作答原话、对应代码行和录音片段（4.5）。senior 做两件事：
+   - 写一句纠正，回到本人的缺口报告和能力记录，形成学习闭环；
+   - 决定下一步：结对修改、senior 担保放行，或者打回。
+3. 完整档另有一条：无论通过与否，senior 都会看一眼审核摘要（4.3）。
+4. 不做任何额外惩罚。作答者可以对评分提出申诉，由人工复核。
+
+**为什么不一失败就直接交给 senior：** 否则 senior 会变成瓶颈，而员工也跳过了"自己搞懂"这一步，等于又失去了一次练习。
 
 ### 4.5 循环 A：senior 30 秒纠正（v2 新增）
 
@@ -169,7 +235,7 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
   - 进入作答者的缺口报告和能力画像；
   - 沉淀进该领域的题库，下次 Planner 出题时可以用上。
 - 这补上了题目里的 "someone correcting them"，而且只占用 senior 很少的时间。
-- **录音和录像的定位：** 只作为给人看的证据，不进入 AI 评分。senior 只在三种情况下能打开：两次未通过、作答者申诉、随机抽样做评分校准。每次查看都记日志，作答者本人能看到。录像默认关闭（见第 8 节隐私一行）。
+- **录音和录像的定位：** 只作为给人看的证据，不进入 AI 评分。senior 只在四种情况下能打开：重答仍未通过、完整档、作答者申诉、随机抽样做评分校准。每次查看都记日志，作答者本人能看到。录像默认关闭（见第 8 节隐私一行）。
 
 ### 4.6 循环 B：间隔复查（v2 新增）
 
@@ -280,7 +346,8 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
 | 执行沙箱 | Python 子进程 + 超时 + 白名单（生产环境换容器） | 对产出函数跑反事实输入，得到标准答案 |
 | 语音（加分项） | 浏览器 `MediaRecorder` 录音 + 后端本地 faster-whisper 转写；浏览器 `speechSynthesis` 朗读问题 | 团队已有 Whisper 转写经验。不用 Chrome 默认 Web Speech（音频会发到云端） |
 | 录音与复核 | 录音文件存本地；Whisper 分段时间戳和作答原文对齐 | senior 复核页点击缺口即跳到对应时间点。录像默认关闭 |
-| 存储 | SQLite / JSON | Task、Artifact、Viva、Question、Answer、Score、Profile、**Gap（概念、状态、下次复查）**、**Correction（senior 纠正）**、**AccessLog** |
+| 触发引擎（v3） | 规则引擎，不用 LLM：风险地图（YAML，目录或文件 → R）+ git 历史（N）+ 能力记录（G） | 输出分数、档位和一句可读的理由；阈值和硬规则都可配置 |
+| 存储 | SQLite / JSON | Task、Artifact、Viva、Question、Answer、Score、Profile、**Gap（概念、状态、下次复查）**、**Correction（senior 纠正）**、**AccessLog**、**RiskMap**、**TriggerDecision（R、N、G、分数、档位、理由、命中的硬规则）** |
 | 隐私（黑客松） | 全部合成数据；API key 放 `.env`；实验参与者签知情同意，活动后删除原始录音 | 产品版设计（最少读取、脱敏、区域存储、零留存、访问日志、自动删除）见 docs/research/viva-competitors-voice-privacy.md 第 4 节 |
 | 集成（路线图） | GitHub App（PR status check：答辩通过前不能合并）、Jira、Slack | 黑客松阶段用模拟 PR 页面演示 |
 
@@ -292,7 +359,7 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
   "anchor": "fx.py:L14-L22",
   "prompt": "A payout of 1,234.56 AUD to a JPY account at rate 97.3 — what exact amount does the recipient get?",
   "truth": {"type": "exec", "value": "<sandbox result>"},
-  "follow_ups_max": 2
+  "follow_ups_max": 1
 }
 ```
 
@@ -305,23 +372,25 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
 - 埋下的真实问题：函数对所有币种统一保留 2 位小数，但 **JPY 在 ISO 4217 中没有小数位**（KWD 则有 3 位）；手续费先扣还是先换汇，结果也会不同；用 float 存金额，存在精度问题。
 
 **第一幕：走捷径，被现实纠正（高潮）**
-1. Mia 直接点"提交"，Viva 关卡弹出。
-2. 追问一（复述）："手续费在哪一步扣？"她答得含糊。
-3. 追问二（**先预测，再揭晓**）："1,234.56 AUD 付到日元账户，收款人拿到的确切金额是多少？先写你的答案和信心。"她写了一个数，信心"高"。点"运行"：沙箱的真实输出和她的预测并排出现，输出是一个带两位小数的日元金额，这本身就是 bug。高信心答错被标红。
-4. 结果：未通过。缺口报告指出："没有意识到函数对所有币种统一保留 2 位小数；JPY 没有小数位。"合并被拦下。
+1. Mia 直接点"提交"。先弹出**触发卡片**："settlement/ 属于高风险路径（R3）× 你第一次改这个模块（N3）× 你在'构建 · 支付'上还没有记录（G3）= 27，完整档。"
+2. 题一（解释决策）："手续费为什么在换汇之前扣？"她答得含糊。
+3. 题二（选择证据）：系统列出 5 条候选证据，让她选能证明"各币种金额都正确"的那条。她选了 `test_fee_aud_to_usd`，但这个测试只覆盖美元，证据不支持她的结论。
+4. 题三（条件变化，**先预测，再揭晓**）："同样的 1,234.56 AUD 付到日元账户，收款人拿到的确切金额是多少？先写答案和信心。"她写了一个数，信心"高"。点"运行"：沙箱的真实输出和她的预测并排出现，输出是一个带两位小数的日元金额，这本身就是 bug。高信心答错被标红。
+5. 结果：未通过。缺口报告指出："没有意识到函数对所有币种统一保留 2 位小数，JPY 没有小数位；现有测试只覆盖美元。"合并被拦下。
 
-**第二幕：有人纠正，真的搞懂**
-1. 切到 senior 复核页：缺口旁边有录音时间戳，senior 点一下，听到 Mia 那 10 秒的回答，写一句纠正："小数位要按币种查 ISO 4217，不能写死 2 位。"（全程约 30 秒）
-2. Mia 看到纠正，去弄懂（可以问 AI、查 ISO 4217），发现问题并修好。
-3. 重新答辩：先预测、再揭晓，这次对了；还主动说出"KWD 有 3 位小数也要处理"，达到 L4 迁移。通过。
-4. 系统用她自己的解释**自动生成 PR 描述**，展示出来。
+**第二幕：自己搞懂，再由 senior 把关**
+1. Mia 去弄懂（可以问 AI、查 ISO 4217），修好函数，补上 JPY 和 KWD 的测试。
+2. 重答：先预测、再揭晓，这次对了；还主动说出"KWD 有 3 位小数也要处理"，达到 L4 迁移。通过。
+3. 因为是完整档，senior 仍要看一眼**审核摘要**：改了什么、她的原话、她选的证据、条件变化题的对错、测试结果。senior 约 30 秒看完，只补一句"清结算日志里也要按币种格式化"。这句话进入 Mia 的能力记录。
+4. 审核摘要同时就是**自动生成的 PR 描述**，展示出来。
 
 **第三幕：决策类（快速展示）**
 - 一条 AML 告警（合成数据）：学生账户短时间内收到多笔小额入账，随后一笔跨境转出。要上报还是关闭？
-- 展示逻辑闭环清单逐项点亮，以及"什么证据会让你改主意"这道追问。
+- 题二"选择证据"：从交易记录里点出支持决定的几笔；题三"条件变化"："如果转出账户是本人在海外的账户，你的决定会变吗？"逻辑闭环清单逐项点亮。
 
-**第四幕：组织视角与时间维度**
-- 能力画像时间线（模拟数据）：几天后 Mia 做另一个任务，Viva 自动换成 KWD 问同一个概念（间隔复查），她答对，缺口"真正关闭"；她在"构建"能力上的抽查比例从 100% 降到 30%（P 牌）。
+**第四幕：懂 = 更快**
+- 对比：熟练的同事 Leo 改内部工具文案，1 × 1 × 1 = 1，免答辩，直接提交。
+- 几周后（模拟数据），Mia 再改手续费逻辑：3 × 1 × 1 = 3，只剩硬规则要求的 1 道轻量题；到期的间隔复查概念（KWD）也顺带出现在这道题里。她的能力画像时间线在上升。
 - 经理仪表盘：理解负债地图（哪些模块目前没人能讲清）。
 
 **收尾一句：** "Other tools ask: did you read this PR? Viva asks: are you getting better?"
@@ -362,7 +431,7 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
 |---|---|
 | **周二 29 下午（今天）** | 锁定概念和定位（v2）；完成 3 页 pre-screen 幻灯片（第 2 页放竞品 2×2）；决定是否改名；准备两个任务素材（手续费函数 + AML 告警）；写 4 个角色的 prompt 草稿；搭后端骨架 |
 | **周三 30 上午** | Pre-screen。**不等结果**，直接开发 |
-| **周三 30 白天到晚上** | 打通核心闭环：读入 → 追问 → 文字答辩 → 评分 → 缺口报告；接上沙箱，做成**先预测再揭晓**；自动生成 PR 描述 |
+| **周三 30 白天到晚上** | **触发引擎和触发卡片**；打通核心闭环：读入 → Decision Defense 三类题 → 文字作答 → 评分 → 缺口报告 → 重答；接上沙箱，做成**先预测再揭晓**；生成审核摘要（兼 PR 描述） |
 | **周四 1 上午** | 跑验证实验，收集数据（先签知情同意） |
 | **周四 1 下午** | 语音和录音（加分项）；**senior 复核页（简版）**；能力画像时间线和经理仪表盘（模拟数据）；把真实实验数据放进决赛幻灯片；排练 |
 
@@ -378,7 +447,7 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
 
 **建议分工（5 人，按各自擅长认领）：**
 - R1 LLM 负责人：4 个角色的 prompt、自适应追问逻辑、评分细则。
-- R2 后端：FastAPI、执行沙箱、数据模型。
+- R2 后端：FastAPI、触发引擎（风险地图 + 评分）、执行沙箱、数据模型。
 - R3 前端：答辩界面（含先预测再揭晓）、结果页、senior 复核页、仪表盘。
 - R4 内容与实验：任务素材、标准答案、招募参与者、知情同意书、组织 mentor 校准。
 - R5 Pitch：幻灯片、demo 旁白、评委问答准备、证据资料。
@@ -409,18 +478,23 @@ v1 的流程是"提交 → 出题 → 作答 → 评分 → 放行或拦截"，�
 5. **"Why would a company pay?"** — Comprehension debt is an incident waiting to happen, especially where money moves. Viva gives faster onboarding, audit evidence that humans in the loop really understand, and a map of what nobody on the team can explain.
 6. **"How is this different from code review?"** — Review checks the code; Viva checks the person. Reviewers are drowning in AI-generated PRs.
 7. **"Doesn't it favour confident English speakers?"** — Scoring is on content, not fluency; text mode and multilingual answers are supported. This directly addresses the brief's "friction is a filter" warning.
-8. **"Privacy / surveillance?"** — The capability profile belongs to the employee; managers see gate outcomes and team-level aggregates. We recommend it not be used for performance ranking. Recordings are evidence for humans only: a senior can open one only after two failed attempts, on appeal, or in a calibration sample, and every view is logged where the employee can see it. We never score faces, tone or emotions. It's a real tension, and we'd rather name it.
+8. **"Privacy / surveillance?"** — The capability profile belongs to the employee; managers see gate outcomes and team-level aggregates. We recommend it not be used for performance ranking. Recordings are evidence for humans only: a senior can open one only after a failed retry, for the highest-risk tier, on appeal, or in a calibration sample, and every view is logged where the employee can see it. We never score faces, tone or emotions. It's a real tension, and we'd rather name it.
 9. **"What about work you can't execute, like decisions?"** — The 7-point decision-closure checklist plus consistency checks; the ground truth is the logic chain, not a single right answer.
 10. **"Can it scale beyond Melbourne?"** — It plugs into global tools, domain packs extend it to other professions, and the passport becomes a portable signal across employers and countries.
 11. **"Tools like SlopBlock and Gater already quiz people on their PRs. What's new?"** (v2) — They check once: did you read this PR? We build the reps: predict first and let the real run correct you, a senior adds a 30-second correction, and the same concept comes back days later on a different task. Ground truth comes from executing the code, not from an LLM's opinion. And it covers decisions and compliance, not only code.
 12. **"Isn't there already a product called Viva?"** (v2) — Yes, an oral-exam tool for schools that checks authorship of assignments. We're in the workplace, embedded in delivery, and focused on growth over time rather than one-off verification. *(Drop this answer if the team renames.)*
 13. **"How do you keep private code and data safe?"** (v2) — We collect the minimum (the diff and the ticket, not the repo), redact before any model sees it, keep voice transcription in-house, store data in-region, and auto-delete raw recordings. For the hackathon, everything is synthetic.
+14. **"Won't this slow everyone down?"** (v3) — Routine work by people who've already proven themselves rarely triggers it. The trigger is risk × novelty × proficiency: a proficient engineer making a familiar, low-risk change skips it entirely. When it does trigger, it's one async question or a 2–5 minute defense, and passing it cuts human review. The employee always sees why it triggered and how close they are to the next tier down.
+15. **"Why not just measure how much of the work AI wrote?"** (v3) — Detection is unreliable, and it would push people to hide their AI use — the brief explicitly doesn't want a reason to use AI less. We only ask: how risky is this, how new is it to you, and have you already shown you understand it?
+16. **"Can people game the trigger by splitting PRs?"** (v3) — Risk and novelty are computed over a person's recent cumulative changes to a module, and 5% of skipped changes are randomly sampled.
 
 ---
 
 ## 14. 待团队拍板
 - [ ] **产品名**：vivaproof.com 已有同名产品 "Viva — AI Oral Assessment"（面向学校）。改名，还是保留并在 pitch 里主动说明区别（见 13 #12）？（备选：Defend Your Work / Walkthrough）
 - [ ] **定位改口径**：从"答辩关"改成"练习引擎"，pitch line 用 "AI took the reps. Viva gives them back."（v2 建议）
+- [ ] **触发阈值（v3）**：四档分界 3 / 8 / 17、随机抽查 5%、R3 至少轻量档。demo 先用这组，团队确认或调整。
+- [ ] **R3 通过后是否保留人工审核**：v3 建议保留（四眼原则），只是 reviewer 改看审核摘要。
 - [ ] **循环取舍**：按第 11 节表格，先预测再揭晓必做，senior 复核做简版，间隔复查和 P 牌用模拟数据？
 - [ ] **摄像头**：录像默认关闭、只给人看、不进入 AI 评分（v2 建议）；还是黑客松里完全不做录像？
 - [ ] Demo 主线用支付工程（手续费函数），决策类用 AML 告警。是否保留两个？
