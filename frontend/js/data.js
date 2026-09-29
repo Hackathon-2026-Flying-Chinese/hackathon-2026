@@ -1,14 +1,19 @@
 /* Fixtures for the minimal demo: one pull request, two sets of questions, the scoring standard, and stand-in answers for the presenter. */
 window.Viva = window.Viva || {};
 Viva.data = {
-  // The person using the demo. The avatar file is assets/avatar.jpg.
-  me: { name: 'Tony', avatar: 'assets/avatar.jpg' },
+  // The company the demo runs in (a made-up payments company), and the person using it. The avatar file is assets/avatar.jpg.
+  org: { name: 'Harbourpay', team: 'Payments Engineering' },
+  me: { name: 'Tony', role: 'Graduate engineer', avatar: 'assets/avatar.jpg' },
+  // The senior assigned to review this team's checks. A demo identity: the reviewer page is opened by a token, not SSO.
+  reviewer: { name: 'Priya Raman', role: 'Senior engineer, Payments' },
   // Default pull request. The GitHub link can override these fields through the URL (see app.js).
   pr: {
     repo: 'harbourpay/transfers', number: 128, title: 'Charge a transfer fee: 1%, minimum 2.00, cap 25.00',
     author: 'tony', branch: 'tony/transfer-fee', base: 'main', sha: 'a41c9e2',
     files: [{ name: 'fees.py', add: 34, del: 2 }, { name: 'test_fees.py', add: 58, del: 0 }]
   },
+  // Other checks on the same commit, shown in the GitHub preview. CI judges correctness; Viva does not.
+  ci: [{ name: 'ci / unit-tests', note: 'Passed in 1m 12s' }, { name: 'ci / lint', note: 'Passed in 18s' }],
   maxAttempts: 2,
   maxTurns: 3,
   standardTurns: 2,

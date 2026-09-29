@@ -112,7 +112,7 @@
     };
     function draw() {
       const g = canvas.getContext('2d'), w = canvas.width, h = canvas.height, st = getComputedStyle(document.documentElement);
-      const ink = st.getPropertyValue('--ink').trim(), dim = st.getPropertyValue('--line-strong').trim(), acc = st.getPropertyValue('--accent').trim();
+      const ink = st.getPropertyValue('--lilac-strong').trim(), dim = st.getPropertyValue('--accent-line').trim(), acc = st.getPropertyValue('--sky-strong').trim();
       const d = w / (canvas.getBoundingClientRect().width || w), bw = 3 * d, gap = 4 * d, n = Math.floor(w / (bw + gap));
       g.clearRect(0, 0, w, h);
       for (let i = 0; i < n; i++) {

@@ -3,7 +3,7 @@
 (() => {
   'use strict';
   const V = (window.Viva = window.Viva || {});
-  const api = V.api;
+  const api = V.api, D = V.data;
   const { $, $$, esc, icon, fmtTime } = V;
   const root = $('#app');
 
@@ -13,27 +13,28 @@
   let data = null, players = [];
   const KINDS = ['specific', 'reason', 'own', 'generic'];
   const MODE = { voice: 'Spoken', text: 'Typed' };
-  const CHIP = { genuine: 'Likely their own work', unclear: 'Needs a closer look', weak: 'Could not confirm' };
+  const VERDICT = { genuine: 'Likely their own work', unclear: 'Needs a closer look', weak: 'Could not confirm' };
   const ACT = { sign: 'requested a signed link for', play: 'played', open_review: 'opened the review page' };
-  const who = a => (a === 'learner' ? 'The learner' : `Reviewer ${esc(String(a).split(':')[1] || '')}`);
+  const who = a => (a === 'learner' ? 'The author' : 'You');
+  const bub = (tone, name) => `<span class="bub" data-tone="${tone}">${icon(name, 14)}</span>`;
   const marks = segs => segs.map(s => (KINDS.includes(s.kind) ? `<mark data-kind="${s.kind}" class="on">${esc(s.text)}</mark>` : esc(s.text))).join('');
 
   // ---------- player ----------
   function playerHtml(m) {
     return `<div class="player" data-id="${esc(m.id)}">
-      <video class="p-video" playsinline preload="none"></video>
-      <div class="p-wave" role="slider" tabindex="0" aria-label="Recording position" aria-valuemin="0" aria-valuemax="${Number(m.duration)}" aria-valuenow="0"><canvas></canvas><i class="p-head"></i></div>
+      <div class="p-stage"><video class="p-video" playsinline preload="none"></video><span class="p-cover">${icon('lock', 18)}<span>Signed link on play</span></span></div>
       <div class="p-bar">
-        <button class="btn-icon p-play" type="button" aria-label="Play">${icon('play', 18)}</button>
+        <button class="btn-icon p-play" type="button" aria-label="Play">${icon('play', 16)}</button>
+        <div class="p-wave" role="slider" tabindex="0" aria-label="Recording position" aria-valuemin="0" aria-valuemax="${Number(m.duration)}" aria-valuenow="0"><canvas></canvas><i class="p-head"></i></div>
         <span class="mono num p-time">0:00 / ${fmtTime(Number(m.duration))}</span>
-        <span class="p-exp small muted">A signed link is requested when you press play.</span>
-        <button class="btn-text p-renew" type="button" hidden>Request a new link</button>
-      </div></div>`;
+      </div>
+      <p class="p-exp"><span class="p-exp-t">A signed link is requested when you press play.</span><button class="btn-text p-renew" type="button" hidden>Request a new link</button></p>
+    </div>`;
   }
 
   function mountPlayer(el, media, segs, { onActive, onAccess }) {
     const video = $('video', el), wave = $('.p-wave', el), cv = $('canvas', wave), head = $('.p-head', el);
-    const btn = $('.p-play', el), time = $('.p-time', el), exp = $('.p-exp', el), renewBtn = $('.p-renew', el);
+    const btn = $('.p-play', el), time = $('.p-time', el), exp = $('.p-exp-t', el), renewBtn = $('.p-renew', el);
     let peaks = null, expiresAt = 0, raf = 0, expTimer = 0, loading = null, expired = false, lastActive = -1, url = null;
     const total = () => (isFinite(video.duration) && video.duration > 0 ? video.duration : media.duration);
 
@@ -43,21 +44,23 @@
     }
     function draw() {
       const g = cv.getContext('2d'), w = cv.width, h = cv.height, st = getComputedStyle(document.documentElement);
-      const ink = st.getPropertyValue('--ink').trim(), dim = st.getPropertyValue('--line-strong').trim(), acc = st.getPropertyValue('--accent').trim();
-      const d = w / (cv.getBoundingClientRect().width || w), bw = 3 * d, gap = 3 * d, n = Math.floor(w / (bw + gap));
+      const dim = st.getPropertyValue('--faint').trim(), acc = st.getPropertyValue('--accent').trim();
+      const d = w / (cv.getBoundingClientRect().width || w), bw = 2 * d, gap = 2 * d, n = Math.floor(w / (bw + gap));
       g.clearRect(0, 0, w, h);
-      g.save(); g.globalAlpha = 0.14; g.fillStyle = acc; // phrases the score marked as generic sit on a soft band
+      g.save(); g.globalAlpha = 0.12; g.fillStyle = acc; // phrases the score marked as generic sit on a soft band
       segs.filter(s => s.flag).forEach(s => { g.fillRect((s.start / total()) * w, 0, ((s.end - s.start) / total()) * w, h); });
       g.restore();
       const playedTo = (video.currentTime / total()) * n;
       for (let i = 0; i < n; i++) {
-        const a = peaks ? peaks[Math.min(peaks.length - 1, Math.floor((i / n) * peaks.length))] : 0.1 + 0.05 * Math.sin(i * 0.7);
-        const bh = Math.max(2 * d, a * h * 0.86);
-        g.fillStyle = i < playedTo ? ink : dim;
+        const a = peaks ? peaks[Math.min(peaks.length - 1, Math.floor((i / n) * peaks.length))] : 0.2 + 0.3 * Math.abs(Math.sin(i * 0.55)) * (0.6 + 0.4 * Math.sin(i * 0.13));
+        const bh = Math.max(2 * d, a * h * 0.84);
+        g.fillStyle = i < playedTo ? acc : dim;
+        g.globalAlpha = i < playedTo ? 1 : 0.5;
         g.beginPath();
         if (g.roundRect) g.roundRect(i * (bw + gap), (h - bh) / 2, bw, bh, bw / 2); else g.rect(i * (bw + gap), (h - bh) / 2, bw, bh);
         g.fill();
       }
+      g.globalAlpha = 1;
     }
     function paint() {
       const t = video.currentTime || 0;
@@ -77,7 +80,7 @@
         const Ctx = window.AudioContext || window.webkitAudioContext;
         ctx = new Ctx();
         const audio = await ctx.decodeAudioData(buf);
-        const ch = audio.getChannelData(0), n = 140, size = Math.floor(ch.length / n) || 1, out = [];
+        const ch = audio.getChannelData(0), n = 160, size = Math.floor(ch.length / n) || 1, out = [];
         for (let i = 0; i < n; i++) { let m = 0; for (let j = i * size; j < (i + 1) * size && j < ch.length; j++) m = Math.max(m, Math.abs(ch[j])); out.push(m); }
         const top = Math.max(...out, 0.001);
         peaks = out.map(x => Math.max(0.06, x / top));
@@ -88,7 +91,7 @@
       clearInterval(expTimer);
       const tick = () => {
         const left = Math.ceil(expiresAt - Date.now() / 1000);
-        if (left > 0) { exp.textContent = `Signed link expires in ${fmtTime(left)}`; return; }
+        if (left > 0) { exp.textContent = `Signed link expires in ${fmtTime(left)}.`; return; }
         expired = true; clearInterval(expTimer); video.pause();
         exp.textContent = 'This link has expired.'; renewBtn.hidden = false; btn.disabled = true;
       };
@@ -97,7 +100,7 @@
     async function load() {
       if (loading) return loading;
       loading = (async () => {
-        exp.textContent = 'Requesting a signed link';
+        exp.textContent = 'Requesting a signed link.';
         const link = await api.mediaLink(media.id, { token });
         expiresAt = link.expires_at;
         const f = await api.mediaFetch(link.url);
@@ -105,6 +108,7 @@
         if (url) URL.revokeObjectURL(url);
         url = f.objectUrl;
         video.src = url;
+        el.dataset.loaded = '1';
         await new Promise(r => { video.onloadedmetadata = r; setTimeout(r, 2000); });
         if (!isFinite(video.duration)) { // MediaRecorder files have no length until the end is visited
           await new Promise(r => { const d = () => { video.removeEventListener('timeupdate', d); video.currentTime = at; r(); }; video.addEventListener('timeupdate', d); video.currentTime = 1e6; setTimeout(r, 1500); });
@@ -123,9 +127,9 @@
     }
     btn.addEventListener('click', async () => { try { if (video.paused) await play(); else video.pause(); } catch { /* shown in the status line */ } });
     renewBtn.addEventListener('click', async () => { video.removeAttribute('src'); try { await load(); play(); } catch { /* shown in the status line */ } });
-    video.addEventListener('play', () => { btn.innerHTML = icon('pause', 18); btn.setAttribute('aria-label', 'Pause'); cancelAnimationFrame(raf); loop(); });
-    video.addEventListener('pause', () => { btn.innerHTML = icon('play', 18); btn.setAttribute('aria-label', 'Play'); paint(); });
-    video.addEventListener('ended', () => { btn.innerHTML = icon('play', 18); paint(); });
+    video.addEventListener('play', () => { btn.innerHTML = icon('pause', 16); btn.setAttribute('aria-label', 'Pause'); cancelAnimationFrame(raf); loop(); });
+    video.addEventListener('pause', () => { btn.innerHTML = icon('play', 16); btn.setAttribute('aria-label', 'Play'); paint(); });
+    video.addEventListener('ended', () => { btn.innerHTML = icon('play', 16); paint(); });
     video.addEventListener('seeked', paint);
     const scrub = e => { const r = wave.getBoundingClientRect(); play(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * total()).catch(() => {}); };
     wave.addEventListener('pointerdown', scrub);
@@ -139,63 +143,88 @@
   // ---------- page ----------
   function turnHtml(t) {
     const segs = t.segments
-      ? `<ol class="rv-tr">${t.segments.map((s, i) => `<li><button type="button" class="seg-row" data-turn="${Number(t.turn)}" data-i="${i}" ${s.flag ? 'data-flag' : ''}><span class="mono num">${fmtTime(Number(s.start))}</span><span class="seg-body"><span class="seg-text">${esc(s.text)}</span>${s.flag ? `<span class="seg-flag">${icon('flag', 13)} ${esc(s.flag)}</span>` : ''}</span></button></li>`).join('')}</ol>`
+      ? `<ol class="rv-tr">${t.segments.map((s, i) => `<li><button type="button" class="seg-row" data-turn="${Number(t.turn)}" data-i="${i}" ${s.flag ? 'data-flag' : ''}><span class="mono num">${fmtTime(Number(s.start))}</span><span class="seg-body"><span class="seg-text">${esc(s.text)}</span>${s.flag ? `<span class="seg-flag">${icon('flag', 12)}${esc(s.flag)}</span>` : ''}</span></button></li>`).join('')}</ol>`
       : `<blockquote class="rq-a">${marks(t.marks)}</blockquote>`;
-    return `<article class="rv-turn" data-reveal>
-      <header><span class="micro">Question ${Number(t.turn)}</span><span class="chip">${esc(t.label)}</span><span class="chip">${MODE[t.mode] || 'Answered'}</span>${t.source === 'follow-up' ? '<span class="chip chip-signal">Follow-up</span>' : ''}</header>
+    return `<article class="rv-turn">
+      <header><span class="rq-n num">${Number(t.turn)}</span><span class="tag" data-tone="lilac">${esc(t.label)}</span><span class="tag">${MODE[t.mode] || 'Answered'}</span>${t.source === 'follow-up' ? '<span class="tag" data-tone="lemon">Follow-up</span>' : ''}</header>
       <p class="rv-q">${esc(t.question)}</p>
-      ${t.media ? playerHtml(t.media) : '<p class="muted small">No recording for this answer.</p>'}
-      <h4 class="micro rv-tr-h">${t.segments ? 'Transcript' : 'Typed answer'}</h4>
-      ${segs}
+      <div class="rv-body${t.media ? '' : ' rv-body-text'}">
+        ${t.media ? playerHtml(t.media) : ''}
+        <div class="rv-text"><p class="label rv-tr-h">${t.segments ? 'Transcript. Select a line to jump to it.' : t.media ? 'Typed answer, recorded on camera' : 'Typed answer. No recording.'}</p>${segs}</div>
+      </div>
     </article>`;
   }
   function decisionHtml() {
     const r = data.decision;
     if (!r || r.status !== 'decided') return '';
     const ok = r.verdict === 'genuine';
-    return `<div class="senior saved" data-enter><header><span class="chip ${ok ? 'chip-solid' : 'chip-signal'}">${ok ? 'Confirmed' : 'Follow-up'}</span></header><p>${ok ? 'Looks like their own work.' : 'Needs a follow-up conversation.'}</p>${r.note ? `<blockquote>${esc(r.note)}</blockquote>` : ''}</div>`;
+    return `<div class="saved" data-verdict="${ok ? 'genuine' : 'followup'}"><span class="saved-i">${icon(ok ? 'check' : 'chat', 14)}</span><div><b>${ok ? 'Confirmed as their own work' : 'Follow-up requested'}</b>${r.note ? `<p>${esc(r.note)}</p>` : ''}<span>Saved at ${V.fmtClock(Number(r.at))}. You can change it below.</span></div></div>`;
   }
-  const logHtml = () => (data.access_log.length ? data.access_log.map(e => `<li><span class="mono num">${V.fmtClock(Number(e.at))}</span><span>${who(e.actor)} ${ACT[e.action] || 'opened'}${e.media_id ? ` the question ${Number(e.turn)} recording` : ''}.</span></li>`).join('') : '<li class="muted">No entries yet.</li>');
+  const statusOf = () => {
+    const r = data.decision;
+    if (r && r.status === 'decided') return r.verdict === 'genuine' ? { tone: 'mint', text: 'Confirmed' } : { tone: '', text: 'Follow-up requested' };
+    return { tone: 'lemon', live: true, text: 'Waiting for your decision' };
+  };
+  const logHtml = () => (data.access_log.length
+    ? data.access_log.map(e => `<li><span class="av" data-tone="ink" style="--s:20px">${esc(e.actor === 'learner' ? V.initials(D.me.name) : V.initials(D.reviewer.name))}</span><span><b>${who(e.actor)}</b> ${ACT[e.action] || 'opened'}${e.media_id ? ` the question ${Number(e.turn)} recording` : ''}.</span><time class="mono num">${V.fmtClock(Number(e.at))}</time></li>`).join('')
+    : '<li class="muted">No entries yet.</li>');
 
   function render() {
     players.forEach(p => p.destroy()); players = [];
-    const pr = data.pr, a = data.assessment;
+    const pr = data.pr, a = data.assessment, repo = String(pr.repo).split('/').pop(), st = statusOf();
     document.title = `Review #${Number(pr.number)} | Viva`;
+    $('#crumb').innerHTML = `<span>Reviews</span><span class="sep" aria-hidden="true">/</span><b>${esc(repo)} #${Number(pr.number)}</b>`;
     root.innerHTML = `
-      <div class="stage-head" data-enter>
-        <div><p class="micro">Senior review</p><h1 class="h1 mask">${V.mask(['Watch the answers,', 'then decide.'])}</h1></div>
-        <div class="head-meta"><span class="chip">${esc(pr.repo)} #${Number(pr.number)}</span><p class="timer">${esc(pr.title)}</p></div>
-      </div>
-      <div class="rv-grid">
-        <div class="rv-main">
-          <section data-enter>
+      <header class="ph" data-enter>
+        <div class="ph-main">
+          <p class="ph-eyebrow">${icon('inbox', 15)}Review request<span class="sep" aria-hidden="true">/</span><span class="mono">${esc(pr.repo)}</span>#${Number(pr.number)}</p>
+          <h1 class="ph-title">${esc(pr.title)}</h1>
+          <div class="ph-meta">
+            <span class="badge"${st.tone ? ` data-tone="${st.tone}"` : ''} id="rv-status">${st.live ? '<i class="dot" data-live></i>' : ''}${esc(st.text)}</span>
+            <span><span class="av" style="--s:18px"><img src="${esc(D.me.avatar)}" alt=""></span>Author ${esc(pr.author)}</span>
+            <span>${icon('commit', 14)}<span class="mono">${esc(pr.sha)}</span></span>
+            <span>${icon('refresh', 14)}Attempt ${Number(data.attempt)} of ${Number(data.max_attempts)}</span>
+            ${data.requested ? `<span>${icon('clock', 14)}Requested at ${V.fmtClock(Number(data.requested))}</span>` : ''}
+          </div>
+        </div>
+        <div class="ph-actions rv-me"><span class="av" data-tone="lemon" style="--s:36px">${esc(V.initials(D.reviewer.name))}</span><div><b>${esc(D.reviewer.name)}</b><span>${esc(D.reviewer.role)}</span></div></div>
+      </header>
+      <div class="cols">
+        <div class="stack">
+          <section class="card rv-sum" data-enter data-verdict="${esc(a.verdict)}">
             <div class="rv-score">
-              <div class="rv-scorenum"><b class="num">${Number(a.score)}</b><span>Understanding score</span></div>
-              <div class="rv-scoremeta"><span class="chip res-verdict" data-verdict="${esc(a.verdict)}">${CHIP[a.verdict] || ''}</span>${a.simulated ? '<span class="chip">Simulated assessment</span>' : ''}${data.attempt > 1 ? `<span class="chip chip-signal">Attempt ${Number(data.attempt)} of ${Number(data.max_attempts)}</span>` : ''}<p class="muted small">Words only. The score never uses the face, the voice tone or expressions in the recording.</p>${data.previous.map(p => `<p class="muted small">Attempt ${Number(p.attempt)} scored ${Number(p.score)} and did not pass. This is the retake, with different questions.</p>`).join('')}</div>
+              <div class="rv-scorenum"><b class="num">${Number(a.score)}</b><span>of 100</span></div>
+              <div class="rv-scoremeta">
+                <p class="label">Understanding score</p>
+                <div class="score-tags"><span class="badge"${a.verdict === 'genuine' ? ' data-tone="accent"' : a.verdict === 'unclear' ? ' data-tone="blue"' : ''}>${VERDICT[a.verdict] || ''}</span>${a.simulated ? '<span class="tag">Simulated assessment</span>' : ''}</div>
+                <p class="muted small">Words only. The score never uses the face, the voice tone or the expressions in the recording.</p>
+                ${data.previous.map(p => `<p class="muted small">Attempt ${Number(p.attempt)} scored ${Number(p.score)} and did not pass. This is the retake, with different questions.</p>`).join('')}
+              </div>
             </div>
-            <ul class="rv-dims">${a.dims.map(d => `<li><span>${esc(d.label)}</span><b class="num">${Number(d.value)}</b><p>${esc(d.note)}</p></li>`).join('')}</ul>
+            <ul class="dims">${a.dims.map(d => `<li class="dim"><div class="dim-top"><b>${esc(d.label)}</b><span class="dim-val num">${Number(d.value)}</span></div><span class="dim-line" aria-hidden="true"><i style="--w:${(Number(d.value) / 100).toFixed(2)}"></i></span><p>${esc(d.note)}</p></li>`).join('')}</ul>
           </section>
-          <section class="rv-interview">
-            <h2 class="h2">Interview</h2>
+          <section class="card rv-interview" data-enter>
+            <div class="card-h"><h2>${bub('lilac', 'chat')}Interview</h2><span class="meta">${data.turns.length} ${data.turns.length === 1 ? 'answer' : 'answers'}</span></div>
             ${data.turns.map(turnHtml).join('') || '<p class="muted">No answers were recorded.</p>'}
           </section>
         </div>
-        <aside class="rv-side">
-          <section class="panel composer" data-enter>
-            <h2 class="h2">Your decision</h2>
+        <aside class="stack rv-side">
+          <section class="card composer" data-enter>
+            <div class="card-h"><h2>${bub('lemon', 'shield')}Your decision</h2></div>
             <div id="saved" aria-live="polite">${decisionHtml()}</div>
             <div class="rv-choices" role="radiogroup" aria-label="Decision">
-              <label class="ev" data-spot><input type="radio" name="verdict" value="genuine"><span class="ev-mark"></span><span class="ev-text"><b>Looks like their own work</b><em>The answers match the change.</em></span></label>
-              <label class="ev" data-spot><input type="radio" name="verdict" value="followup"><span class="ev-mark"></span><span class="ev-text"><b>Needs a follow-up conversation</b><em>Some answers stayed general.</em></span></label>
+              <label class="ev"><input type="radio" name="verdict" value="genuine"><span class="ev-mark"></span><span class="ev-text"><b>Looks like their own work</b><em>The answers match the change.</em></span></label>
+              <label class="ev"><input type="radio" name="verdict" value="followup"><span class="ev-mark"></span><span class="ev-text"><b>Needs a follow-up conversation</b><em>Some answers stayed general.</em></span></label>
             </div>
-            <div class="field"><label for="note">Note for the author (optional)</label><textarea class="textarea" id="note" rows="4" maxlength="500" aria-describedby="note-hint"></textarea><span class="hint" id="note-hint">The author sees your decision and this note on their results page.</span></div>
+            <div class="field"><label for="note">Note for the author <span class="muted">(optional)</span></label><textarea class="textarea" id="note" rows="3" maxlength="500" aria-describedby="note-hint" placeholder="What to keep, or what to talk about"></textarea><span class="hint" id="note-hint">The author sees your decision and this note on their results page.</span></div>
             <p class="error-text" id="err" role="alert" hidden></p>
-            <div class="form-foot"><button class="btn btn-primary" id="save" type="button" data-magnetic>Save decision <span class="arrow">${icon('arrow', 16)}</span></button></div>
+            <button class="btn btn-primary rv-save" id="save" type="button">Save decision</button>
+            <p class="card-foot">Saving updates the viva / decision-check on GitHub.</p>
           </section>
-          <section class="card log" data-reveal>
-            <header class="card-head"><h3>Recording access log</h3></header>
-            <ul id="rv-log">${logHtml()}</ul>
-            <p class="hint">Visible to the author. Signed links expire after 5 minutes.</p>
+          <section class="card log" data-enter>
+            <div class="card-h"><h2>${bub('sky', 'eye')}Recording access log</h2></div>
+            <ul class="log-list" id="rv-log">${logHtml()}</ul>
+            <p class="card-foot">Visible to the author. Signed links expire after 5 minutes.</p>
           </section>
         </aside>
       </div>`;
@@ -216,9 +245,7 @@
       if (pl) pl.seek(seg.start).catch(() => {});
     }));
     $('#save').onclick = save;
-    V.revealMask(root);
-    V.enter($$('[data-enter]', root), { y: 18, step: 70, dur: 900, delay: 120 });
-    V.observe(root);
+    V.enter($$('[data-enter]', root), { y: 8, step: 50, dur: 480, delay: 40 });
   }
 
   async function save() {
@@ -230,20 +257,22 @@
       // no role in the body: the server reads it from the token
       data.decision = await api.decide(token, { verdict, note: $('#note').value });
       $('#saved').innerHTML = decisionHtml();
-      V.enter($('#saved').lastElementChild, { y: 14, dur: 800 });
+      V.enter($('#saved').firstElementChild, { y: 6, dur: 420 });
+      const st = statusOf();
+      $('#rv-status').outerHTML = `<span class="badge"${st.tone ? ` data-tone="${st.tone}"` : ''} id="rv-status">${esc(st.text)}</span>`;
+      if (verdict === 'genuine') V.confetti(btn);
       V.toast('Decision saved. The author sees it on their results page.');
     } catch (e) { err.textContent = e.message; err.hidden = false; } finally { btn.disabled = false; }
   }
 
   function forbidden(message) {
     document.title = 'No access | Viva';
-    root.innerHTML = `<div class="rv-locked-page" data-enter>
-      <span class="lockmark">${icon('lock', 26)}</span>
-      <h1 class="h1 mask">${V.mask(['This link does not', 'open a review.'])}</h1>
-      <p class="lede">${message === 'This link does not open a review.' ? '' : `${esc(message)} `}Reviewer links are separate from learner links, and each one opens exactly one interview.</p>
-      <a class="btn btn-ghost" href="index.html">Back to Viva</a></div>`;
-    V.revealMask(root);
-    V.enter($$('[data-enter]', root), { y: 18, dur: 900, delay: 100 });
+    root.innerHTML = `<div class="rv-locked-page"><section class="card" data-enter>
+      <span class="lockmark">${icon('lock', 20)}</span>
+      <h1 class="h1">This link does not open a review.</h1>
+      <p class="muted">${message === 'This link does not open a review.' ? '' : `${esc(message)} `}Reviewer links are separate from learner links, and each one opens exactly one interview.</p>
+      <a class="btn btn-secondary" href="index.html">Back to Viva</a></section></div>`;
+    V.enter($$('[data-enter]', root), { y: 8, dur: 480 });
   }
 
   async function boot() {

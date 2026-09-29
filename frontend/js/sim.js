@@ -225,14 +225,14 @@
   const newState = (pr, now, scoring) => ({
     id: b64u(rand(24)), stage: 'interview', version: 0, created: now, pr,
     attempt: 1, attempts: [], scoring, first_score: null, level_events: [],
-    interview: { turns: [], done: false }, assessment: null, review: null,
+    interview: { turns: [], done: false }, assessment: null, review: null, finished: null,
     reviewer_token: null, access_log: [], media: {}
   });
   const turnView = t => ({ turn: t.turn, key: t.key, label: t.label, question: t.question, source: t.source, answered: t.answered, answer_text: t.answer_text, mode: t.mode, media_id: t.media_id });
 
   function view(db, s, now, opts = {}) {
     return {
-      id: s.id, stage: s.stage, version: s.version, created: s.created, pr: s.pr,
+      id: s.id, stage: s.stage, version: s.version, created: s.created, finished: s.stage === 'results' ? s.finished || null : null, pr: s.pr,
       attempt: s.attempt, max_attempts: D.maxAttempts, can_retake: canRetake(s),
       previous: s.attempts.map(a => ({ attempt: a.attempt, score: a.assessment.score, verdict: a.assessment.verdict })),
       camera_required: db.settings.cameraRequired !== false,
@@ -262,7 +262,7 @@
   function reviewView(s, token) {
     return {
       role: 'senior', banner: 'Demo reviewer role. Not SSO.', token_hint: token.slice(0, 6),
-      pr: s.pr, assessment: s.assessment, decision: s.review,
+      pr: s.pr, assessment: s.assessment, decision: s.review, requested: s.finished || null,
       attempt: s.attempt, max_attempts: D.maxAttempts, previous: s.attempts.map(a => ({ attempt: a.attempt, score: a.assessment.score, verdict: a.assessment.verdict })),
       turns: s.interview.turns.filter(t => t.answered).map(t => {
         const m = t.media_id ? s.media[t.media_id] : null;
@@ -279,6 +279,13 @@
 
   // ---------- API ----------
   const api = {
+    // What the GitHub check links to: the pull request and why it needs a check (Risk x Novelty x Gap at the current level).
+    async check({ pr } = {}) {
+      await sleep(80);
+      const db = load(), sc = pointsFor(levelOf(db));
+      return { pr: cleanPr(pr), scoring: { ...sc, max: SC.max, why: { r: SC.why.r, n: SC.why.n, g: `${SC.concept.name} is at level ${sc.level} of 3.` }, rubric: SC.rows, bands: SC.bands, concept: { name: SC.concept.name, level: sc.level } } };
+    },
+
     async start({ pr } = {}) {
       await sleep(120);
       return tx(db => { const now = nowS(), s = newState(cleanPr(pr), now, pointsFor(levelOf(db))); db.sessions[s.id] = s; return view(db, s, now); });
@@ -347,7 +354,7 @@
         // The concept level: a pass moves it up, a failed retake moves it down, a first failure leaves it alone.
         if (passed) s.level_events.push({ at: now, delta: 1, attempt: s.attempt, reason: s.attempt === 1 ? 'Passed the interview.' : 'Passed the second attempt.' });
         else if (last) s.level_events.push({ at: now, delta: -1, attempt: s.attempt, reason: 'The second attempt did not pass. It needs more practice or a person to help.' });
-        Object.assign(s, { stage: 'results', version: s.version + 1 });
+        Object.assign(s, { stage: 'results', finished: now, version: s.version + 1 });
         return view(db, s, now, { presenter });
       });
     },
@@ -360,7 +367,7 @@
         checkVersion(s, version);
         if (!canRetake(s)) fail(409, 'A second attempt is not available.');
         s.attempts.push({ attempt: s.attempt, assessment: s.assessment, turns: s.interview.turns, finished: now });
-        Object.assign(s, { attempt: s.attempt + 1, interview: { turns: [], done: false }, assessment: null, review: null, stage: 'interview', version: s.version + 1 });
+        Object.assign(s, { attempt: s.attempt + 1, interview: { turns: [], done: false }, assessment: null, review: null, finished: null, stage: 'interview', version: s.version + 1 });
         return view(db, s, now, { presenter });
       });
     },
