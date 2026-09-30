@@ -161,9 +161,9 @@
   function revealHtml(a) {
     const r = a.reveal, by = k => a.checks.find(c => c.key === k), b = by('behaviour'), rq = by('requirement'), ev = by('evidence');
     const rows = r.rows.length ? `<table class="reveal-rows"><thead><tr><th>Invoice</th><th>Amount</th><th>Status</th></tr></thead><tbody>${r.rows.map(x => `<tr>${x.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '';
-    return `<section class="card reveal" id="reveal-card" data-ok="${b.ok}" data-reveal>
-      <div class="card-h"><h2>${bub('sky', 'play')}What really happened</h2><span class="tag">Simulated run, synthetic data</span></div>
-      <p class="reveal-req"><span class="mono">${esc(r.request)}</span><span>${esc(r.as)}</span></p>
+    return `<details class="card reveal fold" id="reveal-card" data-ok="${b.ok}" data-reveal>
+      <summary class="card-h"><h2>${bub('sky', 'play')}What really happened</h2><span class="fold-sum"><span>You predicted ${esc(b.chosen_text)}. It returned ${esc(r.status)}.</span><span class="fold-i">${icon('chevron', 14)}</span></span></summary>
+      <p class="reveal-req"><span class="mono">${esc(r.request)}</span><span>${esc(r.as)}</span><span class="tag">Simulated run, synthetic data</span></p>
       <div class="reveal-grid">
         <div class="reveal-box" data-side="you"><p class="label">You predicted</p><b>${esc(b.chosen_text)}</b>${a.confidence ? `<span>You were ${esc(CONF[a.confidence] || a.confidence)}.</span>` : ''}</div>
         <div class="reveal-box" data-side="run"><p class="label">It returned</p><b><span class="mono">${esc(r.status)}</span>${esc(r.result)}</b>${rows}<span>${esc(r.owner)}</span></div>
@@ -173,17 +173,18 @@
         <li>${tick(ev.ok)}<span><b>Evidence.</b> Right answer: ${testName(ev.correct_text)}. You picked ${testName(ev.chosen_text)}.</span></li>
       </ul>
       ${r.note ? `<p class="reveal-note">${icon('info', 14)}<span>${esc(r.note)}</span></p>` : ''}
-    </section>`;
+    </details>`;
   }
   function vivaHtml(a) {
     const v = a.viva;
     const src = v.source === 'ai' ? `<span class="tag" data-tone="lilac">AI-assessed${v.model ? ` · ${esc(v.model)}` : ''}</span>` : '<span class="tag">Simulated</span>';
-    return `<section class="card viva" id="viva-card" data-reveal>
-      <div class="card-h"><h2>${bub('lilac', 'chat')}Viva: the why</h2>${src}</div>
+    return `<details class="card viva fold" id="viva-card" data-reveal>
+      <summary class="card-h"><h2>${bub('lilac', 'chat')}Viva: the why</h2><span class="fold-sum"><span>${Number(a.met)} of ${v.points.length} points met</span><span class="fold-i">${icon('chevron', 14)}</span></span></summary>
+      <p class="viva-src">${src}</p>
       ${v.flagged ? `<p class="viva-flag">${icon('flag', 14)}<span>An answer tried to instruct the assessor. It was ignored.</span></p>` : ''}
       <ol class="viva-points">${v.points.map(p => `<li data-met="${p.met}">${tick(p.met)}<div><b>${esc(p.text)}</b>${p.met ? `<blockquote>“${esc(p.quote)}”<cite>Answer ${Number(p.turn)}</cite></blockquote>` : '<span class="muted small">Not in your answers.</span>'}</div></li>`).join('')}</ol>
       <p class="card-foot">A point counts only when the answers make it in their own words, quoted above. Grammar, accent and length never count. The engineer can appeal, and a senior can overrule it.</p>
-    </section>`;
+    </details>`;
   }
 
   // ---------- the scoring standard ----------

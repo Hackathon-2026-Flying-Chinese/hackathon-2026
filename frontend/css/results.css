@@ -52,6 +52,8 @@
 .reveal, .viva { margin-top: 0; }
 .reveal-req { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 12px; font-size: .8125rem; color: var(--muted); }
 .reveal-req .mono { color: var(--ink); font-weight: 600; }
+.reveal-req .tag { margin-left: auto; }
+.viva-src { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 .reveal-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; }
 .reveal-box { display: grid; gap: 6px; align-content: start; padding: 14px 16px; border-radius: var(--r-3); background: var(--sunken); font-size: .8125rem; color: var(--ink-2); }
 .reveal-box > b { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font: 700 1rem/1.35 var(--font-display); color: var(--ink); }
