@@ -101,16 +101,16 @@
     document.title = 'Decision check | Viva';
     const sc = home.scoring;
     const steps = [
-      ['talk', 'Interview', 'Two questions, about 3 minutes. Speak or type.'],
-      ['peek', 'Assessment', 'Reads your words only.'],
-      ['sage', 'Senior review', `${D.reviewer.name} confirms it is your own work.`],
+      ['talk', 'Interview', 'Predict what the code does, then a short viva. About 4 minutes.'],
+      ['peek', 'Assessment', 'Runs the code, then reads your viva.'],
+      ['sage', 'Senior review', `${D.reviewer.name} adds a one-line correction.`],
       ['yay', 'Check passes', `+${Number(sc.s)} points go to your portfolio.`]
     ];
     root.innerHTML = `
       <section class="home" aria-labelledby="home-title">
         <header class="home-head">
           <h1 class="home-title" id="home-title" data-enter>Decision <span class="sq">check<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M3 12Q13 3 23 12T43 12T63 12T83 12T103 12T123 12T143 12T163 12T183 12T197 10"/></svg></span></h1>
-          <p class="home-sub" data-enter>Explain this change in your own words before it merges. It takes about 3 minutes.</p>
+          <p class="home-sub" data-enter>Predict what your change does, then explain why, before it merges. It takes about 4 minutes.</p>
         </header>
         <ol class="steps" aria-label="How the check works">
           ${steps.map(([m, t, p], i) => `<li class="step" data-step="${i + 1}"><div class="step-art">${V.mascot(m)}</div><div><span class="step-n">${i + 1}</span><h2>${t}</h2><p>${esc(p)}</p></div>${i < steps.length - 1 ? `<span class="step-to" aria-hidden="true">${icon('arrow', 14)}</span>` : ''}</li>`).join('')}
@@ -208,7 +208,7 @@
       if (logChanged) swapCard('#log-card', V.results.logHtml(v));
       if (v.scoring.status === 'earned' && was.scoring.status !== 'earned') {
         V.confetti($('#status-badge', root));
-        V.toast(`${D.reviewer.name} confirmed your work. +${v.scoring.points} points added to your portfolio.`, { action: { label: 'View portfolio', run: () => { location.href = `portfolio.html${presenter ? '?presenter=1' : ''}`; } } });
+        V.toast(`${D.reviewer.name} passed your check with a correction. +${v.scoring.points} points added to your portfolio.`, { action: { label: 'View portfolio', run: () => { location.href = `portfolio.html${presenter ? '?presenter=1' : ''}`; } } });
         V.pulse($('.avatar'));
       } else if (reviewChanged) V.toast(`${D.reviewer.name} left a decision.`);
     } catch { /* keep the current view if a poll fails */ }
@@ -241,6 +241,9 @@
       ['Generic answer, question 1', A.generic.implementation], ['Generic answer, question 2', A.generic.rationale], ['Generic answer, follow-up', A.generic.probe]
     ];
   }
+  function fillPredictions(kind) {
+    if (!ivCtl || !ivCtl.fillPredict(kind)) V.toast('Open the three questions first.');
+  }
   function fillOpenQuestion(profile) {
     const turn = ivCtl && ivCtl.turn;
     if (!turn) { V.toast('Open a question first.'); return; }
@@ -262,6 +265,7 @@
         <p class="muted pres-help">Untick only if the camera hardware fails. The interview then runs on text. Applies to the next interview.</p>
         <div class="pres-row"><span>Voice answers become</span>
           <div class="seg pres-seg" data-seg role="radiogroup" aria-label="Voice answers become"><label><input type="radio" name="pm-voice" value="specific" ${api.sim.voice() === 'specific' ? 'checked' : ''}><span>Specific</span></label><label><input type="radio" name="pm-voice" value="generic" ${api.sim.voice() === 'generic' ? 'checked' : ''}><span>Generic</span></label><i class="seg-thumb"></i></div></div>
+        <div class="pres-row"><span>Fill the three checks</span><span class="pres-btns"><button class="btn btn-secondary btn-sm" id="pm-pred-wrong" type="button">Wrong</button><button class="btn btn-secondary btn-sm" id="pm-pred-right" type="button">Right</button></span></div>
         <div class="pres-row"><span>Fill the open question</span><span class="pres-btns"><button class="btn btn-secondary btn-sm" id="pm-fill-specific" type="button">Specific</button><button class="btn btn-secondary btn-sm" id="pm-fill-generic" type="button">Generic</button></span></div>
         <div class="pres-row"><span>Clear all local demo data</span><button class="btn btn-danger btn-sm" id="pm-reset" type="button">Reset</button></div>
         <h3>Script, attempt ${attemptNo()}</h3>
@@ -269,6 +273,8 @@
       V.seg(panel);
       $('#pm-cam', panel).onchange = e => { api.sim.setCameraRequired(e.target.checked); V.toast(e.target.checked ? 'The camera is required.' : 'The camera is optional for the next interview.'); };
       $$('input[name=pm-voice]', panel).forEach(r => { r.onchange = () => { api.sim.setVoice(r.value); V.toast(`Spoken answers will read as ${r.value}.`); }; });
+      $('#pm-pred-wrong', panel).onclick = () => fillPredictions('wrong');
+      $('#pm-pred-right', panel).onclick = () => fillPredictions('right');
       $('#pm-fill-specific', panel).onclick = () => fillOpenQuestion('specific');
       $('#pm-fill-generic', panel).onclick = () => fillOpenQuestion('generic');
       $('#pm-reset', panel).onclick = async () => {
