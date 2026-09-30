@@ -145,26 +145,48 @@ h1, h2, h3, p { margin: 0; }
 .ico { width: 60px; height: 60px; display: block; }
 .ico svg, .sico svg { width: 100%; height: 100%; fill: none; stroke: url(#ig); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---------- s2 hook: the lasagna ---------- */
-.slide.lasagna { display: block; }
-.lasagna .warm { position: absolute !important; inset: 0; pointer-events: none;
-  background: radial-gradient(ellipse 52% 58% at 50% 56%, rgb(255 168 76 / .22), rgb(255 120 40 / .07) 45%, rgb(0 0 0 / 0) 70%); transition: transform 1.1s var(--ease); }
-.lasagna .dish { position: absolute !important; left: 350px; top: 150px; width: 900px; height: 600px; transition: transform 1.1s var(--ease); }
-.lasagna[data-step="1"] .dish, .lasagna[data-step="1"] .warm { transform: translateX(-230px) scale(.9); }
-.slide.active.lasagna .dish { animation: dishIn 1.6s var(--ease) .15s both; }
-@keyframes dishIn { from { opacity: 0; scale: .94; filter: blur(12px) brightness(.4); } to { opacity: 1; scale: 1; filter: none; } }
-.lz, .binart { display: block; width: 100%; height: 100%; overflow: visible; }
-.lz .steam path { opacity: 0; animation: steam 4.6s ease-in-out infinite; }
-.lz .steam path:nth-child(2) { animation-delay: 1.5s; }
-.lz .steam path:nth-child(3) { animation-delay: 3s; }
-@keyframes steam { 0% { opacity: 0; translate: 0 26px; } 35% { opacity: .5; } 100% { opacity: 0; translate: 0 -46px; } }
-.lasagna .bin { position: absolute !important; right: 150px; bottom: 56px; width: 360px; height: 497px; }
-.lasagna .bin.b { opacity: 0; filter: none; transform: translateY(470px); transition: transform .95s cubic-bezier(.34, 1.4, .64, 1), opacity .25s; }
-.lasagna .bin.b.on { opacity: 1; transform: none; }
-.binart .box { transform: translateY(270px); transition: transform .85s cubic-bezier(.34, 1.56, .64, 1) .55s; }
-.bin.on .binart .box { transform: none; }
-.binart .lid { transform-origin: 364px 200px; transition: transform .6s cubic-bezier(.34, 1.56, .64, 1) .4s; }
-.bin.on .binart .lid { transform: rotate(100deg); }
+/* ---------- s2 hook: autopilot. A tilted night map where the car drives itself to the pin, then the words take over ---------- */
+.slide.autopilot { display: block; padding: 0; }
+.autopilot > * { position: absolute !important; }
+.ap-world { inset: 0; perspective: 1100px; transition: opacity 1s var(--ease), filter 1s var(--ease), transform 1.4s var(--ease); }
+.ap-map { position: absolute; left: 50%; top: 50%; width: 2000px; height: 1400px; margin: -700px 0 0 -1000px; transform: rotateX(56deg) translateY(150px); }
+.slide.active .ap-map { animation: mapIn 6s var(--ease) both; }
+@keyframes mapIn { 0% { opacity: 0; transform: rotateX(62deg) translateY(360px) scale(1.1); } 25% { opacity: 1; } 100% { opacity: 1; transform: rotateX(56deg) translateY(150px); } }
+.ap-map > svg { position: absolute; inset: 0; width: 2000px; height: 1400px; overflow: visible; }
+.ap-route { stroke-dasharray: 1; }
+.slide.active .ap-route { animation: draw 1.1s var(--ease) .4s both; }
+.ap-ping { transform-box: fill-box; transform-origin: center; opacity: 0; }
+.slide.active .ap-ping { animation: ping 2s ease-out 4.9s infinite; }
+@keyframes ping { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(4); } }
+.ap-car { position: absolute; left: 0; top: 0; width: 80px; height: 38px; offset-anchor: 50% 50%; offset-rotate: auto; }
+.ap-car svg { width: 100%; height: 100%; overflow: visible; }
+.slide.active .ap-car { animation: drive 4.2s cubic-bezier(.45, .05, .3, 1) .7s both; }
+@keyframes drive { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+.ap-fog { inset: 0; pointer-events: none; background: linear-gradient(#000 12%, rgb(0 0 0 / .6) 30%, rgb(0 0 0 / 0) 52%), radial-gradient(130% 100% at 50% 75%, rgb(0 0 0 / 0) 50%, #000 100%); }
+.ap-hud { inset: 0; pointer-events: none; transition: opacity .6s var(--ease), filter .6s var(--ease); }
+.ap-pill { position: absolute; left: 0; right: 0; top: 64px; margin: auto; width: max-content; display: flex; align-items: center; gap: 12px; height: 54px; padding: 0 22px 0 16px; border-radius: 999px;
+  background: rgb(255 255 255 / .07); box-shadow: inset 0 0 0 1px var(--line-2); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); font: 600 22px/1 var(--display); }
+.ap-pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 14px var(--blue); animation: live 1.6s ease-in-out infinite; }
+.ap-wheel { width: 28px; height: 28px; }
+.ap-wheel svg, .ap-ck svg { display: block; width: 100%; height: 100%; fill: none; stroke: url(#ig); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.ap-q { position: absolute; left: 0; right: 0; top: 150px; text-align: center; }
+.ap-trip { position: absolute; right: 70px; bottom: 60px; width: 400px; padding: 22px 26px; border-radius: 26px; display: flex; flex-direction: column; gap: 12px; text-align: left;
+  background: rgb(22 22 28 / .74); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .14), 0 40px 90px -30px rgb(0 0 0 / .9); }
+.ap-trip-h { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.ap-trip-h b { font: 700 34px/1 var(--display); letter-spacing: -.02em; }
+.ap-trip-h span { font: 400 17px/1 var(--text); color: var(--fg-2); }
+.ap-row { display: flex; align-items: center; gap: 12px; font: 400 20px/1.2 var(--text); color: var(--fg-2); }
+.ap-ck { width: 22px; height: 22px; flex: none; }
+.ap-key { justify-content: space-between; padding-top: 12px; border-top: 1px solid var(--line); color: var(--fg); font-weight: 600; }
+.ap-key b { font: 700 30px/1 var(--display); }
+.ap-say { inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; text-align: center; padding: 0 140px; transition: opacity .6s var(--ease), filter .6s var(--ease), transform .8s var(--ease); }
+.ap-t { font: 700 80px/1.06 var(--display); letter-spacing: -.033em; }
+.ap-chips { display: flex; gap: 16px; margin: 4px 0 12px; }
+.ap-chips > span { display: inline-flex; align-items: center; gap: 10px; height: 56px; padding: 0 24px 0 18px; border-radius: 999px; background: var(--card); box-shadow: inset 0 0 0 1px var(--line-2); font: 500 24px/1 var(--text); }
+/* builds: 1 dims the map and says what arriving proves, 2 swaps that for the same checklist at work */
+.autopilot[data-step="1"] .ap-world, .autopilot[data-step="2"] .ap-world { opacity: .26; filter: blur(3px); transform: scale(.97); }
+.autopilot[data-step="1"] .ap-hud, .autopilot[data-step="2"] .ap-hud { opacity: 0; filter: blur(8px); }
+.autopilot[data-step="2"] .ap-s1 { opacity: 0; filter: blur(10px); transform: translateY(-30px); }
 
 /* ---------- s3 market ---------- */
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; width: 1280px; }
@@ -444,66 +466,107 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </aside>
     </section>
 
-    <!-- 2 · hook: the lasagna -->
-    <section class="slide lasagna" data-title="Hook: the lasagna" data-speaker="Tony" data-at="0:00">
-      <div class="warm"></div>
-      <div class="dish" data-art="lasagna"></div>
-      <div class="bin b" data-f="1" data-art="bin"></div>
+    <!-- 2 · hook: autopilot -->
+    <section class="slide autopilot" data-title="Hook: autopilot" data-speaker="Tony" data-at="0:00">
+      <div class="ap-world"><div class="ap-map" data-art="city"></div></div>
+      <div class="ap-fog"></div>
+      <div class="ap-hud">
+        <p class="ap-pill in" style="--d:.4s"><span class="ap-wheel" data-icon="wheel"></span>Autopilot<i></i></p>
+        <p class="ap-q h2 in" style="--d:5s">Would you give them<br>a driver’s licence?</p>
+        <div class="ap-trip in" style="--d:4.9s">
+          <div class="ap-trip-h"><b>Arrived</b><span>18 km · 24 min</span></div>
+          <div class="ap-row"><span class="ap-ck" data-icon="tick"></span>Destination reached</div>
+          <div class="ap-row"><span class="ap-ck" data-icon="tick"></span>On time</div>
+          <div class="ap-row"><span class="ap-ck" data-icon="tick"></span>No scratches</div>
+          <div class="ap-row ap-key">Driver steered<b class="grad">0 min</b></div>
+        </div>
+      </div>
+      <div class="ap-say ap-s1">
+        <p class="ap-t b" data-f="1">Arriving proves the car works.</p>
+        <p class="ap-t grad b" data-f="1" style="transition-delay:.35s">Not that the driver can drive.</p>
+      </div>
+      <div class="ap-say ap-s2">
+        <p class="eyebrow grad b" data-f="2">Junior developers with AI, today</p>
+        <div class="ap-chips">
+          <span class="b" data-f="2" style="transition-delay:.15s"><span class="ap-ck" data-icon="tick"></span>Code written</span>
+          <span class="b" data-f="2" style="transition-delay:.3s"><span class="ap-ck" data-icon="tick"></span>Tests pass</span>
+          <span class="b" data-f="2" style="transition-delay:.45s"><span class="ap-ck" data-icon="tick"></span>Task closed</span>
+        </div>
+        <p class="h1 grad b" data-f="2" style="transition-delay:.8s">Can they take the wheel<br>when it breaks?</p>
+      </div>
       <div class="lower"><b>Tony</b><span>Team Flying Chinese</span></div>
       <aside class="notes">
-        <p>You're invited to a dinner party. You bring a lasagna. Homemade, of course. Everyone loves it.</p>
-        <p>Someone leans over: "This is incredible. Can I get the recipe?" And you hear yourself say: "Oh… it's a family secret."</p>
-        <p>[click: the bin shows the supermarket box] [Wait two seconds for the laugh.]</p>
-        <p>[→ next slide as you say:] You've shipped something you didn't fully understand.</p>
-      </aside>
-    </section>
-
-    <!-- 3 · hook: the line -->
-    <section class="slide" data-title="Hook: the line" data-speaker="Tony" data-at="0:30">
-      <p class="quote"><span class="in" style="--d:.2s">“You’ve shipped something</span><span class="in" style="--d:.55s">you didn’t fully understand.”</span></p>
-      <p class="cap in" style="--d:1.1s">Said to us at the Airwallex briefing.</p>
-      <p class="sub b" data-f="1">Hands up if that’s you.</p>
-      <aside class="notes">
-        <p>You've shipped something you didn't fully understand.</p>
-        <p>[click] Hands up if that's you. [pause]</p>
-        <p>Airwallex said this at the briefing, and told us to hold on to that feeling, because it's the most important data in the room. So let's look at the data.</p>
+        <p>Would you give someone a driver's licence simply because they reached the destination on autopilot?</p>
+        <p>[click] Probably not. Reaching the destination proves the car worked. It doesn't prove the driver can drive.</p>
+        <p>[click] Yet this is more and more how companies judge junior developers using AI. The code is written, the tests pass, the task is closed. But no one knows whether the person behind it can take control when something goes wrong.</p>
+        <p>[→ next slide as you say:] And this is no longer a hypothetical problem.</p>
       </aside>
     </section>
 
     <!-- 3 · data -->
-    <section class="slide" data-title="Data: AI writes the code" data-speaker="Tony" data-at="0:50">
-      <p class="eyebrow grad in">AI is already doing the work</p>
-      <p class="stat grad in" style="--d:.25s"><span class="count" data-to="42">42</span>%</p>
-      <p class="sub in" style="--d:.5s">of the code developers commit is now AI-generated or assisted.</p>
-      <p class="src in" style="--d:.7s">Sonar, State of Code Developer Survey 2026 · 1,100+ developers, self-reported</p>
+    <section class="slide" data-title="Data: juniors lean on AI" data-speaker="Tony" data-at="0:30">
+      <p class="eyebrow grad in">No longer hypothetical</p>
+      <div class="trio stats3">
+        <div class="in" style="--d:.25s">
+          <p class="role">Everyone builds with it</p>
+          <p class="stat-s grad"><span class="count" data-to="84">84</span>%</p>
+          <h3>of developers use AI when they build software.</h3>
+          <p class="src">Info-Tech Research Group, 2026 · 500+ practitioners</p>
+        </div>
+        <div class="b" data-f="1">
+          <p class="role">Juniors gain the most</p>
+          <p class="stat-s grad"><span class="count" data-to="75">75</span>%</p>
+          <h3>of the least-experienced developers say AI makes them faster.</h3>
+          <p class="src">Info-Tech Research Group, 2026 · veterans: 55%</p>
+        </div>
+        <div class="b" data-f="2">
+          <p class="role">Understanding lags behind</p>
+          <p class="stat-s grad"><span class="count" data-to="16">16</span>%</p>
+          <h3>of seniors say juniors fully understand the AI code they submit.</h3>
+          <p class="src">BairesDev Dev Barometer, Q2 2026 · 1,569 developers</p>
+        </div>
+      </div>
       <aside class="notes">
-        <p>Developers now say 42% of the code they commit is written or assisted by AI. AI is already doing the work.</p>
+        <p>84% of developers now use AI when they build software.</p>
+        <p>[click] And the least-experienced developers feel the gains most: 75% say AI makes them faster, against 55% of veterans.</p>
+        <p>[click] However, only 16% of senior engineers say juniors fully understand the AI code they submit.</p>
       </aside>
     </section>
 
     <!-- 4 · market -->
-    <section class="slide" data-title="Market background" data-speaker="Tony" data-at="1:05">
+    <section class="slide" data-title="Market: small tech teams" data-speaker="Tony" data-at="0:55">
       <p class="eyebrow grad in">The market</p>
-      <div class="duo">
-        <div class="in" style="--d:.2s">
-          <p class="stat-m grad"><span class="count" data-to="81">81</span>%</p>
-          <p class="cap">of Australian SMEs already use AI or automation in finance.</p>
-          <p class="src">Airwallex × YouGov, Sep 2025 · 505 senior decision makers</p>
+      <h2 class="h2 in" style="--d:.15s">Small teams now write more AI code than they can confidently review.</h2>
+      <div class="trio stats3">
+        <div class="b" data-f="1">
+          <p class="role">SMEs are all in</p>
+          <p class="stat-s grad"><span class="count" data-to="81">81</span>%</p>
+          <h3>of Australian SMEs have adopted AI or automation in finance.</h3>
+          <p class="src">Airwallex × YouGov, Sep 2025 · 505 decision makers · SMEs: 6–249 staff</p>
         </div>
-        <div class="in" style="--d:.45s">
-          <p class="stat-m grad"><span class="count" data-to="5320" data-sep>5,320</span></p>
-          <p class="cap">Australian software firms with 5 to 199 staff.</p>
-          <p class="src">ABS 8165.0, June 2025, ANZSIC 7000 · 1,422 with 20–199 staff, 3,898 with 5–19</p>
+        <div class="b" data-f="2">
+          <p class="role">Seniors inherit the checking</p>
+          <p class="stat-s grad"><span class="count" data-to="38">38</span>%</p>
+          <h3>of veteran developers are shifting time to reviewing and validating code.</h3>
+          <p class="src">Info-Tech Research Group, 2026 · least experienced: 20%</p>
+        </div>
+        <div class="b" data-f="3">
+          <p class="role">Quality is the blocker</p>
+          <p class="stat-s grad"><span class="count" data-to="64">64</span>%</p>
+          <h3>of small organisations say AI output quality is their top adoption challenge.</h3>
+          <p class="src">Info-Tech Research Group, 2026</p>
         </div>
       </div>
       <aside class="notes">
-        <p>And the businesses Airwallex serves are all in. Your own research with YouGov found 81% of Australian SMEs already use AI or automation in finance.</p>
-        <p>In software alone, Australia has about 5,300 firms with 5 to 199 staff. That's our market.</p>
+        <p>This creates a growing challenge for small and medium-sized tech companies, where senior review time is already limited.</p>
+        <p>[click] The businesses Airwallex serves are all in: your research with YouGov found 81% of Australian SMEs have adopted AI or automation in finance.</p>
+        <p>[click] In engineering, the checking moves up: 38% of veteran developers are shifting their time to reviewing and validating code.</p>
+        <p>[click] And for small organisations, AI output quality is the top adoption challenge, for 64% of them. Juniors gain the speed. Seniors inherit the checking.</p>
       </aside>
     </section>
 
     <!-- 5 · audience -->
-    <section class="slide" data-title="Target audience" data-speaker="Tony" data-at="1:25">
+    <section class="slide" data-title="Target audience" data-speaker="Tony" data-at="1:15">
       <h2 class="h2 in">Built for the junior who ships with AI.</h2>
       <p class="sub in" style="--d:.3s">And for the people around them.</p>
       <div class="trio">
@@ -511,8 +574,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
           <span class="ico"><svg viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.6-3.6 3.2-5.8 6.5-5.8s5.9 2.2 6.5 5.8"/><path d="M19 3v4.5M16.75 5.25h4.5"/></svg></span>
           <p class="role grad">Uses it</p>
           <h3>Junior engineers</h3>
-          <p class="t">Ship with AI every day. 75% of the least-experienced developers say speed is AI’s key benefit.</p>
-          <p class="src">Info-Tech Research Group, 2026 · veterans: 55%</p>
+          <p class="t">Ship with ChatGPT, Claude, Copilot or Cursor every day.</p>
         </div>
         <div class="b" data-f="2">
           <span class="ico"><svg viewBox="0 0 24 24"><circle cx="7" cy="13" r="3.5"/><circle cx="17" cy="13" r="3.5"/><path d="M10.5 13h3M3.6 11.6 2 8.8M20.4 11.6 22 8.8"/></svg></span>
@@ -524,20 +586,23 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         <div class="b" data-f="3">
           <span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7M3 12.5h18"/></svg></span>
           <p class="role grad">Buys it</p>
-          <h3>Engineering leads</h3>
+          <h3>CTOs and engineering leads</h3>
           <p class="t">Want the speed of AI without shipping code nobody understands.</p>
         </div>
       </div>
+      <p class="cap b" data-f="4">First market: <span style="color:var(--fg)">5,320</span> Australian software firms with 5 to 199 staff.</p>
+      <p class="src b" data-f="4">ABS 8165.0, June 2025, ANZSIC 7000 · 1,422 with 20–199 staff, 3,898 with 5–19</p>
       <aside class="notes">
-        <p>Inside those firms, we build for three people.</p>
-        <p>[click] The junior engineer, who ships with AI every day. Three in four of the least-experienced developers say speed is what AI gives them.</p>
+        <p>So we are not building for every SME. We build for tech companies that already ship with AI, and have few seniors to check it. Inside those firms, three people.</p>
+        <p>[click] The junior engineer, who ships with ChatGPT, Claude, Copilot or Cursor every day.</p>
         <p>[click] The one or two seniors who review everything.</p>
-        <p>[click] And the engineering lead, who wants that speed without the risk, and pays for Viva.</p>
+        <p>[click] And the CTO or engineering lead, who wants that speed without the risk, and pays for Viva.</p>
+        <p>[click] In Australia alone, that's about 5,300 software firms with 5 to 199 staff. Let me show you what it looks like for the junior.</p>
       </aside>
     </section>
 
     <!-- 6 · problem through the audience: Tony -->
-    <section class="slide split" data-title="Meet Tony" data-speaker="Tony" data-at="1:50">
+    <section class="slide split" data-title="Meet Tony" data-speaker="Tony" data-at="1:40">
       <div class="split-l">
         <p class="eyebrow grad in">A story from our demo</p>
         <h2 class="h1 in" style="--d:.15s">Meet Tony.</h2>
@@ -573,14 +638,14 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </div>
       <p class="src foot-src">Illustrative story. Harbourpay, Tony and all data are fictional.</p>
       <aside class="notes">
-        <p>Meet Tony. Same name as me, so imagine it's me, three months into my first job. My lead asks me to let customers download their invoices. AI writes it in minutes. Tests pass. Lint passes. It merges.</p>
+        <p>Meet Tony. Same name as me, so imagine it's me, three months into my first job. My lead asks me to let customers download their invoices. AI writes it in minutes. Tests pass. Lint passes. It merges. I reached the destination.</p>
         <p>[click] But the code trusts the customer ID in the request. Customer 42 asks for customer 17, and gets Northwind's invoices.</p>
         <p>[click] Nobody asked me a single question. Not because anyone was careless. Because nothing in the workflow asks.</p>
       </aside>
     </section>
 
     <!-- 7 · problem -->
-    <section class="slide" data-title="The problem" data-speaker="Tony" data-at="2:30">
+    <section class="slide" data-title="The problem" data-speaker="Tony" data-at="2:20">
       <p class="eyebrow grad in">The problem</p>
       <h2 class="h2 in" style="--d:.15s">Companies require AI for speed.<br><span class="grad">Nothing checks whether the person shipping the code understands it.</span></h2>
       <p class="sub b" data-f="1">So code no one understands reaches production. And juniors stop learning.</p>
@@ -591,14 +656,15 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     </section>
 
     <!-- 8 · why: three numbers -->
-    <section class="slide" data-title="Why it happens" data-speaker="Tony" data-at="2:45">
+    <section class="slide" data-title="Why it happens" data-speaker="Tony" data-at="2:35">
       <p class="eyebrow grad in">Why it happens</p>
       <div class="trio stats3">
         <div class="b" data-f="1">
-          <p class="role">Understanding is never checked</p>
-          <p class="stat-s grad"><span class="count" data-to="16">16</span>%</p>
-          <h3>of seniors say juniors fully understand the AI code they submit.</h3>
-          <p class="src">BairesDev Dev Barometer, Q2 2026 · 1,569 developers</p>
+          <p class="role">Nobody checks every time</p>
+          <p class="stat-s grad"><span class="count" data-to="48">48</span>%</p>
+          <h3>of developers always verify AI code before they commit it.</h3>
+          <p class="cap">Yet 96% don’t fully trust it.</p>
+          <p class="src">Sonar, State of Code Developer Survey 2026 · 1,100+ developers</p>
         </div>
         <div class="b" data-f="2">
           <p class="role">Seniors can’t review it all</p>
@@ -615,7 +681,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
       </div>
       <aside class="notes">
-        <p>[click] Only 16% of seniors say juniors fully understand the AI code they submit.</p>
+        <p>[click] Checking is optional. 96% of developers don't fully trust AI code, yet only 48% always verify it before they commit.</p>
         <p>[click] Review can't keep up: PR review time is up 91% on high-AI teams, with one or two seniors to do it.</p>
         <p>[click] And it costs twice. 80% of executives traced an incident or defect to AI code last year. And juniors learn less: 50% on a concept quiz, against 67% for those who coded by hand.</p>
         <p>If juniors never become seniors, the ladder loses its bottom rung. That's the question Airwallex asked us.</p>
@@ -623,7 +689,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     </section>
 
     <!-- 9 · punch -->
-    <section class="slide" data-title="Code review checks the code" data-speaker="Tony" data-at="3:25">
+    <section class="slide" data-title="Code review checks the code" data-speaker="Tony" data-at="3:05">
       <p class="punch in" style="--d:.15s">Code review checks the code.</p>
       <p class="punch grad in" style="--d:.7s">Nobody checks the coder.</p>
       <aside class="notes">
@@ -632,7 +698,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     </section>
 
     <!-- 10 · competitors -->
-    <section class="slide" data-title="Competitors" data-speaker="Tony" data-at="3:30">
+    <section class="slide" data-title="Competitors" data-speaker="Tony" data-at="3:10">
       <h2 class="h2 in">How others approach it.</h2>
       <div class="cmp in" id="cmp" style="--d:.3s"></div>
       <p class="src in" style="--d:.5s">From each vendor’s public website, 29 Sep 2026; we did not try the products. — means not offered or not stated. In today’s demo, code results come from fixed task data.</p>
@@ -643,7 +709,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     </section>
 
     <!-- 11 · originality -->
-    <section class="slide" data-title="Originality" data-speaker="Tony" data-at="3:55">
+    <section class="slide" data-title="Originality" data-speaker="Tony" data-at="3:35">
       <p class="h1 in" style="--d:.15s">Others ask, “Did you understand this PR?”</p>
       <p class="h1 grad in" style="--d:.8s">We ask, “Are you getting better?”</p>
       <aside class="notes">
@@ -651,8 +717,20 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </aside>
     </section>
 
-    <!-- 12 · reveal -->
-    <section class="slide reveal" data-title="Introducing Viva" data-speaker="Tony" data-at="4:03" data-glow>
+    <!-- 12 · back to the car -->
+    <section class="slide" data-title="Keep the autopilot" data-speaker="Tony" data-at="3:43">
+      <span class="ico in" style="width:76px;height:76px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6"/><path d="M3.2 11.2c3 .1 5.4.3 6.3.8M20.8 11.2c-3 .1-5.4.3-6.3.8M12 14.6V21"/></svg></span>
+      <p class="punch in" style="--d:.15s">Keep the autopilot.</p>
+      <p class="punch grad in" style="--d:.7s">Check the driver.</p>
+      <p class="sub in" style="--d:1.4s">Can they still understand it, explain it and take control?</p>
+      <aside class="notes">
+        <p>Companies don't need to take AI away from junior employees, just as we don't take the technology out of modern cars.</p>
+        <p>They need a way to know that the person behind it can still understand it, explain it and take control.</p>
+      </aside>
+    </section>
+
+    <!-- 13 · reveal -->
+    <section class="slide reveal" data-title="Introducing Viva" data-speaker="Tony" data-at="4:00" data-glow>
       <div class="halo rise"></div>
       <div class="rv">
         <p class="cap in" style="--d:.3s">Introducing</p>
@@ -672,7 +750,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
       </div>
       <aside class="notes">
-        <p>So we built Viva. [pause] Viva checks the coder, not the code.</p>
+        <p>That's why we created Viva. [pause] Viva checks the coder, not the code.</p>
         <p>[click] It's one more required check on the pull request. Before Tony's PR merges, Tony explains it. Johnny, show them how.</p>
       </aside>
     </section>
@@ -865,7 +943,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         <p>[Q&amp;A backdrop. Leave this up while the judges ask questions.]</p>
         <p>If asked: demo data is synthetic and scores are labelled Simulated; the GitHub check is the next build step; nothing is measured yet, the pilot measures it.</p>
         <p>If asked about vivaproof.com, also called Viva: it is for schools and checks who wrote an assignment. We work inside the pull request at work, and build skill over time.</p>
-        <p>Numbers: 42% Sonar 2026, self-reported; 81% Airwallex × YouGov, Sep 2025, n = 505, finance functions; 5,320 = ABS June 2025, ANZSIC 7000, 5–199 staff; 75% Info-Tech 2026; 16% BairesDev Q2 2026, n = 1,569; +91% Faros AI 2025; 80% Sauce Labs 2026, 400 executives; 50% vs 67% Anthropic RCT, n = 52.</p>
+        <p>Numbers: 84%, 75% (veterans 55%), 38% and 64% Info-Tech 2026, 500+ practitioners; 16% BairesDev Q2 2026, n = 1,569; 81% Airwallex × YouGov, Sep 2025, n = 505, finance functions, SMEs 6–249 staff; 5,320 = ABS June 2025, ANZSIC 7000, 5–199 staff; 48% and 96% Sonar 2026, 1,100+ developers; +91% Faros AI 2025; 80% Sauce Labs 2026, 400 executives; 50% vs 67% Anthropic RCT, n = 52.</p>
       </aside>
     </section>
   </div>
@@ -891,7 +969,8 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
   const ICON = {
     check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>',
     merge: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2.3"/><circle cx="6" cy="19" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M6 7.3v9.4M8.1 6.1c5 .7 7.6 2.9 7.8 5.6"/></svg>Merged',
-    tick: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>'
+    tick: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>',
+    wheel: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6"/><path d="M3.2 11.2c3 .1 5.4.3 6.3.8M20.8 11.2c-3 .1-5.4.3-6.3.8M12 14.6V21"/></svg>'
   };
   $$('[data-icon]').forEach(el => { el.insertAdjacentHTML('afterbegin', ICON[el.dataset.icon]); });
 
@@ -923,102 +1002,59 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     if (kind === 'draw') el.firstElementChild.classList.add('draw');
   });
 
-  // ---------- illustrations for the lasagna hook (drawn, seeded, so every run looks the same) ----------
+  // ---------- the autopilot hook: a night city grid, the planned route, and a car that follows it (seeded, so every run looks the same) ----------
   const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
   const f1 = v => v.toFixed(1);
-  function lasagnaSVG() {
-    const r = rng(7), X0 = 200, X1 = 700, DX = 60, DY = -70;
-    const wave = (base, amp, k, ph) => { const pts = []; for (let x = X0; x <= X1 + .1; x += 20) pts.push([x, base + amp * Math.sin((x - X0) / (X1 - X0) * Math.PI * k + ph)]); return pts; };
-    const B = [[250, 0, 0, 0], [283, 4, 5, .4], [298, 3, 6, 1.3], [338, 4, 4, 2.1], [350, 3, 7, .2], [365, 3, 5, 1.9], [402, 4, 4, .8], [412, 3, 6, 2.6], [427, 3, 5, 1.1], [462, 0, 0, 0]]
-      .map(([b, a, k, ph]) => wave(b, a, k, ph));
-    const FILL = ['url(#lzCheeseF)', 'url(#lzPasta)', 'url(#lzSauce)', 'url(#lzBech)', 'url(#lzPasta)', 'url(#lzSauce)', 'url(#lzBech)', 'url(#lzPasta)', 'url(#lzSauce)'];
-    const SIDE = ['#c98a35', '#d9b86c', '#861f10', '#d6ccb4', '#d9b86c', '#861f10', '#d6ccb4', '#d9b86c', '#7a1c0e'];
-    const band = (top, bot) => 'M' + top.map(q => f1(q[0]) + ' ' + f1(q[1])).join(' L') + ' L' + bot.slice().reverse().map(q => f1(q[0]) + ' ' + f1(q[1])).join(' L') + ' Z';
-    let front = '', side = '', meat = '', spots = '', specks = '', drips = '';
-    for (let i = 0; i < 9; i++) {
-      front += `<path d="${band(B[i], B[i + 1])}" fill="${FILL[i]}"/>`;
-      const yt = B[i][B[i].length - 1][1], yb = B[i + 1][B[i + 1].length - 1][1];
-      side += `<path d="M${X1} ${f1(yt)} L${X1 + DX} ${f1(yt + DY)} L${X1 + DX} ${f1(yb + DY)} L${X1} ${f1(yb)} Z" fill="${SIDE[i]}"/>`;
-    }
-    side += `<path d="M${X1} 250 L${X1 + DX} ${250 + DY} L${X1 + DX} ${462 + DY} L${X1} 462 Z" fill="#000" opacity=".22"/>`;
-    [2, 5, 8].forEach(li => {
-      for (let i = 0; i < 26; i++) {
-        const x = X0 + 8 + r() * (X1 - X0 - 16), k = Math.min(B[li].length - 1, Math.round((x - X0) / 20));
-        const y = B[li][k][1] + 6 + r() * (B[li + 1][k][1] - B[li][k][1] - 12);
-        meat += `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(2.5 + r() * 4)}" ry="${f1(2 + r() * 3)}" fill="${r() > .35 ? '#5e150a' : '#e2683f'}" opacity="${(.55 + r() * .35).toFixed(2)}"/>`;
+  // streets run every 160 by 120 px; the route keeps to them and ends on the pin
+  const ROUTE = 'M1000 1480 L1000 1120 Q1000 1100 980 1100 L700 1100 Q680 1100 680 1080 L680 760 Q680 740 700 740 L1300 740 Q1320 740 1320 720 L1320 500';
+  function citySVG() {
+    const r = rng(11), XS = [], YS = [];
+    for (let x = 40; x <= 1960; x += 160) XS.push(x);
+    for (let y = 20; y <= 1380; y += 120) YS.push(y);
+    let blocks = '';
+    for (let i = 0; i < XS.length - 1; i++) for (let j = 0; j < YS.length - 1; j++) {
+      const x = XS[i] + 11, y = YS[j] + 11, w = XS[i + 1] - XS[i] - 22, h = YS[j + 1] - YS[j] - 22, v = r();
+      blocks += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="9" fill="${v < .5 ? '#0b0c12' : '#0e0f17'}"/>`;
+      if (v > .4) {
+        const bw = 30 + r() * 50, bh = 24 + r() * 40;
+        blocks += `<rect x="${f1(x + 10 + r() * (w - bw - 20))}" y="${f1(y + 8 + r() * (h - bh - 16))}" width="${f1(bw)}" height="${f1(bh)}" rx="4" fill="#13141e"/>`;
       }
-    });
-    const at = (u, v) => [X0 + u * (X1 - X0) + v * DX, 250 + v * DY];
-    for (let i = 0; i < 26; i++) { const [x, y] = at(.06 + r() * .88, .1 + r() * .8); spots += `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(8 + r() * 20)}" ry="${f1(4 + r() * 8)}" fill="#9a4f18" opacity="${(.35 + r() * .4).toFixed(2)}"/>`; }
-    for (let i = 0; i < 40; i++) { const [x, y] = at(r(), r()); specks += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(1 + r() * 1.8)}" fill="#fff4cf" opacity=".7"/>`; }
-    [260, 330, 415, 505, 590, 660].forEach((x, i) => { const len = 14 + (i * 7) % 20; drips += `<path d="M${x - 9} 280 Q${x - 8} ${280 + len} ${x} ${282 + len} Q${x + 8} ${280 + len} ${x + 9} 280 Z" fill="#e6a23e"/>`; });
-    const [bx, by] = at(.62, .55);
-    return `<svg class="lz" viewBox="0 0 900 600" role="img" aria-label="A plate of lasagna">
+    }
+    const svg = `<svg viewBox="0 0 2000 1400" role="img" aria-label="A car on autopilot following its route across a city map at night">
       <defs>
-        <linearGradient id="lzCheeseT" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f9d27a"/><stop offset=".55" stop-color="#eaa944"/><stop offset="1" stop-color="#c9832f"/></linearGradient>
-        <linearGradient id="lzCheeseF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0b24e"/><stop offset="1" stop-color="#d88f35"/></linearGradient>
-        <linearGradient id="lzPasta" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8e2a3"/><stop offset="1" stop-color="#e9c46f"/></linearGradient>
-        <linearGradient id="lzSauce" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8401f"/><stop offset="1" stop-color="#91240f"/></linearGradient>
-        <linearGradient id="lzBech" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fcf5e3"/><stop offset="1" stop-color="#e9dcc0"/></linearGradient>
-        <linearGradient id="lzShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
-        <radialGradient id="lzPlate" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="#2e2e35"/><stop offset="1" stop-color="#0f0f12"/></radialGradient>
-        <linearGradient id="lzBasil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#63b34a"/><stop offset="1" stop-color="#2c6b26"/></linearGradient>
-        <filter id="lzBlur" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="12"/></filter>
-        <filter id="lzSteam" x="-60%" y="-20%" width="220%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>
+        <linearGradient id="apRoute" gradientUnits="userSpaceOnUse" x1="1000" y1="1400" x2="1320" y2="500"><stop offset="0" stop-color="#8b6bff"/><stop offset="1" stop-color="#5b8cff"/></linearGradient>
+        <filter id="apGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14"/></filter>
       </defs>
-      <ellipse cx="480" cy="446" rx="400" ry="104" fill="url(#lzPlate)"/>
-      <ellipse cx="480" cy="440" rx="326" ry="78" fill="#1d1d23"/>
-      <path d="M96 424 C150 372 300 344 480 342 C620 342 740 360 820 392" fill="none" stroke="#fff" stroke-opacity=".13" stroke-width="3" stroke-linecap="round"/>
-      <ellipse cx="470" cy="468" rx="300" ry="30" fill="#000" opacity=".6" filter="url(#lzBlur)"/>
-      <path d="M176 458 C142 468 150 494 206 492 C262 490 306 482 334 468 L334 456 Z" fill="#a52d18"/>
-      <path d="M190 470 C220 476 260 474 300 468" fill="none" stroke="#e0613a" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
-      <g>${side}${front}${meat}<path d="M${X0} 250 L${X1} 250 L${X1} 462 L${X0} 462 Z" fill="url(#lzShade)"/>${drips}
-        <path d="M${X0} 250 L${X1} 250 L${X1 + DX} ${250 + DY} L${X0 + DX} ${250 + DY} Z" fill="url(#lzCheeseT)"/>${spots}${specks}
-        <g transform="translate(${f1(bx)} ${f1(by)}) rotate(-18)"><path d="M0 0 C18 -16 52 -14 70 0 C52 14 18 16 0 0 Z" fill="url(#lzBasil)"/><path d="M4 0 L64 0" stroke="#9bd784" stroke-width="1.6" opacity=".6"/></g>
-        <g transform="translate(${f1(bx - 8)} ${f1(by + 6)}) rotate(38)"><path d="M0 0 C12 -11 36 -10 50 0 C36 10 12 11 0 0 Z" fill="url(#lzBasil)"/><path d="M3 0 L46 0" stroke="#9bd784" stroke-width="1.4" opacity=".6"/></g>
-      </g>
-      <g class="steam" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" filter="url(#lzSteam)">
-        <path d="M390 170 C368 136 410 108 386 70 C366 40 396 20 382 0"/>
-        <path d="M490 158 C512 124 470 96 494 60 C514 30 486 12 498 -10"/>
-        <path d="M600 168 C580 134 620 108 598 72 C580 42 606 22 594 2"/>
+      <rect width="2000" height="1400" fill="#15161e"/>
+      ${blocks}
+      <path d="M-80 560 C 200 500 330 300 520 200 S 860 60 960 -80" fill="none" stroke="#0a1226" stroke-width="130" stroke-linecap="round"/>
+      <path d="${ROUTE}" fill="none" stroke="url(#apRoute)" stroke-width="40" stroke-linejoin="round" opacity=".45" filter="url(#apGlow)"/>
+      <path class="ap-route" pathLength="1" d="${ROUTE}" fill="none" stroke="url(#apRoute)" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+      <g transform="translate(1320 500)">
+        <circle class="ap-ping" r="20" fill="none" stroke="#8b6bff" stroke-width="4"/>
+        <circle r="22" fill="#0b0a10" stroke="#fff" stroke-width="6"/>
+        <circle r="10" fill="url(#apRoute)"/>
       </g>
     </svg>`;
-  }
-  function binSVG() {
-    let bars = '', ridges = '';
-    for (let i = 0; i < 30; i++) bars += `<rect x="${118 + i * 3.6}" y="208" width="${[2, 1, 2.6, 1, 1.6][i % 5]}" height="28" fill="#1d1d1f"/>`;
-    for (let i = 1; i < 9; i++) ridges += `<path d="M${60 + i * 33.3} ${200 + 34 * Math.sqrt(1 - Math.pow((i * 33.3 - 150) / 150, 2))} L${78 + i * 29.3} 548" stroke="#000" stroke-opacity=".28" stroke-width="2"/>`;
-    return `<svg class="binart" viewBox="0 0 420 580" role="img" aria-label="A supermarket lasagna box sticking out of the bin">
+    // the car points along +x, so offset-rotate turns it with the road
+    const car = `<div class="ap-car" style="offset-path: path('${ROUTE}')"><svg viewBox="-40 -19 80 38" aria-hidden="true">
       <defs>
-        <linearGradient id="binMetal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#26262b"/><stop offset=".3" stop-color="#5a5a64"/><stop offset=".55" stop-color="#34343a"/><stop offset="1" stop-color="#18181b"/></linearGradient>
-        <linearGradient id="binLid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#74747e"/><stop offset="1" stop-color="#3a3a41"/></linearGradient>
-        <filter id="binBlur" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="10"/></filter>
+        <linearGradient id="apBeam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".42"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        <linearGradient id="apBody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#dcdce6"/><stop offset="1" stop-color="#a6a6b6"/></linearGradient>
+        <radialGradient id="apAura"><stop offset="0" stop-color="#5b8cff" stop-opacity=".6"/><stop offset="1" stop-color="#5b8cff" stop-opacity="0"/></radialGradient>
       </defs>
-      <ellipse cx="210" cy="556" rx="170" ry="16" fill="#000" opacity=".7" filter="url(#binBlur)"/>
-      <ellipse cx="210" cy="200" rx="150" ry="34" fill="#09090b"/>
-      <path d="M60 200 A150 34 0 0 1 360 200" fill="none" stroke="#5c5c66" stroke-width="5"/>
-      <g class="box"><g transform="rotate(-12 210 200)">
-        <path d="M300 34 L336 16 L336 238 L300 256 Z" fill="#cfc7b6"/>
-        <path d="M100 34 L136 16 L336 16 L300 34 Z" fill="#ebe4d6"/>
-        <rect x="100" y="34" width="200" height="222" fill="#f6f2e9"/>
-        <rect x="100" y="34" width="200" height="56" fill="#d4372b"/>
-        <text x="200" y="59" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="800" font-size="20" letter-spacing="2" fill="#fff">FAMILY SIZE</text>
-        <text x="200" y="83" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="800" font-size="22" fill="#fff">LASAGNA</text>
-        <rect x="116" y="100" width="168" height="74" rx="6" fill="#8f2412"/>
-        <rect x="116" y="100" width="168" height="16" rx="6" fill="#e9a944"/>
-        <rect x="116" y="124" width="168" height="8" fill="#f3d98e"/><rect x="116" y="146" width="168" height="8" fill="#f3d98e"/>
-        <text x="200" y="195" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="600" font-size="12.5" fill="#3d3a48">Frozen · ready in 5 min</text>
-        ${bars}
-        <g transform="translate(262 222) rotate(14)"><circle r="31" fill="#ffd23f"/><text y="-2" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="800" font-size="15" fill="#1d1d1f">A$6.99</text><text y="14" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="700" font-size="9" letter-spacing="1" fill="#1d1d1f">SPECIAL</text></g>
-      </g></g>
-      <path d="M60 200 A150 34 0 0 0 360 200 L342 540 Q340 552 326 552 L94 552 Q80 552 78 540 Z" fill="url(#binMetal)"/>
-      ${ridges}
-      <path d="M60 200 A150 34 0 0 0 360 200" fill="none" stroke="#8a8a94" stroke-width="5"/>
-      <rect x="180" y="540" width="60" height="16" rx="4" fill="#111114"/>
-      <g class="lid"><path d="M56 200 A154 38 0 0 1 364 200 A154 38 0 0 1 56 200 Z" fill="url(#binLid)"/><path d="M60 200 A150 34 0 0 0 360 200" fill="none" stroke="#2a2a30" stroke-width="3"/></g>
-    </svg>`;
+      <ellipse rx="74" ry="46" fill="url(#apAura)"/>
+      <path d="M38 -14 L200 -70 L200 70 L38 14 Z" fill="url(#apBeam)"/>
+      <rect x="-40" y="-19" width="80" height="38" rx="13" fill="url(#apBody)"/>
+      <path d="M8 -15 Q19 0 8 15 L1 13 Q7 0 1 -13 Z" fill="#171821"/>
+      <rect x="-18" y="-13" width="17" height="26" rx="5" fill="#2a2b36"/>
+      <path d="M-23 -13 Q-29 0 -23 13 L-30 12 Q-34 0 -30 -12 Z" fill="#171821"/>
+      <rect x="33" y="-15" width="5" height="8" rx="2" fill="#fff"/><rect x="33" y="7" width="5" height="8" rx="2" fill="#fff"/>
+      <rect x="-41" y="-15" width="3" height="30" rx="1.5" fill="#ff4d6a"/>
+    </svg></div>`;
+    return svg + car;
   }
-  const ART = { lasagna: lasagnaSVG, bin: binSVG };
+  const ART = { city: citySVG };
   $$('[data-art]').forEach(el => { el.innerHTML = ART[el.dataset.art](); });
 
   // ---------- the comparison table (vendors' public websites, 29 Sep 2026; see the wiki's competitor research) ----------
