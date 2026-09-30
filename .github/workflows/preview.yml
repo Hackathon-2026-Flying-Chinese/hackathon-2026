@@ -44,11 +44,11 @@ jobs:
         with:
           header: pr-preview
           message: |
-            ## 🚀 Live demo preview
+            ## <img src="https://raw.githubusercontent.com/Hackathon-2026-Flying-Chinese/hackathon-2026/main/frontend/assets/logo.svg" height="28" alt="Vivo"> Vivo preview
 
             <img align="right" height="110" alt="QR code for preview link" src="https://qr.rossjrw.com/?color.dark=0d1117&url=${{ steps.preview.outputs.preview-url }}">
 
-            ### 👉 [**Open the demo**](${{ steps.preview.outputs.preview-url }})
+            ### 👉 [**Go Vivo**](${{ steps.preview.outputs.preview-url }})
 
             Try the latest changes from this PR in your browser, or scan the QR code on your phone.
 
