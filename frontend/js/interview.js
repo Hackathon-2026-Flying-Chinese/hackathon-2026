@@ -1,5 +1,6 @@
-/* window.VivaInterview: the interview. The camera is on for the whole interview, every answer is recorded for the senior
-   reviewer, and answers can be spoken or typed. The code under review is never shown. */
+/* window.VivaInterview: the interview. First the person reads the code and locks three predictions (what it returns,
+   whether it meets the rule, which test backs it); then the viva: two questions and at most one follow-up, spoken or
+   typed, each answer recorded for the senior reviewer. The code runs and the answers are checked after the viva. */
 (() => {
   'use strict';
   const V = (window.Viva = window.Viva || {});
@@ -7,10 +8,44 @@
   const { $, $$, esc, icon, fmtTime } = V;
 
   const arrow = `<span class="arrow">${icon('arrow', 14)}</span>`;
-  const ANALYSIS = ['Collecting your answers', 'Looking for specifics', 'Checking your reasoning', 'Comparing what you decided yourself'];
+  const ANALYSIS = ['Running your code on test data', 'Checking it against the rule', 'Checking the test you picked', 'Reading your viva against the rubric'];
+  // `code` in task text becomes inline code
+  const inline = t => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>');
+  const CONF = [['low', 'Guessing'], ['medium', 'Fairly sure'], ['high', 'Certain']];
+
+  // The three checks, read before the viva. The right answers stay on the server until the results.
+  function predictHtml(view, presenter) {
+    const t = D.sets[Math.min(view.attempt, D.sets.length) - 1].task, it = t.items;
+    const opts = (key, list) => `<div class="pd-opts" data-n="${list.length}">${list.map(o => `<label class="ev"><input type="radio" name="pd-${key}" value="${esc(o.id)}"><span class="ev-mark"></span><span class="ev-text"><b${/^test_/.test(o.text) ? ' class="mono"' : ''}>${esc(o.text)}</b></span></label>`).join('')}</div>`;
+    return `<header class="pd-head">
+        <p class="ph-eyebrow">${icon('file', 15)}<span class="mono">${esc(t.file)}</span><span class="sep" aria-hidden="true">/</span><span class="mono">${esc(t.fn)}</span><span class="sep" aria-hidden="true">/</span>Pull request #${Number(view.pr.number)}</p>
+        <h1 class="pd-title">First, predict what your code does.</h1>
+        <p class="muted pd-sub">Three quick questions. Your answers lock before the viva, and the code runs on test data after it.</p>
+      </header>
+      <div class="pd-grid">
+        <section class="card pd-code" aria-label="The code">
+          <div class="card-h"><h2>${icon('file', 15)}<span class="mono">${esc(t.fn)}</span></h2><span class="tag">From #${Number(view.pr.number)}</span></div>
+          <pre class="code"><code>${esc(t.code)}</code></pre>
+          <p class="label pd-tests-h">Tests in this change. All passing.</p>
+          <ul class="pd-tests">${t.tests.map(x => `<li><code>${esc(x.id)}</code><span>${esc(x.note)}</span></li>`).join('')}</ul>
+        </section>
+        <div class="pd-qs">
+          <fieldset class="pd-q"><legend><span class="pd-n">1</span><span>${inline(it.behaviour.q)}</span></legend>${opts('behaviour', it.behaviour.options)}
+            <div class="pd-conf"><span class="label">How sure are you?</span><div class="seg" data-seg role="radiogroup" aria-label="How sure are you">${CONF.map(([v, l]) => `<label><input type="radio" name="pd-conf" value="${v}"><span>${l}</span></label>`).join('')}<i class="seg-thumb"></i></div></div>
+          </fieldset>
+          <fieldset class="pd-q"><legend><span class="pd-n">2</span><span>${inline(it.requirement.q)}</span></legend><p class="pd-rule">${icon('shield', 14)}<span><b>Rule.</b> ${esc(t.rule)}</span></p>${opts('requirement', it.requirement.options)}</fieldset>
+          <fieldset class="pd-q"><legend><span class="pd-n">3</span><span>${inline(it.evidence.q)}</span></legend>${opts('evidence', it.evidence.options)}</fieldset>
+          <p class="error-text" id="pd-err" role="alert" hidden></p>
+          <div class="pd-foot">
+            <button class="btn btn-primary btn-lg" type="button" id="pd-lock" disabled>Lock answers and start the viva ${arrow}</button>
+            ${presenter ? '<span class="pd-fill"><button class="btn-text" type="button" data-fill="wrong">Fill wrong</button><button class="btn-text" type="button" data-fill="right">Fill right</button></span>' : ''}
+          </div>
+        </div>
+      </div>`;
+  }
   const mac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
-  function shell(view) {
+  function shell(view, ctx) {
     const pr = view.pr, second = view.attempt > 1, reviewer = esc(D.reviewer.name);
     return `
       <div class="iv-stage">
@@ -20,17 +55,17 @@
             <div class="gate-panel">
               <div class="gate-art">${V.mascot('talk')}</div>
               <p class="ph-eyebrow">Decision check<span class="sep" aria-hidden="true">/</span><span class="mono">${esc(pr.repo)}</span>#${Number(pr.number)}</p>
-              <h1 class="gate-title">${second ? 'Round two. New questions, same change.' : 'Say hi to your camera'}</h1>
+              <h1 class="gate-title">${second ? 'Round two. New code, same idea.' : 'Say hi to your camera'}</h1>
               <p class="muted gate-sub">Your camera and microphone stay on for the whole interview, and ${reviewer} watches the recording.</p>
               <div class="gate-check" hidden>
                 <div><span class="bub" data-tone="mint">${icon('camera', 14)}</span><span class="gate-dev">Camera</span><b>${icon('check', 14)}</b></div>
                 <div><span class="bub" data-tone="mint">${icon('mic', 14)}</span><span>Microphone. Say something.</span><canvas class="gate-wave" aria-hidden="true"></canvas></div>
               </div>
               <ul class="gate-list">
-                ${second ? `<li><span class="bub" data-tone="mint">${icon('refresh', 14)}</span><span>New questions about the same change. Your first attempt is kept.</span></li>` : ''}
-                <li><span class="bub" data-tone="lilac">${icon('chat', 14)}</span><span>Two questions, and at most one follow-up.</span></li>
-                <li><span class="bub" data-tone="sky">${icon('lock', 14)}</span><span>Your code is not shown. Answer in your own words.</span></li>
-                <li><span class="bub" data-tone="lemon">${icon('scan', 14)}</span><span>The score uses your words only. Never your face or your voice tone.</span></li>
+                ${second ? `<li><span class="bub" data-tone="mint">${icon('refresh', 14)}</span><span>A new part of the same change, on the same idea. Your first attempt is kept.</span></li>` : ''}
+                <li><span class="bub" data-tone="sky">${icon('file', 14)}</span><span>Read the code and predict what it does. Your answers lock.</span></li>
+                <li><span class="bub" data-tone="lilac">${icon('chat', 14)}</span><span>Then the viva: two questions, and at most one follow-up.</span></li>
+                <li><span class="bub" data-tone="lemon">${icon('scan', 14)}</span><span>Only what you say counts. Never your face or your voice tone.</span></li>
               </ul>
               <div class="gate-actions">
                 <button class="btn btn-primary btn-lg" type="button" id="cam-on">${icon('camera')}Turn on camera and microphone</button>
@@ -41,6 +76,8 @@
             </div>
           </div>
         </div>
+
+        <div class="iv-predict" hidden>${predictHtml(view, ctx.presenter)}</div>
 
         <div class="iv-main" hidden>
           <div class="iv-col">
@@ -53,7 +90,7 @@
               <h1 class="iv-q" aria-live="polite" aria-atomic="true"></h1>
               <i class="iv-hook" aria-hidden="true"></i>
             </div>
-            <p class="iv-ground">${icon('lock', 14)}About pull request #${Number(pr.number)} in ${esc(pr.repo)}. Your code is not shown. Answer in your own words.</p>
+            <p class="iv-ground">${icon('lock', 14)}About <span class="mono">${esc(D.sets[Math.min(view.attempt, D.sets.length) - 1].task.fn)}</span> in pull request #${Number(pr.number)}. Your predictions are locked. Answer in your own words.</p>
 
             <div class="iv-answer card" hidden>
               <div class="iv-answer-h">
@@ -94,7 +131,7 @@
             <p class="label">Submitted</p>
             <h1 class="an-title">Reading your answers</h1>
             <ol class="iv-steps">${ANALYSIS.map(t => `<li><span class="st"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path pathLength="1" d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>${t}</span></li>`).join('')}</ol>
-            <p class="hint">Simulated assessment. It reads your words only.</p>
+            <p class="hint an-hint">The code checks decide the first three. The viva is read against a fixed rubric.</p>
           </div>
         </div>
       </div>`;
@@ -111,7 +148,7 @@
     let view = ctx.view, cam = null, cur = null, mode = 'speak', upload = null, busy = false, destroyed = false, stopWave = null, clock = 0;
 
     host.className = 'iv';
-    host.innerHTML = shell(view);
+    host.innerHTML = shell(view, ctx);
     $('[data-slot=gate]', host).innerHTML = camHtml();
     V.seg(host);
     const gate = $('.iv-gate', host), main = $('.iv-main', host), analysis = $('.iv-analysis', host), answer = $('.iv-answer', host);
@@ -217,6 +254,7 @@
       $('.iv-ticks', main).innerHTML = Array.from({ length: total }, (_, i) => `<i data-state="${i + 1 < turn.turn ? 'done' : i + 1 === turn.turn ? 'on' : ''}"></i>`).join('');
       $('.iv-label', main).textContent = turn.label;
       $('.iv-src', main).hidden = turn.source !== 'follow-up';
+      $('.iv-src', main).textContent = turn.by === 'ai' ? 'AI follow-up' : 'Follow-up';
       // the plan: the two standard questions of this attempt, then the follow-up (asked only when an answer stays weak)
       const qs = D.sets[Math.min(view.attempt, D.sets.length) - 1].questions, turns = view.interview.turns;
       const probe = turns.find(t => t.source === 'follow-up');
@@ -383,6 +421,42 @@
       q.innerHTML = m ? `${esc(text.slice(0, m.index))}<span class="hl">${esc(m[0])}</span>${esc(text.slice(m.index + m[0].length))}` : esc(text);
     }
 
+    // ---------- predictions: lock the three checks before the viva ----------
+    const pd = $('.iv-predict', host), lockBtn = $('#pd-lock', pd), pdErr = $('#pd-err', pd);
+    const picked = () => { const v = n => ($(`input[name=pd-${n}]:checked`, pd) || {}).value; return { answers: { behaviour: v('behaviour'), requirement: v('requirement'), evidence: v('evidence') }, confidence: v('conf') }; };
+    const complete = p => !!(p.answers.behaviour && p.answers.requirement && p.answers.evidence && p.confidence);
+    const paintLock = () => { lockBtn.disabled = busy || !complete(picked()); };
+    pd.addEventListener('change', () => { pdErr.hidden = true; paintLock(); });
+    let locked = null;
+    function showPredict() {
+      gate.hidden = true; main.hidden = true; pd.hidden = false;
+      V.enter($$('.pd-head > *, .pd-code, .pd-q, .pd-foot', pd), { y: 8, step: 45, dur: 460 });
+      paintLock();
+      return new Promise(resolve => { locked = resolve; });
+    }
+    lockBtn.addEventListener('click', async () => {
+      const p = picked();
+      if (busy || !complete(p)) return;
+      busy = true; paintLock();
+      try {
+        view = await api.predict(sid, { version: view.version, ...p }, { presenter }); ctx.onView(view);
+        pd.hidden = true;
+        if (locked) locked();
+      } catch (e) {
+        if (e.status === 409) ctx.fail(e); else { pdErr.textContent = e.message; pdErr.hidden = false; }
+      } finally { busy = false; paintLock(); }
+    });
+    function fillPredict(kind) {
+      if (pd.hidden) return false;
+      const p = D.predictions[Math.min(view.attempt, D.predictions.length) - 1][kind];
+      [['behaviour', p.behaviour], ['requirement', p.requirement], ['evidence', p.evidence], ['conf', p.confidence]].forEach(([n, v]) => {
+        const r = $(`input[name=pd-${n}][value="${v}"]`, pd);
+        if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
+      });
+      return true;
+    }
+    $$('[data-fill]', pd).forEach(b => { b.onclick = () => fillPredict(b.dataset.fill); });
+
     // ---------- flow ----------
     async function leaveQuestion() {
       if (stopWave) { stopWave(); stopWave = null; }
@@ -418,6 +492,7 @@
       (cam ? done : text).focus({ preventScroll: true });
     }
     async function begin() {
+      if (!view.predict) { await showPredict(); if (destroyed) return; }
       let turn = view.interview.turns.find(t => !t.answered);
       if (!turn) {
         try {
@@ -477,7 +552,10 @@
       if (granted) startCamera();
     })();
 
+    if (V.ai) V.ai.status().then(st => { if (!st.live) $('.an-hint', host).textContent = 'Simulated: the model is not connected, so the viva is matched to the rubric on this device.'; });
+
     return {
+      fillPredict,
       fill(body) {
         if (answer.hidden || upload) return false;
         $('input[name=iv-mode][value=type]', host).click();

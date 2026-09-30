@@ -1,4 +1,4 @@
-/* window.VivaPortfolio: the person's portfolio. Points from reviewed checks, the understanding score and its trend,
+/* window.VivaPortfolio: the person's portfolio. Points from reviewed checks, the judgment score and its trend,
    the concept level, and the work behind them. Private to the person: a reviewer link cannot read any of it. */
 (() => {
   'use strict';
@@ -41,7 +41,7 @@
   function mountChart(host, data) {
     const synth = D.syntheticHistory, real = data.score.real.map(p => p.score);
     host.setAttribute('role', 'img');
-    host.setAttribute('aria-label', `Understanding score trend. A synthetic illustration in dashed grey${real.length ? `, then your first attempts: ${real.join(', ')}` : '. Your first attempts will appear after it'}.`);
+    host.setAttribute('aria-label', `Judgment score trend. A synthetic illustration in dashed grey${real.length ? `, then your first attempts: ${real.join(', ')}` : '. Your first attempts will appear after it'}.`);
     const draw = () => { host.innerHTML = chartSvg(Math.round(host.clientWidth), synth, real); };
     draw();
     let last = host.clientWidth;
@@ -100,7 +100,7 @@
           <p class="kpi-s">${plural(p.confirmed, 'reviewed check')}. Up to ${Number(p.max_per_change)} per change.</p>
         </div>
         <div class="card kpi" data-enter data-tone="sky">
-          <p class="kpi-l">${icon('trend', 14)}Understanding score</p>
+          <p class="kpi-l">${icon('trend', 14)}Judgment score</p>
           ${sc.value != null ? `<p class="kpi-v"><span data-odo="${Number(sc.value)}"></span><span class="kpi-of">of 100</span></p><p class="kpi-s">Average of your last ${Math.min(10, sc.n)} first attempts, weighted by risk.</p>` : `<p class="kpi-v kpi-none">Not enough evidence</p><p class="kpi-s"><span class="pf-dots" aria-hidden="true">${dots}</span>${sc.n} of ${sc.needed} first attempts. Retakes do not count.</p>`}
         </div>
         <div class="card kpi" data-enter data-tone="mint">

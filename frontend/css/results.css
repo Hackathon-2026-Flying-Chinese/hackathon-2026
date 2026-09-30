@@ -1,6 +1,6 @@
-/* Results, read as a check report: the flow, the score and its signals, the answers with their marked phrases,
-   the senior review, who watched the recording, and the points. The four signals and the four highlight colours
-   match: specific is lilac, reasoning is sky, detail is mint. */
+/* Results, read as a check report: the flow, the judgment score with the three code checks and the viva, what really
+   happened when the code ran, the viva points with their quotes, the answers with the quoted words marked, the senior
+   review, who watched the recording, and the points. */
 
 .flow-card { margin-bottom: 20px; padding: 22px 24px; }
 
@@ -25,11 +25,12 @@
 .score-copy > .muted { margin-top: 6px; max-width: 58ch; }
 .score-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
 
-.dims { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+.dims { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
 .dim { display: grid; gap: 10px; align-content: start; padding: 16px 16px 18px; border-radius: var(--r-3); background: var(--d-t); }
 .dim:nth-child(1) { --d-t: var(--lilac); --d-c: var(--lilac-strong); }
 .dim:nth-child(2) { --d-t: var(--sky); --d-c: var(--sky-strong); }
 .dim:nth-child(3) { --d-t: var(--mint); --d-c: var(--mint-strong); }
+.dim:nth-child(4) { --d-t: var(--lemon); --d-c: var(--lemon-strong); }
 .dim-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .dim-top b { font: 750 .8125rem/1.2 var(--font-display); }
 .dim-val { display: inline-block; font: 800 2rem/1 var(--font-display); letter-spacing: -.045em; }
@@ -38,8 +39,39 @@
 .dim-line i { display: block; width: calc(var(--w) * 100%); height: 100%; border-radius: 3px; background: var(--d-c); transform-origin: left; }
 .dim p { font-size: .75rem; line-height: 1.45; color: var(--ink-2); }
 /* a ring that did not pass drops the brand gradient */
+.dim[data-ok='false'] { --d-t: var(--sunken); }
+.dim-frac { font: 800 1.5rem/1 var(--font-display); letter-spacing: -.04em; }
+.dim-frac em { font-style: normal; font-size: .9375rem; color: var(--muted); }
+.ck { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--mint-strong); color: #fff; }
+.ck[data-ok='false'] { background: var(--danger); }
+.score-scope { margin-top: 6px; }
 .score-card[data-verdict='gaps'] .ring-fg { stroke: var(--sky-strong); }
 .score-card[data-verdict='not_shown'] .ring-fg { stroke: var(--lemon-strong); }
+
+/* ---------- what really happened: the prediction beside the run ---------- */
+.reveal, .viva { margin-top: 0; }
+.reveal-req { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 12px; font-size: .8125rem; color: var(--muted); }
+.reveal-req .mono { color: var(--ink); font-weight: 600; }
+.reveal-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 10px; }
+.reveal-box { display: grid; gap: 6px; align-content: start; padding: 14px 16px; border-radius: var(--r-3); background: var(--sunken); font-size: .8125rem; color: var(--ink-2); }
+.reveal-box > b { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; font: 700 1rem/1.35 var(--font-display); color: var(--ink); }
+.reveal-box[data-side='run'] { background: var(--sky); }
+.reveal[data-ok='false'] .reveal-box[data-side='run'] { background: color-mix(in srgb, var(--danger) 12%, var(--surface)); }
+.reveal-rows { width: 100%; margin: 4px 0; border-collapse: collapse; font: 500 .75rem/1.5 var(--font-mono); }
+.reveal-rows th { padding: 4px 8px 4px 0; text-align: left; font-family: var(--font-sans); font-weight: 600; color: var(--muted); }
+.reveal-rows td { padding: 4px 8px 4px 0; border-top: 1px dashed var(--line); color: var(--ink); }
+.reveal-list { display: grid; gap: 8px; margin-top: 14px; font-size: .8125rem; color: var(--ink-2); }
+.reveal-list li, .reveal-note, .viva-flag { display: flex; gap: 10px; align-items: flex-start; }
+.reveal-note { margin-top: 14px; padding: 12px 14px; border-radius: var(--r-3); background: var(--lemon); font-size: .8125rem; color: var(--ink-2); }
+.reveal-note svg, .viva-flag svg { flex: none; margin-top: .15em; }
+
+/* ---------- the viva: rubric points and the quotes that earned them ---------- */
+.viva-flag { margin-bottom: 12px; padding: 10px 12px; border-radius: var(--r-2); background: var(--lemon); font-size: .8125rem; }
+.viva-points { display: grid; gap: 12px; }
+.viva-points li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; align-items: start; font-size: .8125rem; }
+.viva-points b { display: block; font-weight: 600; line-height: 1.45; }
+.viva-points blockquote { margin: 6px 0 0; padding: 8px 12px; border-left: 3px solid var(--lemon-strong); border-radius: 0 var(--r-2) var(--r-2) 0; background: var(--lemon); line-height: 1.55; color: var(--ink); }
+.viva-points cite { display: block; margin-top: 2px; font-style: normal; font-size: .6875rem; color: var(--muted); }
 
 /* ---------- answers ---------- */
 .answers .card-h { flex-wrap: wrap; }
@@ -50,11 +82,6 @@
 .rq-n { display: grid; place-items: center; width: 24px; height: 24px; margin-right: 4px; border-radius: 9px; background: var(--accent); color: #fff; font: 800 .75rem/1 var(--font-display); transform: rotate(-6deg); }
 .rq-q { margin-top: 10px; max-width: 70ch; font-size: .8125rem; color: var(--muted); }
 .rq-a { margin: 10px 0 0; padding: 14px 16px; max-width: 72ch; border-radius: var(--r-3); background: var(--sunken); font-size: .9375rem; line-height: 1.75; }
-.rq-notes { display: grid; gap: 6px; margin-top: 12px; font-size: .8125rem; }
-.rq-notes li { display: flex; gap: 8px; align-items: flex-start; color: var(--ink-2); }
-.rq-notes svg { flex: none; margin-top: .2em; }
-.rq-notes li[data-tone='good'] svg { color: var(--mint-strong); }
-.rq-notes li[data-tone='warn'] svg { color: var(--lemon-ink); }
 
 /* phrases the score looked at, highlighted with a sweep */
 mark {
@@ -63,10 +90,8 @@ mark {
   transition: background-size .8s var(--ease);
 }
 mark.on { background-size: 100% 100%; }
-mark[data-kind='specific'] { background-image: linear-gradient(var(--lilac), var(--lilac)); }
-mark[data-kind='reason'] { background-image: linear-gradient(var(--sky), var(--sky)); }
-mark[data-kind='generic'] { text-decoration: underline wavy color-mix(in srgb, var(--danger) 55%, transparent); text-decoration-thickness: 1.5px; text-underline-offset: .28em; }
-.rq-a mark[data-kind='specific'].on, .rq-a mark[data-kind='reason'].on { box-shadow: inset 0 -2px 0 rgb(23 21 31 / .06); }
+mark[data-kind='quote'] { background-image: linear-gradient(var(--lemon), var(--lemon)); }
+.rq-a mark[data-kind='quote'].on { box-shadow: inset 0 -2px 0 rgb(23 21 31 / .06); }
 
 /* ---------- senior review and access log ---------- */
 .person { display: flex; align-items: center; gap: 10px; }
@@ -146,7 +171,8 @@ mark[data-kind='generic'] { text-decoration: underline wavy color-mix(in srgb, v
 .pts-link { margin-top: 16px; }
 
 @media (max-width: 880px) {
-  .pts-eq { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pts-eq, .dims { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reveal-grid { grid-template-columns: minmax(0, 1fr); }
   .pts-f:nth-child(2) .pts-op { display: none; }
 }
 @media (max-width: 800px) {

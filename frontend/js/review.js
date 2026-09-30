@@ -11,7 +11,7 @@
   try { token = decodeURIComponent(location.hash.slice(1)); } catch { token = ''; }
 
   let data = null, players = [];
-  const KINDS = ['specific', 'reason', 'generic'];
+  const KINDS = ['quote'];
   const MODE = { voice: 'Spoken', text: 'Typed' };
   const VERDICT = { shown: 'Understanding shown', gaps: 'Gaps to close', not_shown: 'Not shown yet' };
   const ACT = { sign: 'requested a signed link for', play: 'played', open_review: 'opened the review page' };
@@ -195,14 +195,16 @@
             <div class="rv-score">
               <div class="rv-scorenum"><b class="num">${Number(a.score)}</b><span>of 100</span></div>
               <div class="rv-scoremeta">
-                <p class="label">Understanding score</p>
+                <p class="label">Judgment score: three code checks</p>
                 <div class="score-tags"><span class="badge"${a.verdict === 'shown' ? ' data-tone="accent"' : a.verdict === 'gaps' ? ' data-tone="blue"' : ''}>${VERDICT[a.verdict] || ''}</span>${a.simulated ? '<span class="tag">Simulated assessment</span>' : ''}</div>
-                <p class="muted small">Words only. The score never uses the face, the voice tone or the expressions in the recording.</p>
-                ${data.previous.map(p => `<p class="muted small">Attempt ${Number(p.attempt)} scored ${Number(p.score)} and did not pass. This is the retake, with different questions.</p>`).join('')}
+                <p class="muted small">The code decides the three checks. The viva is read against a fixed rubric, and only what was said counts: never the face, the voice tone or the expressions in the recording.</p>
+                ${data.previous.map(p => `<p class="muted small">Attempt ${Number(p.attempt)} scored ${Number(p.score)} and did not pass. This is the retake, on new code about the same idea.</p>`).join('')}
               </div>
             </div>
-            <ul class="dims">${a.dims.map(d => `<li class="dim"><div class="dim-top"><b>${esc(d.label)}</b><span class="dim-val num">${Number(d.value)}</span></div><span class="dim-line" aria-hidden="true"><i style="--w:${(Number(d.value) / 100).toFixed(2)}"></i></span><p>${esc(d.note)}</p></li>`).join('')}</ul>
+            ${V.results.checksHtml(a)}
           </section>
+          ${V.results.revealHtml(a)}
+          ${V.results.vivaHtml(a)}
           <section class="card rv-interview" data-enter>
             <div class="card-h"><h2>${bub('lilac', 'chat')}Interview</h2><span class="meta">${data.turns.length} ${data.turns.length === 1 ? 'answer' : 'answers'}</span></div>
             ${data.turns.map(turnHtml).join('') || '<p class="muted">No answers were recorded.</p>'}

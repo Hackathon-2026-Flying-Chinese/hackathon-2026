@@ -22,7 +22,7 @@
   const fail = (status, detail) => { throw new HttpError(status, detail); };
 
   // ---------- persistence ----------
-  const KEY = 'viva.sim.v4'; // v4: understanding verdicts and senior corrections replace the authorship wording
+  const KEY = 'viva.sim.v5'; // v5: locked predictions, three code checks and a rubric-assessed viva
   const fresh = () => ({ sessions: {}, tokens: {}, media: {}, secret: hex(rand(32)), settings: { cameraRequired: true, voice: 'specific' } });
   let mem = null; // in-memory fallback when localStorage is blocked
   const load = () => {
@@ -67,8 +67,7 @@
     return hex(new Uint8Array(await crypto.subtle.sign('HMAC', key, enc(msg))));
   }
 
-  // ---------- assessment: content only, never face, voice tone or expression ----------
-  // It looks at understanding (how and why the change works), never at who wrote it or how much AI helped.
+  // ---------- word signals: only used to aim the template follow-up when the model is not available ----------
   const RE = {
     num: /\$?\b\d[\d,]*(?:\.\d+)?%?/g,
     id: /`[^`]+`|\b[a-z]+(?:_[a-z0-9]+)+\b|\b[a-z]+[A-Z][A-Za-z0-9]*\b|\b[\w-]+\.(?:py|js|ts|go|java|rb|rs|sql|json|ya?ml)\b/g,
@@ -94,52 +93,80 @@
     return { dims, score };
   }
 
-  // Marks the phrases the score looked at, so the results page can show them.
-  function annotate(text) {
-    const spans = [];
-    const add = (re, kind) => { for (const m of text.matchAll(re)) spans.push({ start: m.index, end: m.index + m[0].length, kind }); };
-    add(RE.generic, 'generic'); add(RE.num, 'specific'); add(RE.id, 'specific'); add(RE.reason, 'reason'); add(RE.alt, 'reason');
-    spans.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  // ---------- assessment ----------
+  // The three checks are decided by the task data: what the code really returns, the rule, the test that covers it.
+  // The viva is assessed against the task's fixed rubric: by the model when it is available (every credited point quotes
+  // the answer, checked on the server), otherwise on this device from the rubric's patterns, labelled Simulated.
+  // Content only: never face, voice tone or expression, and never who wrote the code or how much AI helped.
+  const ITEMS = ['behaviour', 'requirement', 'evidence'];
+  const CONF = ['low', 'medium', 'high'];
+  const CHECK = { behaviour: 'Behaviour', requirement: 'Requirement', evidence: 'Evidence' };
+  const HEAD = { shown: 'You predicted what the code does, and explained why.', gaps: 'Part of this is still a guess.', not_shown: 'The code did something you did not expect.' };
+  const taskOf = s => setOf(s).task;
+  const optText = (item, id) => (item.options.find(o => o.id === id) || {}).text || '';
+  const sentences = text => text.replace(/(\d)\.(\d)/g, '$1\u0000$2').split(/(?<=[.!?])\s+/).map(x => x.replace(/\u0000/g, '.').trim()).filter(Boolean);
+
+  function simulatedViva(set, answered) {
+    return {
+      source: 'simulated', model: null, flagged: false,
+      points: set.rubric.map(p => {
+        const res = p.sim.map(x => new RegExp(x, 'i'));
+        for (const t of answered) {
+          const hit = sentences(t.answer_text).find(x => res.every(re => re.test(x)));
+          if (hit) return { id: p.id, text: p.text, met: true, quote: hit, turn: t.turn };
+        }
+        return { id: p.id, text: p.text, met: false, quote: '', turn: 0 };
+      })
+    };
+  }
+  function modelViva(set, ai) {
+    return {
+      source: 'ai', model: ai.model || null, flagged: !!ai.injection_attempt,
+      points: set.rubric.map(p => {
+        const g = ai.points.find(x => x.id === p.id) || {}, met = !!g.met && !!g.quote;
+        return { id: p.id, text: p.text, met, quote: met ? g.quote : '', turn: met ? Number(g.turn) : 0 };
+      })
+    };
+  }
+  // The answer split into plain runs and the runs the viva assessment quoted, so the pages can mark them.
+  function quoteMarks(text, quotes) {
+    const low = text.toLowerCase(), spans = [];
+    for (const q of quotes) { const i = low.indexOf(q.toLowerCase()); if (i >= 0) spans.push([i, i + q.length]); }
+    spans.sort((a, b) => a[0] - b[0]);
     const out = [];
     let at = 0;
-    for (const s of spans) {
-      if (s.start < at) continue;
-      if (s.start > at) out.push({ text: text.slice(at, s.start), kind: null });
-      out.push({ text: text.slice(s.start, s.end), kind: s.kind });
-      at = s.end;
+    for (const [a, b] of spans) {
+      if (a < at) continue;
+      if (a > at) out.push({ text: text.slice(at, a), kind: null });
+      out.push({ text: text.slice(a, b), kind: 'quote' });
+      at = b;
     }
     if (at < text.length) out.push({ text: text.slice(at), kind: null });
     return out;
   }
-  // "how it works" is noted on specifics and "why this way" on reasoning, so neither is faulted for what it did not ask
-  function noteFor(text, key) {
-    const f = features(text), notes = [];
-    const concrete = [...f.ids, ...f.nums].slice(0, 4), named = concrete.length >= 2, why = f.reason + f.alt >= 2;
-    if (named || key !== 'rationale') notes.push(named ? { tone: 'good', text: `Concrete details: ${concrete.join(', ')}.` } : { tone: 'warn', text: 'No concrete inputs, values or names.' });
-    if (why || key !== 'implementation') notes.push(why ? { tone: 'good', text: 'Explains why, and what was weighed.' } : { tone: 'warn', text: 'Says what the code does, not why.' });
-    if (f.generic.length) notes.push({ tone: 'warn', text: `Generic phrasing: ${f.generic.slice(0, 3).map(g => `“${g}”`).join(', ')}.` });
-    return notes;
-  }
-
-  const DIM = {
-    specific: { label: 'Specific', good: 'Named concrete values, inputs and names.', mid: 'Some concrete detail. Add exact inputs and outputs.', low: 'Stayed abstract. Few concrete values, names or cases.' },
-    reasoning: { label: 'Reasoning', good: 'Explained why, and what was weighed.', mid: 'Gave a reason, not the alternative you rejected.', low: 'Described what the code does, not why.' },
-    detail: { label: 'Detail', good: 'Answers were complete.', mid: 'Answers were short in places.', low: 'Answers were very short.' }
-  };
-  const HEAD = { shown: 'Your answers show how and why it works.', gaps: 'Parts of this stayed general.', not_shown: 'Your answers did not show how it works yet.' };
-  const tierOf = v => (v >= 70 ? 'good' : v >= 45 ? 'mid' : 'low');
-  const verdictOf = score => (score >= 70 ? 'shown' : score >= 45 ? 'gaps' : 'not_shown');
-
-  function assess(s) {
-    const answered = s.interview.turns.filter(t => t.answered);
-    const { dims, score } = scoreTexts(answered.map(t => t.answer_text));
-    const verdict = verdictOf(score);
+  function assess(s, ai) {
+    const set = setOf(s), task = set.task, answered = s.interview.turns.filter(t => t.answered);
+    const checks = ITEMS.map(key => {
+      const it = task.items[key], chosen = s.predict.answers[key];
+      return { key, label: CHECK[key], question: it.q, chosen, chosen_text: optText(it, chosen), correct_text: optText(it, it.correct), ok: chosen === it.correct };
+    });
+    const viva = ai && Array.isArray(ai.points) ? modelViva(set, ai) : simulatedViva(set, answered);
+    const right = checks.filter(c => c.ok).length, met = viva.points.filter(p => p.met).length;
+    const verdict = right === ITEMS.length && met >= D.vivaPass ? 'shown' : right + met >= 3 ? 'gaps' : 'not_shown';
     return {
-      simulated: true, score, verdict, headline: HEAD[verdict],
-      dims: Object.entries(dims).map(([key, value]) => ({ key, label: DIM[key].label, value, note: DIM[key][tierOf(value)] })),
-      questions: answered.map(t => ({ turn: t.turn, label: t.label, question: t.question, source: t.source, mode: t.mode, answer: t.answer_text, segments: annotate(t.answer_text), notes: noteFor(t.answer_text, t.key) }))
+      simulated: viva.source !== 'ai', score: Math.round((right / ITEMS.length) * 100), verdict, headline: HEAD[verdict],
+      checks, right, confidence: s.predict.confidence, fn: task.fn, rule: task.rule, reveal: task.reveal, viva, met, rubric_size: set.rubric.length,
+      questions: answered.map(t => ({
+        turn: t.turn, label: t.label, question: t.question, source: t.source, by: t.by || null, mode: t.mode, answer: t.answer_text,
+        segments: quoteMarks(t.answer_text, viva.points.filter(p => p.met && p.turn === t.turn).map(p => p.quote))
+      }))
     };
   }
+  // What the model is sent: the code, the rule and the viva. The follow-up never gets the answer key; the assessment gets
+  // the facts of the run, so it can tell a right explanation from a wrong one.
+  const vivaTurns = s => s.interview.turns.filter(t => t.answered).map(t => ({ turn: t.turn, question: t.question, answer: t.answer_text }));
+  const followupBody = s => { const t = taskOf(s); return { file: t.file, code: t.code, rule: t.rule, turns: vivaTurns(s), leak_terms: t.leak }; };
+  const gradeBody = s => { const set = setOf(s), t = set.task; return { file: t.file, code: t.code, rule: t.rule, facts: t.facts, rubric: set.rubric.map(p => ({ id: p.id, text: p.text })), turns: vivaTurns(s) }; };
 
   // ---------- interview ----------
   function cleanPr(input = {}) {
@@ -147,28 +174,34 @@
     const number = Number.isInteger(+input.number) && +input.number > 0 ? +input.number : d.number;
     return { repo: str(input.repo, 80) || d.repo, number, title: str(input.title, 120) || d.title, author: str(input.author, 40) || d.author, branch: str(input.branch, 60) || d.branch, base: str(input.base, 40) || d.base, sha: str(input.sha, 12) || d.sha, files: d.files };
   }
-  // Attempt 1 draws from the first question set and the retake from the second, so no question repeats.
+  // Attempt 1 reads the first task and the retake the second (same concept, different code), so no question repeats.
   const setOf = s => D.sets[Math.min(s.attempt, D.sets.length) - 1];
   function makeTurn(s, key, turn, source) {
     const set = setOf(s), spec = key.startsWith('probe:') ? set.probes[key.slice(6)] : set.questions[key];
-    return { turn, key, label: spec.label, question: spec.text.replace('{title}', s.pr.title), source, answered: false, answer_text: null, mode: null, media_id: null, asked_at: nowS() };
+    return { turn, key, label: spec.label, question: spec.text.replace('{title}', s.pr.title), source, by: source === 'follow-up' ? 'template' : null, answered: false, answer_text: null, mode: null, media_id: null, asked_at: nowS() };
   }
-  // Follow-up only when the two standard answers leave a weak signal (at most one, aimed at the weakest).
+  // The template follow-up aims at the weaker of the two word signals, and is skipped when neither is weak.
   function weakest(s) {
     const { dims } = scoreTexts(s.interview.turns.filter(t => t.answered).map(t => t.answer_text));
     const [dim, v] = ['specific', 'reasoning'].map(k => [k, dims[k]]).sort((a, b) => a[1] - b[1])[0];
     return v < 55 ? dim : null;
   }
+  // The two standard questions. The follow-up is decided after the second answer (see interviewAnswer).
   function advance(s) {
     const turns = s.interview.turns, n = turns.length;
-    if (n === 0) { turns.push(makeTurn(s, 'implementation', 1, 'standard')); return turns[0]; }
-    if (n === 1) { turns.push(makeTurn(s, 'rationale', 2, 'standard')); return turns[1]; }
-    if (n === 2) {
-      const dim = weakest(s);
-      if (dim) { turns.push(makeTurn(s, 'probe:' + dim, 3, 'follow-up')); return turns[2]; }
-    }
-    s.interview.done = true;
-    return null;
+    if (n >= D.standardTurns) return null;
+    const t = makeTurn(s, n === 0 ? 'implementation' : 'rationale', n + 1, 'standard');
+    turns.push(t);
+    return t;
+  }
+  // At most one follow-up: the model's question when it asks one that passed the server's checks; the template when the
+  // model is not available or its question was filtered out; none when the model finds the answers need no follow-up.
+  const PROBE_LABEL = { concrete: 'Be concrete', reasoning: 'Why this way', consequence: 'What could go wrong' };
+  function followUp(s, ai) {
+    if (ai && ai.needs_follow_up === false) return null;
+    if (ai && ai.question) return { ...makeTurn(s, 'probe:specific', D.standardTurns + 1, 'follow-up'), key: 'probe:ai', label: PROBE_LABEL[ai.target] || 'Follow-up', question: ai.question, by: 'ai' };
+    const dim = weakest(s);
+    return dim ? makeTurn(s, 'probe:' + dim, D.standardTurns + 1, 'follow-up') : null;
   }
 
   // Simulated transcriber: speaking is answered with a stand-in text, split into timestamped segments.
@@ -221,11 +254,11 @@
   // ---------- state and views ----------
   const newState = (pr, now, scoring) => ({
     id: b64u(rand(24)), stage: 'interview', version: 0, created: now, pr,
-    attempt: 1, attempts: [], scoring, first_score: null, level_events: [],
+    attempt: 1, attempts: [], scoring, first_score: null, level_events: [], predict: null,
     interview: { turns: [], done: false }, assessment: null, review: null, finished: null,
     reviewer_token: null, access_log: [], media: {}
   });
-  const turnView = t => ({ turn: t.turn, key: t.key, label: t.label, question: t.question, source: t.source, answered: t.answered, answer_text: t.answer_text, mode: t.mode, media_id: t.media_id });
+  const turnView = t => ({ turn: t.turn, key: t.key, label: t.label, question: t.question, source: t.source, by: t.by || null, answered: t.answered, answer_text: t.answer_text, mode: t.mode, media_id: t.media_id });
 
   function view(db, s, now, opts = {}) {
     return {
@@ -233,6 +266,7 @@
       attempt: s.attempt, max_attempts: D.maxAttempts, can_retake: canRetake(s),
       previous: s.attempts.map(a => ({ attempt: a.attempt, score: a.assessment.score, verdict: a.assessment.verdict })),
       camera_required: db.settings.cameraRequired !== false,
+      predict: s.predict ? { answers: { ...s.predict.answers }, confidence: s.predict.confidence } : null,
       interview: { standard: D.standardTurns, max_turns: D.maxTurns, done: s.interview.done, turns: s.interview.turns.map(turnView) },
       assessment: s.stage === 'results' ? s.assessment : null,
       review: s.stage === 'results' ? s.review : null,
@@ -267,7 +301,7 @@
           turn: t.turn, label: t.label, question: t.question, source: t.source, mode: t.mode, answer_text: t.answer_text,
           media: m ? { id: m.id, kind: m.kind, duration: m.duration } : null,
           segments: t.mode === 'voice' && m && m.segments ? m.segments.map(sg => ({ ...sg, flag: count(sg.text, RE.generic) ? 'Generic phrasing.' : null })) : null,
-          marks: annotate(t.answer_text)
+          marks: ((s.assessment.questions.find(q => q.turn === t.turn) || {}).segments) || [{ text: t.answer_text, kind: null }]
         };
       }),
       access_log: s.access_log.filter(e => e.media_id || e.action === 'open_review').map(e => ({ ...e }))
@@ -292,6 +326,26 @@
       return tx(db => view(db, getSession(db, sid), nowS(), { presenter }));
     },
 
+    // Lock the three checks before the viva: what the code returns, whether it meets the rule, which test backs it.
+    // Nothing about the right answers comes back until the results.
+    async predict(sid, { version, answers = {}, confidence = null }, { presenter = false } = {}) {
+      await sleep(200);
+      return tx(db => {
+        const s = getSession(db, sid), now = nowS(), task = taskOf(s);
+        checkVersion(s, version);
+        if (s.stage !== 'interview') fail(409, 'The interview is over.');
+        if (s.predict) fail(409, 'Your answers are already locked.');
+        const picked = {};
+        for (const key of ITEMS) {
+          if (!task.items[key].options.some(o => o.id === answers[key])) fail(422, 'Answer all three questions first.');
+          picked[key] = answers[key];
+        }
+        if (!CONF.includes(confidence)) fail(422, 'Say how sure you are about question 1.');
+        s.predict = { answers: picked, confidence, at: now };
+        return view(db, s, now, { presenter });
+      });
+    },
+
     // First question, or the open one after a reload.
     async interviewNext(sid, { version }, { presenter = false } = {}) {
       await sleep(350);
@@ -299,6 +353,7 @@
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
         if (s.stage !== 'interview') fail(409, 'The interview is over.');
+        if (!s.predict) fail(409, 'Lock your answers to the three questions first.');
         const iv = s.interview, last = iv.turns[iv.turns.length - 1];
         if (iv.done) fail(409, 'The interview is complete.');
         if (last && !last.answered) return { ...turnView(last), view: view(db, s, now, { presenter }) };
@@ -310,7 +365,7 @@
 
     async interviewAnswer(sid, { version, turn, text = '', media_id = null, mode = 'text' }, { presenter = false } = {}) {
       await sleep(500);
-      return tx(db => {
+      const recorded = tx(db => {
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
         const cur = openTurn(s, turn);
@@ -325,19 +380,36 @@
           m.used = true; m.mode = mode;
           m.segments = mode === 'voice' ? segmentsFor(answer, m.duration) : null;
         }
-        const next = advance(s);
+        const n = s.interview.turns.length;
+        if (n < D.standardTurns) { const next = advance(s); return { done: false, ...turnView(next), view: view(db, s, now, { presenter }) }; }
+        if (n > D.standardTurns) { s.interview.done = true; return { done: true, view: view(db, s, now, { presenter }) }; }
+        return null; // after the second answer: decide on the follow-up below
+      });
+      if (recorded) return recorded;
+      const snap = load().sessions[sid];
+      const ai = V.ai ? await V.ai.followup(followupBody(snap)) : null;
+      return tx(db => {
+        const s = getSession(db, sid), now = nowS();
+        if (s.stage !== 'interview' || s.interview.done || s.interview.turns.length !== D.standardTurns) fail(409, 'This interview has already changed. Reload to continue; nothing was overwritten.');
+        const next = followUp(s, ai);
+        if (next) s.interview.turns.push(next); else s.interview.done = true;
         return { done: !next, ...(next ? turnView(next) : {}), view: view(db, s, now, { presenter }) };
       });
     },
 
     async interviewFinish(sid, { version }, { presenter = false } = {}) {
       await sleep(150);
+      const snap = getSession(load(), sid);
+      checkVersion(snap, version);
+      if (snap.stage !== 'interview') fail(409, 'The interview is over.');
+      if (!snap.interview.done || snap.interview.turns.some(t => !t.answered)) fail(409, 'Answer every question first.');
+      const ai = V.ai ? await V.ai.grade(gradeBody(snap)) : null;
       return tx(db => {
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
         if (s.stage !== 'interview') fail(409, 'The interview is over.');
         if (!s.interview.done || s.interview.turns.some(t => !t.answered)) fail(409, 'Answer every question first.');
-        s.assessment = assess(s);
+        s.assessment = assess(s, ai);
         const passed = s.assessment.verdict === 'shown', last = s.attempt >= D.maxAttempts;
         if (s.attempt === 1) s.first_score = { score: s.assessment.score, at: now }; // only a first attempt counts toward the trend
         // A first failure is feedback and a second chance: nothing goes to a senior yet. A pass, or a failed retake, does.
@@ -363,8 +435,8 @@
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
         if (!canRetake(s)) fail(409, 'A second attempt is not available.');
-        s.attempts.push({ attempt: s.attempt, assessment: s.assessment, turns: s.interview.turns, finished: now });
-        Object.assign(s, { attempt: s.attempt + 1, interview: { turns: [], done: false }, assessment: null, review: null, finished: null, stage: 'interview', version: s.version + 1 });
+        s.attempts.push({ attempt: s.attempt, assessment: s.assessment, predict: s.predict, turns: s.interview.turns, finished: now });
+        Object.assign(s, { attempt: s.attempt + 1, predict: null, interview: { turns: [], done: false }, assessment: null, review: null, finished: null, stage: 'interview', version: s.version + 1 });
         return view(db, s, now, { presenter });
       });
     },
@@ -498,7 +570,7 @@
           const v = scoringView(db, s);
           return { sid: s.id, title: s.pr.title, repo: s.pr.repo, number: s.pr.number, at: s.created, attempt: s.attempt, score: s.assessment.score, verdict: s.assessment.verdict, r: s.scoring.r, n: s.scoring.n, g: s.scoring.g, s: s.scoring.s, band: s.scoring.band, status: v.status, points: v.points };
         });
-        // Understanding score: first attempts only, the last ten, weighted by risk. Fewer than five shows no score at all.
+        // Judgment score: the three code checks of first attempts only, the last ten, weighted by risk. Fewer than five shows no score at all.
         const firsts = all.filter(s => s.first_score).map(s => ({ at: s.first_score.at, score: s.first_score.score, w: s.scoring.r }));
         const recent = firsts.slice(-10), need = 5;
         const value = recent.length >= need ? Math.round(recent.reduce((a, p) => a + p.score * p.w, 0) / recent.reduce((a, p) => a + p.w, 0)) : null;
@@ -530,5 +602,5 @@
   };
 
   V.api = api;
-  V.simInternals = { scoreTexts, annotate, features, verdictOf, segmentsFor, weakest, pointsFor, bandOf };
+  V.simInternals = { scoreTexts, features, simulatedViva, quoteMarks, assess, segmentsFor, weakest, pointsFor, bandOf };
 })();

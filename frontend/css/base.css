@@ -245,3 +245,22 @@ kbd {
 @media (prefers-reduced-transparency: reduce) {
   .dialog::backdrop { backdrop-filter: none; }
 }
+
+/* ---------- choice cards (radio): the predictions and the reviewer decision ---------- */
+.ev {
+  position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 10px; align-items: start;
+  padding: 12px 14px; cursor: pointer;
+  border: 1.5px solid var(--line-strong); border-radius: var(--r-3); background: var(--surface);
+  transition: border-color var(--t), background-color var(--t), box-shadow var(--t);
+}
+.ev:hover { background: var(--surface-2); }
+.ev input { position: absolute; opacity: 0; }
+.ev-mark { display: grid; place-items: center; width: 16px; height: 16px; margin-top: 2px; border: 1px solid var(--faint); border-radius: 50%; transition: background-color var(--t), border-color var(--t); }
+.ev-mark::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; transform: scale(0); transition: transform 240ms var(--spring); }
+.ev input:checked ~ .ev-mark { background: var(--accent); border-color: var(--accent); }
+.ev input:checked ~ .ev-mark::after { transform: scale(1); }
+.ev:has(input:checked) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 5%, var(--surface)); box-shadow: var(--focus); }
+.ev:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ev-text { font-size: .8125rem; line-height: 1.45; }
+.ev-text b { display: block; font-weight: 600; }
+.ev-text em { display: block; margin-top: 1px; font-style: normal; color: var(--muted); font-size: .75rem; }
