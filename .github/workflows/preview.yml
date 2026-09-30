@@ -1,0 +1,65 @@
+name: Deploy preview
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # main -> site root (keep pr-preview/ folders intact)
+      - name: Deploy main
+        if: github.event_name == 'push'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: frontend
+          branch: gh-pages
+          clean-exclude: pr-preview/
+
+      # PR -> /pr-preview/pr-<N>/ and a sticky comment with the link
+      - name: Deploy PR preview
+        id: preview
+        if: github.event_name == 'pull_request'
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: frontend
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
+          comment: false
+
+      - name: Comment preview link
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-preview
+          message: |
+            ## <img src="https://raw.githubusercontent.com/Hackathon-2026-Flying-Chinese/hackathon-2026/main/frontend/assets/logo.svg" height="28" alt="Viva"> Viva preview
+
+            <img align="right" height="110" alt="QR code for preview link" src="https://qr.rossjrw.com/?color.dark=0d1117&url=${{ steps.preview.outputs.preview-url }}">
+
+            ### <img src="${{ steps.preview.outputs.preview-url }}assets/mascot-pink.svg" height="44" align="absmiddle" alt=""> [**Go Viva**](${{ steps.preview.outputs.preview-url }})
+
+            Try the latest changes from this PR in your browser, or scan the QR code on your phone.
+
+            <sub>Updated for `${{ github.event.pull_request.head.sha }}` · Pages may take 1–2 min to refresh · removed when the PR closes</sub>
+
+      - name: Update comment on close
+        if: github.event_name == 'pull_request' && github.event.action == 'closed'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-preview
+          message: |
+            ## 🧹 Preview removed
+
+            This PR is closed, so its demo preview has been taken down.
