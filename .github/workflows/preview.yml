@@ -29,9 +29,35 @@ jobs:
 
       # PR -> /pr-preview/pr-<N>/ and a sticky comment with the link
       - name: Deploy PR preview
+        id: preview
         if: github.event_name == 'pull_request'
         uses: rossjrw/pr-preview-action@v1
         with:
           source-dir: frontend
           preview-branch: gh-pages
           umbrella-dir: pr-preview
+          comment: false
+
+      - name: Comment preview link
+        if: github.event_name == 'pull_request' && github.event.action != 'closed'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-preview
+          message: |
+            ## 🚀 Live demo preview
+
+            ### 👉 [**Open the demo**](${{ steps.preview.outputs.preview-url }})
+
+            Try the latest changes from this PR in your browser.
+
+            <sub>Updated for `${{ github.event.pull_request.head.sha }}` · Pages may take 1–2 min to refresh · removed when the PR closes</sub>
+
+      - name: Update comment on close
+        if: github.event_name == 'pull_request' && github.event.action == 'closed'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: pr-preview
+          message: |
+            ## 🧹 Preview removed
+
+            This PR is closed, so its demo preview has been taken down.
