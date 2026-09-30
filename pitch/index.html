@@ -79,6 +79,11 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- type ---------- */
 .eyebrow { font: 600 26px/1.2 var(--display); letter-spacing: -.005em; }
+.slide.demo { padding: 0; }
+.demo-video { position: absolute !important; left: 0; top: 0; width: 1600px; height: 900px; object-fit: contain; background: #000; cursor: pointer; }
+.demo-play { position: absolute !important; left: 50%; top: 50%; width: 110px; height: 110px; margin: -55px 0 0 -55px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: #fff; background: var(--grad); box-shadow: 0 20px 60px -10px rgb(123 85 255 / .7); opacity: 0; pointer-events: none; transition: opacity .3s; }
+.demo-play svg { width: 44px; height: 44px; fill: currentColor; margin-left: 5px; }
+.slide.demo.stopped .demo-play { opacity: 1; pointer-events: auto; }
 .hero { font: 700 120px/1.02 var(--display); letter-spacing: -.035em; text-wrap: balance; }
 .h1 { font: 700 88px/1.05 var(--display); letter-spacing: -.03em; text-wrap: balance; }
 .h2 { font: 700 68px/1.08 var(--display); letter-spacing: -.025em; text-wrap: balance; }
@@ -475,51 +480,93 @@ h1, h2, h3, p { margin: 0; }
 .merge.go .mb-row.viva { background: rgb(63 185 80 / .10); box-shadow: inset 0 0 0 1px rgb(63 185 80 / .45); transition: background .6s, box-shadow .6s; }
 
 /* ---------- s12 steps ---------- */
-.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 44px; width: 1320px; text-align: left; }
-.step { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.sico { width: 64px; height: 64px; display: block; margin-bottom: 8px; }
+.steps { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 44px; width: 1320px; margin-top: 30px; text-align: center; }
+.step { display: flex; flex-direction: column; align-items: center; gap: 12px; min-width: 0; }
 .sn { font: 600 18px/1.2 var(--display); }
-.step h3 { font: 600 34px/1.12 var(--display); letter-spacing: -.02em; }
-.step p { font: 400 20px/1.5 var(--text); color: var(--fg-2); }
+.step h3 { font: 600 34px/1.12 var(--display); letter-spacing: -.02em; text-wrap: balance; }
+.step > .sn, .step > h3 { opacity: 0; transform: translateY(26px); filter: blur(10px); transition: opacity .8s var(--ease), transform .9s var(--ease), filter .8s var(--ease); }
+.step.on > .sn, .step.on > h3 { opacity: 1; transform: none; filter: none; }
+.step.on > h3 { transition-delay: .12s; }
 
-/* ---------- s14 impact: the problem sits on glass, and the question breaks it ---------- */
+/* the four stages of one pull request: a rail, a train of PR cards, and a node that wakes up when the card reaches it */
+.hnode { position: relative; z-index: 2; width: 96px; height: 96px; margin-bottom: 10px; border-radius: 50%; display: grid; place-items: center; border: 2px solid transparent;
+  background: linear-gradient(#0d0c14, #0d0c14) padding-box, var(--grad) border-box; box-shadow: 0 0 60px -14px rgb(123 85 255 / .8);
+  opacity: .28; filter: grayscale(.7); transition: opacity .8s var(--ease), filter .8s var(--ease) .3s; }
+.hnode svg { width: 52%; height: 52%; fill: none; stroke: url(#ig); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+.hnode::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid rgb(167 139 255 / .8); opacity: 0; }
+.hnode.warm { background: linear-gradient(#0d0c14, #0d0c14) padding-box, linear-gradient(160deg, #ff6b6b, #ff9f43) border-box; box-shadow: 0 0 60px -14px rgb(255 107 107 / .8); }
+.hnode.warm svg { stroke: #ffb199; }
+.hnode.warm::after { border-color: rgb(255 143 122 / .85); }
+.hnode.good { background: linear-gradient(#0d0c14, #0d0c14) padding-box, linear-gradient(160deg, #3fb950, #7ee787) border-box; box-shadow: 0 0 60px -14px rgb(63 185 80 / .7); }
+.hnode.good svg { stroke: #7ee787; }
+.hnode.good::after { border-color: rgb(63 185 80 / .85); }
+.step.on .hnode { opacity: 1; filter: none; transition-delay: .55s; }
+.slide.active .step.on .hnode::after { animation: ping 1.3s cubic-bezier(.2, .6, .3, 1) .75s both; }
+@keyframes ping { from { opacity: .9; scale: 1; } to { opacity: 0; scale: 1.6; } }
+
+.hrail { position: absolute; z-index: 0; left: 148.5px; right: 148.5px; top: 47px; height: 2px; background: linear-gradient(90deg, rgb(255 255 255 / .12), rgb(255 255 255 / .12)); }
+.hfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #8b6bff, #5b8cff 45%, #ff8f7a 70%, #3fb950); box-shadow: 0 0 14px rgb(139 107 255 / .7); transition: width 1.4s var(--ease) .1s; }
+.how[data-a="2"] .hfill { width: 341px; } .how[data-a="3"] .hfill { width: 682px; } .how[data-a="4"] .hfill { width: 1023px; }
+
+.hpr { --x: 38px; --c: 167 139 255; --dy: 0px; position: absolute; z-index: 1; left: -22px; top: 33px; width: 44px; height: 28px; border-radius: 7px; background: #1b1a26; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 8px;
+  box-shadow: inset 0 0 0 1.5px rgb(var(--c) / .8), 0 6px 18px -6px rgb(0 0 0 / .9);
+  transform: translate(calc(var(--x) - var(--k) * 54px), var(--dy)); opacity: 0;
+  transition: transform 1.5s var(--ease) calc(var(--k) * .12s), opacity .6s var(--ease), box-shadow .6s var(--ease) .6s; }
+.hpr b { height: 3px; border-radius: 2px; background: rgb(var(--c) / .85); transition: background .6s var(--ease) .6s; }
+.hpr b + b { width: 60%; background: rgb(255 255 255 / .35); }
+.slide.active .hpr { opacity: 1; }
+.how[data-a="1"] .hpr { --x: 258px; }
+.how[data-a="2"] .hpr { --x: 599px; }
+.how[data-a="3"] .hpr { --x: 940px; --c: 255 143 122; }
+.how[data-a="4"] .hpr { --x: 1282px; --c: 63 185 80; }
+/* small, safe changes never reach a senior: they drop out after the viva */
+.how[data-a="3"] .hpr.d, .how[data-a="4"] .hpr.d { --x: 690px; --dy: 26px; --c: 63 185 80; opacity: 0; }
+.how[data-a="3"] .hpr.d, .how[data-a="4"] .hpr.d { transition-duration: 1s, .9s, .6s; }
+
+.needle { transform-box: view-box; transform-origin: 12px 16px; transform: rotate(-75deg); transition: transform 1.3s cubic-bezier(.34, 1.56, .64, 1) .7s; }
+.step.on .needle { transform: none; }
+.bar { transform-box: fill-box; transform-origin: center; }
+.slide.active .step.on .bar { animation: wave 1s ease-in-out calc(.7s + var(--i) * .13s) infinite; }
+@keyframes wave { 50% { transform: scaleY(2.2); } }
+.play { transform-box: fill-box; transform-origin: center; }
+.slide.active .step.on .play { animation: nudge 1.8s ease-in-out .9s infinite; }
+@keyframes nudge { 50% { transform: scale(1.35); } }
+.tick { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .7s var(--ease); }
+.step.on .tick { stroke-dashoffset: 0; transition-delay: .95s; }
+
+/* ---------- s14 impact: each answer smashes the matching problem ---------- */
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 50px 90px; width: 1240px; text-align: left; }
 .grid2 > div { display: flex; flex-direction: column; gap: 10px; }
 .for { font: 600 24px/1.2 var(--display); }
 .what { font: 600 38px/1.2 var(--display); letter-spacing: -.02em; text-wrap: balance; }
 .slide.impact { display: block; }
-.impact .halo { opacity: .26; }
-.glass { position: absolute !important; inset: 0; margin: auto; width: 1400px; height: 760px; padding: 56px 70px 64px; border-radius: 34px; text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 22px;
-  background: linear-gradient(135deg, rgb(255 255 255 / .16) 0%, rgb(255 255 255 / .05) 38%, rgb(255 255 255 / .03) 62%, rgb(255 255 255 / .09) 100%);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22), inset 0 1px 0 rgb(255 255 255 / .4), 0 40px 120px -40px rgb(0 0 0 / .9); }
-.now-t { position: absolute; left: 0; right: 0; top: 34px; text-align: center; font: 700 96px/1.05 var(--display); letter-spacing: -.035em; }
-.now-grid { position: absolute; left: 80px; top: 230px; }
-.glass-t { font: 700 58px/1.12 var(--display); letter-spacing: -.025em; text-wrap: balance; }
-.impact.hit > .glass { visibility: hidden; }
+.impact .halo { opacity: .26; transition: opacity 1.6s var(--ease); }
+/* the problem is warm (coral); the answers are Viva's violet. The halo swaps from one to the other on the first smash */
+.impact .halo.warm { background: conic-gradient(#ff5a4f, #ff9f43, #f0508a, #ff6b6b, #ff5a4f); opacity: .3; }
+.impact .halo.cool { background: conic-gradient(#7b55ff, #3e7bff, #b58bff, #7b55ff); opacity: 0; }
+/* each smashed problem moves the glow one notch from coral towards violet; it only gets all the way there when the title flips */
+.impact[data-p="1"] .halo.warm { opacity: .25; } .impact[data-p="1"] .halo.cool { opacity: .05; }
+.impact[data-p="2"] .halo.warm { opacity: .2; } .impact[data-p="2"] .halo.cool { opacity: .1; }
+.impact[data-p="3"] .halo.warm { opacity: .15; } .impact[data-p="3"] .halo.cool { opacity: .15; }
+.impact[data-p="4"] .halo.warm { opacity: .09; } .impact[data-p="4"] .halo.cool { opacity: .19; }
+.impact[data-p="5"] .halo.warm { opacity: 0; } .impact[data-p="5"] .halo.cool { opacity: .3; }
+.grad.warm { background: linear-gradient(95deg, #ff6b6b 0%, #ff8f7a 50%, #ffb05c 100%); -webkit-background-clip: text; background-clip: text; }
+.ch.g.w { background: linear-gradient(95deg, #ff6b6b 0%, #ff8f7a 50%, #ffb05c 100%); -webkit-background-clip: text; background-clip: text; }
+.now-t { position: absolute !important; left: 0; right: 0; top: 104px; text-align: center; font: 700 96px/1.05 var(--display); letter-spacing: -.035em; }
+.now-grid { position: absolute !important; left: 50%; top: 300px; margin-left: -620px; grid-template-rows: 175px auto; }
 .impact-q { position: absolute !important; z-index: 4 !important; left: 0; right: 0; top: 104px; text-align: center; font: 700 96px/1.05 var(--display); letter-spacing: -.035em; opacity: 0; }
-.impact.hit .impact-q { opacity: 1; }
-.impact.hitting .impact-q { animation: slam 1.9s both; }
-@keyframes slam {
-  0% { opacity: 0; transform: translateY(292px) scale(2.8); filter: blur(14px); animation-timing-function: cubic-bezier(.55, 0, 1, .45); }
-  11% { opacity: 1; transform: translateY(292px) scale(1); filter: blur(0); }
-  58% { opacity: 1; transform: translateY(292px) scale(1); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
-  100% { opacity: 1; transform: none; }
-}
+.impact.t2 .impact-q { opacity: 1; }
 .impact-grid { position: absolute !important; left: 50%; top: 300px; margin-left: -620px; }
 .impact-grid > div { opacity: 0; }
-.impact.hit .impact-grid > div { opacity: 1; }
-.impact.hitting .impact-grid > div { animation: rise .9s var(--ease) both; animation-delay: calc(1.5s + var(--j) * .16s); }
-.flash { position: absolute !important; z-index: 3 !important; left: 50%; top: 50%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; border-radius: 50%; pointer-events: none; opacity: 0;
-  background: radial-gradient(circle, rgb(255 255 255 / .6), rgb(183 166 255 / .25) 28%, rgb(0 0 0 / 0) 62%); }
-.impact.hitting .flash { animation: flash .6s ease-out .2s both; }
-@keyframes flash { 0% { opacity: 0; scale: .4; } 22% { opacity: 1; } 100% { opacity: 0; scale: 1.35; } }
-.shards { position: absolute !important; z-index: 2 !important; pointer-events: none; perspective: 1300px; }
-.shard { position: absolute; overflow: hidden; }
-.glass-copy { right: auto !important; bottom: auto !important; margin: 0 !important; }
-.cracks { position: absolute !important; z-index: 3 !important; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 6px rgb(255 255 255 / .7)); }
-.cracks path { fill: none; stroke: rgb(255 255 255 / .92); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .13s linear forwards; }
+.impact-grid > div.on { opacity: 1; }
+.impact .gone { visibility: hidden; }
+/* a smashed letter: absolutely placed pieces that fall */
+.ch { position: absolute; z-index: 5; visibility: visible; white-space: pre; pointer-events: none; }
+.ch.g { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.burst { position: absolute; z-index: 3; pointer-events: none; border-radius: 50%; background: radial-gradient(circle, rgb(255 255 255 / .6), rgb(183 166 255 / .25) 28%, rgb(0 0 0 / 0) 62%); }
 .stage.shake { animation: shake .45s linear; }
+.stage.shake-s { animation: shake-s .35s linear; }
+@keyframes shake-s { 0%, 100% { translate: 0 0; } 15% { translate: -6px 3px; } 35% { translate: 5px -3px; } 55% { translate: -3px 2px; } 78% { translate: 2px -1px; } }
 @keyframes shake { 0%, 100% { translate: 0 0; } 12% { translate: -16px 9px; } 26% { translate: 13px -8px; } 40% { translate: -10px 6px; } 55% { translate: 7px -4px; } 72% { translate: -4px 2px; } 86% { translate: 2px -1px; } }
 
 /* ---------- s15 architecture: components and stack, not the workflow ---------- */
@@ -540,6 +587,57 @@ h1, h2, h3, p { margin: 0; }
 .slide.active .tier.br::after, .slide.active .tier.srv::after { animation: wire 1.8s linear infinite; }
 @keyframes wire { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 .tier.br::before, .tier.srv::before { content: ""; position: absolute; top: calc(50% + 15px); right: -51px; width: 10px; height: 10px; margin-top: -4px; border-top: 2px solid var(--blue); border-right: 2px solid var(--blue); transform: rotate(45deg); }
+/* a laptop whose screen says Frontend; the screen lifts out, grows and turns over to show the rest of the stack */
+.lap { position: absolute !important; left: 50%; top: 50%; width: 1200px; height: 750px; margin: -375px 0 0 -600px; perspective: 2600px; }
+.lap .lid { position: absolute; left: 187px; top: 112px; width: 826px; height: 526px; border-radius: 24px; background: linear-gradient(180deg, #34343c, #16161b); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .2), inset 0 1.5px 0 rgb(255 255 255 / .34), 0 60px 120px -30px rgb(0 0 0 / .95), 0 0 140px -40px rgb(123 85 255 / .5); transition: opacity .7s var(--ease), transform 1s var(--ease); }
+.lap .deck { position: absolute; left: 100px; top: 638px; width: 1000px; height: 92px; filter: drop-shadow(0 30px 40px rgb(0 0 0 / .85)); transition: opacity .7s var(--ease), transform 1s var(--ease); }
+/* the base opens a little: a trapezoid seen from above, with a strip of keyboard and a trackpad */
+.lap .deck-i { position: absolute; inset: 0; clip-path: path('M80 0 H920 L1000 70 Q1000 92 972 92 H28 Q0 92 0 70 Z'); background: linear-gradient(180deg, #3d3d45 0%, #2a2a31 12%, #1f1f25 60%, #131317 100%); box-shadow: inset 0 1px 0 rgb(255 255 255 / .2); }
+.lap .deck .keys { display: none; position: absolute; left: 100px; right: 100px; top: 12px; height: 42px; border-radius: 4px;
+  background: repeating-linear-gradient(90deg, transparent 0 27px, #26262d 27px 31px), repeating-linear-gradient(180deg, transparent 0 8px, #26262d 8px 11px), #09090c; }
+.lap .deck .pad { position: absolute; left: 50%; top: 62px; width: 260px; height: 18px; margin-left: -130px; border-radius: 6px; background: rgb(255 255 255 / .03); box-shadow: inset 0 0 0 1px rgb(255 255 255 / .09); }
+.lap .deck-i::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 150px; height: 6px; margin-left: -75px; border-radius: 8px 8px 0 0; background: #0b0b0e; }
+.lap .screen { position: absolute; inset: 0; transform-style: preserve-3d; transform: scale(.6667) rotateY(0); transition: transform 1.4s var(--ease); }
+.lap .sf { position: absolute; inset: 0; border-radius: 30px; overflow: hidden; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; text-align: left;
+  background: radial-gradient(120% 90% at 20% 0%, #1b1730 0%, #0c0b12 55%, #08080b 100%); box-shadow: inset 0 0 0 1.5px rgb(139 107 255 / .35); }
+.lap .sf.back { transform: rotateY(180deg); }
+.lap .sf.front { padding: 0 0 0 80px; gap: 16px; }
+.lap .sf.front .tier-h { font-size: 34px; }
+.lap .sf.front h3 { font: 700 68px/1.05 var(--display); letter-spacing: -.035em; position: relative; z-index: 2; }
+.lap .sf.front .tier-h, .lap .sf.front p.sub2 { position: relative; z-index: 2; }
+.lap .sf.front p.sub2 { font: 400 28px/1.3 var(--text); color: var(--fg-2); }
+/* the real app, running in the browser, comes in from the right edge of the screen */
+.lap .sf-ui { position: absolute; z-index: 1; right: -110px; top: 50%; width: 740px; transform: translateY(-50%) perspective(1800px) rotateY(-12deg); transform-origin: 100% 50%;
+  border-radius: 18px; overflow: hidden; box-shadow: 0 0 0 1px rgb(255 255 255 / .12), 0 40px 90px -20px rgb(0 0 0 / .9), 0 0 120px -20px rgb(123 85 255 / .55); }
+.lap .sf-ui img { display: block; width: 100%; }
+.lap .sf.back { padding: 0 56px; gap: 40px; }
+.lap .sf.back .eyebrow { text-align: center; }
+.lap .sf.back .blk.big { min-height: 300px; padding: 32px 30px; justify-content: flex-start; gap: 16px; }
+.lap .sf.back .blk.big b { font-size: 42px; }
+.lap .sf.back .blk.big span { margin-top: auto; font-size: 23px; line-height: 1.4; color: #c4c4c9; }
+.lap .sf.back .blk.hot { box-shadow: 0 0 90px -14px rgb(139 107 255 / .8); }
+.lap .sf.back .tier-h { font-size: 24px; }
+/* the whole screen, black background and all, swings open like a pair of doors hinged at its outer edges, onto the next slide */
+.doors { position: absolute; z-index: 30; left: 0; top: 0; width: 1600px; height: 900px; perspective: 3000px; pointer-events: none; }
+.doors .door { position: absolute; top: 0; width: 800px; height: 900px; overflow: hidden; background: var(--bg); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.doors .door.l { left: 0; transform-origin: 0 50%; }
+.doors .door.r { left: 800px; transform-origin: 100% 50%; }
+.doors .lap { position: absolute !important; top: 75px; margin: 0; perspective: none; }
+.doors .door.l .lap { left: 200px; }
+.doors .door.r .lap { left: -600px; }
+.doors .dshade { position: absolute; inset: 0; z-index: 9; background: #000; opacity: 0; }
+.lap .cards { display: grid; grid-template-columns: 1fr 48px 1fr 48px 1fr; gap: 0; }
+/* the backend sits in the middle and talks to both: a pulse runs along each wire, with an arrowhead at each end */
+.lap .wire { position: relative; align-self: center; margin-top: 44px; height: 2px; border-radius: 2px; margin-inline: 8px;
+  background: linear-gradient(90deg, rgb(139 107 255 / .3), var(--violet) 40%, var(--blue) 60%, rgb(91 140 255 / .3)); background-size: 200% 100%; }
+.slide.active .lap .wire { animation: wire 1.8s linear infinite; }
+.lap .wire::before, .lap .wire::after { content: ""; position: absolute; top: -4px; width: 9px; height: 9px; border-top: 2px solid var(--blue); border-right: 2px solid var(--blue); }
+.lap .wire::before { left: -2px; transform: rotate(-135deg); }
+.lap .wire::after { right: -2px; transform: rotate(45deg); }
+.lap-eyebrow { position: absolute !important; left: 0; right: 0; top: 104px; transition: opacity .6s var(--ease); }
+.archi[data-step="1"] .lap .screen { transform: scale(1) rotateY(180deg); }
+.archi[data-step="1"] .lap .lid, .archi[data-step="1"] .lap .deck { opacity: 0; transform: translateY(70px); }
+.archi[data-step="1"] .lap-eyebrow { opacity: 0; }
 .stack4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; width: 1320px; text-align: left; margin-top: 30px; }
 .blk.big { min-height: 250px; padding: 28px 28px; gap: 12px; }
 .blk.big b { font-size: 38px; line-height: 1.12; letter-spacing: -.02em; }
@@ -561,14 +659,32 @@ h1, h2, h3, p { margin: 0; }
 .link:hover { text-decoration: underline; }
 .pill:focus-visible, .link:focus-visible, .ctl:focus-visible { outline: 3px solid #b7a6ff; outline-offset: 4px; }
 
-/* ---------- s16 pricing ---------- */
-.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; width: 1240px; }
-.plan { position: relative; padding: 34px 32px 32px; border-radius: 26px; background: var(--card); border: 1px solid var(--line); text-align: left; display: flex; flex-direction: column; gap: 8px; }
-.plan.featured { border: 1.5px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; box-shadow: 0 0 100px -30px rgb(139 107 255 / .65); }
-.pname { font: 600 22px/1.2 var(--display); color: var(--fg-2); }
-.price { font: 700 84px/1.05 var(--display); letter-spacing: -.035em; }
-.per { font: 400 18px/1.3 var(--text); color: var(--fg-2); min-height: 24px; }
-.pdesc { margin-top: 12px; font: 400 20px/1.45 var(--text); color: var(--fg-2); }
+/* ---------- business model: the cost of stalled growth, then the path to a team subscription ---------- */
+.slide.business { gap: 0; }
+.business-head { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 34px; }
+.business-layout { display: grid; grid-template-columns: 560px 1fr; gap: 84px; width: 1320px; text-align: left; }
+.business-kicker { font: 600 19px/1.2 var(--display); color: var(--fg-2); margin-bottom: 20px; }
+.business-metrics { display: flex; flex-direction: column; gap: 28px; }
+.business-number { display: flex; align-items: baseline; gap: 12px; font: 700 112px/.95 var(--display); letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.business-number small { font: 600 32px/1 var(--display); letter-spacing: -.025em; }
+.business-number .approx { font: 500 54px/1 var(--display); letter-spacing: -.03em; margin-right: -8px; }
+.business-caption { margin-top: 12px; font: 500 26px/1.22 var(--display); letter-spacing: -.015em; }
+.business-detail { display: block; margin-top: 6px; font: 400 19px/1.35 var(--text); color: var(--fg-2); }
+.business-offer { padding: 28px 32px; border: 1.5px solid transparent; border-radius: 24px; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; box-shadow: 0 0 95px -38px rgb(139 107 255 / .55); }
+.business-offer-top { display: flex; align-items: center; gap: 20px; }
+.business-offer .ico { width: 48px; height: 48px; flex: none; }
+.business-offer h3 { font: 600 39px/1.1 var(--display); letter-spacing: -.025em; }
+.business-offer p { margin-top: 18px; font: 400 26px/1.25 var(--text); color: var(--fg-2); }
+.business-offer p strong { font-weight: 500; color: var(--fg); }
+.business-pilot { display: grid; grid-template-columns: 1fr 52px 1fr; align-items: center; gap: 16px; margin-top: 22px; padding: 24px 30px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; }
+.business-pilot b { display: block; font: 600 28px/1.15 var(--display); letter-spacing: -.02em; }
+.business-pilot span { display: block; margin-top: 6px; font: 400 18px/1.3 var(--text); color: var(--fg-2); }
+.business-arrow { width: 44px; height: 24px; fill: none; stroke: url(#ig); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.business-value { width: 1320px; margin-top: 36px; font: 600 46px/1.15 var(--display); letter-spacing: -.025em; text-align: center; }
+.business-sources { position: absolute !important; left: 140px; right: 140px; bottom: 34px; text-align: center; font: 400 14px/1.55 var(--text); color: var(--fg-3); }
+.business-sources a { color: inherit; text-decoration-color: rgb(255 255 255 / .22); text-underline-offset: 3px; }
+.business-sources a:hover { color: var(--fg-2); }
+.business-sources a:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
 
 /* ---------- s17 roadmap ---------- */
 .road { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; width: 1320px; text-align: left; }
@@ -576,6 +692,7 @@ h1, h2, h3, p { margin: 0; }
 .ms { position: relative; display: flex; flex-direction: column; gap: 10px; }
 .ms .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 3px solid var(--violet); margin-bottom: 16px; }
 .ms.now .dot { background: var(--violet); box-shadow: 0 0 24px var(--violet); }
+.when { transition-delay: .5s; } .ms.on > h3 { transition-delay: .6s; } .ms.on > p:not(.when) { transition-delay: .7s; }
 .when { font: 600 18px/1.2 var(--display); }
 .ms h3 { font: 600 27px/1.15 var(--display); letter-spacing: -.02em; }
 .ms p { font: 400 19px/1.45 var(--text); color: var(--fg-2); }
@@ -888,118 +1005,163 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     <!-- ===================== JOHNNY ===================== -->
 
     <!-- 13 · how it works -->
-    <section class="slide" data-title="How Viva solves it" data-speaker="Johnny" data-at="4:20">
+    <section class="slide how" data-title="How Viva solves it" data-speaker="Johnny" data-at="4:20">
       <p class="eyebrow grad in">How Viva solves it</p>
       <h2 class="h2 in" style="--d:.15s">Four steps. Inside every pull request.</h2>
-      <div class="steps">
-        <div class="step b" data-f="1">
-          <span class="sico"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4.2-5"/><circle cx="12" cy="16" r="1.3"/></svg></span>
+      <div class="steps in" style="--d:.35s">
+        <span class="hrail" aria-hidden="true"><i class="hfill"></i></span>
+        <i class="hpr" style="--k:0" aria-hidden="true"><b></b><b></b></i><i class="hpr d" style="--k:1" aria-hidden="true"><b></b><b></b></i><i class="hpr d" style="--k:2" aria-hidden="true"><b></b><b></b></i>
+        <div class="step">
+          <span class="hnode"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path class="needle" d="M12 16l4.2-5"/><circle cx="12" cy="16" r="1.3"/></svg></span>
           <span class="sn grad">1 · Triage</span>
           <h3>Score every PR</h3>
-          <p>Risk × novelty × your proven level. Routine work passes untouched.</p>
         </div>
-        <div class="step b" data-f="2">
-          <span class="sico"><svg viewBox="0 0 24 24"><path d="M5 4.5h14A2.5 2.5 0 0 1 21.5 7v8a2.5 2.5 0 0 1-2.5 2.5h-6.5L8 21v-3.5H5A2.5 2.5 0 0 1 2.5 15V7A2.5 2.5 0 0 1 5 4.5z"/><path d="M8 10v2M11 8.5v5M14 9.5v3M17 10.5v1"/></svg></span>
+        <div class="step">
+          <span class="hnode"><svg viewBox="0 0 24 24"><path d="M5 4.5h14A2.5 2.5 0 0 1 21.5 7v8a2.5 2.5 0 0 1-2.5 2.5h-6.5L8 21v-3.5H5A2.5 2.5 0 0 1 2.5 15V7A2.5 2.5 0 0 1 5 4.5z"/><path class="bar" style="--i:0" d="M8 10v2"/><path class="bar" style="--i:1" d="M11 8.5v5"/><path class="bar" style="--i:2" d="M14 9.5v3"/><path class="bar" style="--i:3" d="M17 10.5v1"/></svg></span>
           <span class="sn grad">2 · Three-minute viva</span>
           <h3>Explain your change</h3>
-          <p>A short AI interview on risky or new work: how it works and why, in your own words. Graded on what you say, never face, voice or accent.</p>
         </div>
-        <div class="step b" data-f="3">
-          <span class="sico"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.3v5.4l4.5-2.7z"/></svg></span>
+        <div class="step">
+          <span class="hnode warm"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path class="play" d="M10 9.3v5.4l4.5-2.7z"/></svg></span>
           <span class="sn grad">3 · Only real gaps</span>
           <h3>Seniors see clips</h3>
-          <p>A first miss is feedback and new questions. Repeat misses, or very high risk, go to a senior as timestamped clips.</p>
         </div>
-        <div class="step b" data-f="4">
-          <span class="sico"><svg viewBox="0 0 24 24"><path d="M12 2.8l2.4 1.8 3-.2.9 2.8 2.4 1.8-1 2.8 1 2.8-2.4 1.8-.9 2.8-3-.2L12 21.2l-2.4-1.8-3 .2-.9-2.8-2.4-1.8 1-2.8-1-2.8 2.4-1.8.9-2.8 3 .2z"/><path d="M8.5 12.2l2.3 2.3 4.7-4.8"/></svg></span>
+        <div class="step">
+          <span class="hnode good"><svg viewBox="0 0 24 24"><path d="M12 2.8l2.4 1.8 3-.2.9 2.8 2.4 1.8-1 2.8 1 2.8-2.4 1.8-.9 2.8-3-.2L12 21.2l-2.4-1.8-3 .2-.9-2.8-2.4-1.8 1-2.8-1-2.8 2.4-1.8.9-2.8 3 .2z"/><path class="tick" pathLength="1" d="M8.5 12.2l2.3 2.3 4.7-4.8"/></svg></span>
           <span class="sn grad">4 · Earn trust</span>
           <h3>Each pass gets lighter</h3>
-          <p>Your level on the concept rises, so the next similar change gets a lighter check.</p>
         </div>
       </div>
       <div class="lower"><b>Johnny</b><span>Flying Chinese</span></div>
       <aside class="notes">
-        <p>Thanks, Tony. Four steps, inside every pull request.</p>
-        <p>[click] One: triage. Every PR is scored by risk, novelty and your proven level. A typo fix passes untouched.</p>
-        <p>[click] Two: a three-minute viva. Risky or new work gets a short AI interview: how it works and why, in your own words. We grade what you say, never your face, voice or accent.</p>
-        <p>[click] Three: only real gaps reach a senior. A first miss is feedback and fresh questions. A repeat miss, or very high risk, goes to a senior as timestamped clips.</p>
-        <p>[click] Four: every pass makes the next one lighter.</p>
+        <p>Thanks, Tony. Four steps, inside every pull request. This plays by itself; no clicks.</p>
+        <p>One: triage. Every PR is scored by risk, novelty and your proven level. A typo fix passes untouched.</p>
+        <p>Two: a three-minute viva. Risky or new work gets a short AI interview: how it works and why, in your own words. We grade what you say, never your face, voice or accent.</p>
+        <p>Three: only real gaps reach a senior. A first miss is feedback and fresh questions. A repeat miss, or very high risk, goes to a senior as timestamped clips.</p>
+        <p>Four: every pass makes the next one lighter.</p>
       </aside>
     </section>
 
     <!-- 14 · impact -->
     <section class="slide impact" data-title="Impact" data-speaker="Johnny" data-at="5:00">
-      <div class="halo"></div>
-      <div class="glass in" style="--d:.2s">
-        <p class="now-t">The <span class="grad">problem</span> today</p>
-        <div class="grid2 now-grid">
-          <div><p class="for grad">For companies</p><p class="what">Code no one understands ships, and gets found after it breaks.</p></div>
-          <div><p class="for grad">For seniors</p><p class="what">Every change looks the same, so they review all of it or guess.</p></div>
-          <div><p class="for grad">For juniors</p><p class="what">Ship AI code without learning from it. Courses sit apart from the work.</p></div>
-          <div><p class="for grad">For the industry</p><p class="what">Companies require AI, and hire fewer juniors.</p></div>
-        </div>
+      <div class="halo warm"></div><div class="halo cool"></div>
+      <p class="now-t in" style="--d:.15s">The <span class="grad warm">problem</span> today</p>
+      <div class="grid2 now-grid in" style="--d:.3s">
+        <div><p class="for grad warm">For companies</p><p class="what">Code no one understands ships, and gets found after it breaks.</p></div>
+        <div><p class="for grad warm">For seniors</p><p class="what">Every change looks the same, so they review all of it or guess.</p></div>
+        <div><p class="for grad warm">For juniors</p><p class="what">Ship AI code without learning from it. Courses sit apart from the work.</p></div>
+        <div><p class="for grad warm">For the industry</p><p class="what">Companies require AI, and hire fewer juniors.</p></div>
       </div>
-      <div class="flash" aria-hidden="true"></div>
-      <p class="impact-q">What’s the <span class="grad">impact</span>?</p>
-      <div class="grid2 impact-grid" data-f="1">
-        <div style="--j:0"><p class="for grad">For companies</p><p class="what">Catch code no one understands before it ships, not after it breaks.</p></div>
-        <div style="--j:1"><p class="for grad">For seniors</p><p class="what">Review only the changes that need them, with the exact moment to watch.</p></div>
-        <div style="--j:2"><p class="for grad">For juniors</p><p class="what">Grow through real work instead of separate courses, with a record they own.</p></div>
-        <div style="--j:3"><p class="for grad">For the industry</p><p class="what">Companies keep hiring juniors while still requiring AI.</p></div>
+      <p class="impact-q" data-f="5">What’s the <span class="grad">impact</span>?</p>
+      <div class="grid2 impact-grid">
+        <div data-f="1"><p class="for grad">For companies</p><p class="what">Catch code no one understands before it ships, not after it breaks.</p></div>
+        <div data-f="2"><p class="for grad">For seniors</p><p class="what">Review only the changes that need them, with the exact moment to watch.</p></div>
+        <div data-f="3"><p class="for grad">For juniors</p><p class="what">Grow through real work instead of separate courses, with a record they own.</p></div>
+        <div data-f="4"><p class="for grad">For the industry</p><p class="what">Companies keep hiring juniors while still requiring AI.</p></div>
       </div>
       <aside class="notes">
         <p>Remember where we are today. Companies ship code no one understands and find out after it breaks. Seniors can't tell which changes need them. Juniors ship AI code without learning from it. And companies require AI while hiring fewer juniors.</p>
-        <p>[click: the question breaks the glass] So what's the impact? Companies catch code no one understands before it ships. Seniors review only what needs them, with the exact moment to watch. Juniors grow through real work, with a record they own. And the industry keeps hiring juniors while still requiring AI.</p>
+        <p>[click: the answer smashes the problem] For companies: catch code no one understands before it ships, not after it breaks.</p>
+        <p>[click] For seniors: review only what needs them, with the exact moment to watch.</p>
+        <p>[click] For juniors: grow through real work, with a record they own.</p>
+        <p>[click] For the industry: companies keep hiring juniors while still requiring AI.</p>
+        <p>[click: the title flips] So what's the impact? That's it.</p>
         <p>These are design goals, and our pilot measures each one.</p>
       </aside>
     </section>
 
     <!-- 15 · architecture -->
     <section class="slide archi" data-title="Technical architecture" data-speaker="Johnny" data-at="5:25">
-      <p class="eyebrow grad in">Technical architecture</p>
-      <h2 class="h2 in" style="--d:.15s">How it’s built.</h2>
-      <div class="stack4 in" style="--d:.3s">
-        <div class="tier"><p class="tier-h grad">Frontend</p><div class="blk big core"><b>HTML, CSS and JavaScript</b><span>Plain, no framework</span></div></div>
-        <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn</span></div></div>
-        <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Tracks each gap until a new task closes it</span></div></div>
-        <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core"><b>Claude Sonnet 5.5</b><span>Asks one follow-up and marks against a fixed rubric</span></div></div>
+      <p class="eyebrow grad lap-eyebrow">Technical architecture</p>
+      <div class="lap in" style="--d:.2s">
+        <div class="lid"></div>
+        <div class="deck"><div class="deck-i"><i class="keys"></i><i class="pad"></i></div></div>
+        <div class="screen" data-f="1">
+          <div class="sf front">
+            <p class="tier-h grad">Frontend</p>
+            <h3>HTML, CSS,<br>and JavaScript</h3>
+            <p class="sub2">Plain, no framework</p>
+            <div class="sf-ui"><img src="viva-ui.jpg" alt="The Viva app, running in the browser"></div>
+          </div>
+          <div class="sf back">
+            <p class="eyebrow grad">How it’s built</p>
+            <div class="cards">
+              <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Tracks each gap until a new task closes it</span></div></div>
+              <i class="wire" aria-hidden="true"></i>
+              <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn</span></div></div>
+              <i class="wire" aria-hidden="true"></i>
+              <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core hot"><b>Claude<br>Sonnet 5.5</b><span>Asks one follow-up and marks against a fixed rubric</span></div></div>
+            </div>
+          </div>
+        </div>
       </div>
       <aside class="notes">
-        <p>Here's how it's built. The frontend is plain HTML, CSS and JavaScript. The backend is Python, FastAPI on Uvicorn. The database is SQLite. And the AI model is Claude Sonnet 5.5, which asks one follow-up and marks against a fixed rubric.</p>
+        <p>Here's how it's built. The frontend is plain HTML, CSS and JavaScript.</p>
+        <p>[click: the screen lifts out of the laptop and turns over] Behind it, in the middle, the backend is Python, FastAPI on Uvicorn. On one side, the database is SQLite, which tracks each gap until a new task closes it. On the other, the AI model is Claude Sonnet 5.5, which asks one follow-up and marks against a fixed rubric.</p>
+        <p>[click: the screen swings open like doors onto the demo]</p>
       </aside>
     </section>
 
     <!-- 16 · demo -->
-    <section class="slide" data-title="Demo" data-speaker="Johnny" data-at="5:55">
-      <p class="eyebrow grad in">Demo</p>
-      <h2 class="hero in" style="--d:.15s">Let’s see it.</h2>
-      <p class="sub in" style="--d:.35s">Tony takes his viva on PR #214.</p>
-      <p class="flow in" style="--d:.5s">Predict <i>›</i> Explain <i>›</i> Run it <i>›</i> Re-test</p>
-      <div class="btns in" style="--d:.65s">
-        <a class="pill" href="http://localhost:8791" target="_blank" rel="noopener">Open live demo</a>
-        <a class="link" href="http://localhost:8780" target="_blank" rel="noopener">Offline fallback ›</a>
-      </div>
-      <p class="src in" style="--d:.8s">Synthetic company and data. Scores are labelled Simulated.</p>
+    <section class="slide demo" data-title="Demo" data-speaker="Johnny" data-at="5:55">
+      <video class="demo-video" src="demo.mp4" poster="demo-poster.jpg" playsinline preload="auto"></video>
+      <button class="demo-play" type="button" aria-label="Play the demo video"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></button>
       <aside class="notes">
         <p>Let's see it. Tony takes his viva on PR #214. The company and data are synthetic, and scores are labelled Simulated.</p>
-        <p>[Switch to the demo. About 75 seconds. Come back with →.]</p>
+        <p>[The demo video plays by itself, about 60 seconds. Click the video to pause or play. Come back with →.]</p>
       </aside>
     </section>
 
-    <!-- 17 · business model -->
-    <section class="slide" data-title="Business model" data-speaker="Johnny" data-at="7:10">
-      <p class="eyebrow grad in">Business model</p>
-      <h2 class="h2 in" style="--d:.15s">Pricing.</h2>
-      <div class="plans in" style="--d:.3s">
-        <div class="plan"><span class="pname">Starter</span><span class="price">Free</span><span class="per">&nbsp;</span><span class="pdesc">Up to 3 juniors. The full loop.</span></div>
-        <div class="plan featured"><span class="pname">Team</span><span class="price">A$20</span><span class="per">per junior, per month</span><span class="pdesc">Unlimited juniors, senior review, gap reports. Seniors are always free.</span></div>
-        <div class="plan"><span class="pname">Enterprise</span><span class="price">Custom</span><span class="per">&nbsp;</span><span class="pdesc">SSO, private deployment, custom concept packs.</span></div>
+    <!-- 17 · business model + value -->
+    <section class="slide business" data-title="Business model &amp; value" data-speaker="Johnny" data-at="7:10">
+      <div class="business-head">
+        <p class="eyebrow grad in">Business model &amp; value</p>
+        <h2 class="h2 in" style="--d:.15s">The case for growth.</h2>
       </div>
-      <p class="cap b" data-f="1">Break-even: at 10 juniors, Team pays for itself if it saves a senior 2 hours a month.</p>
-      <p class="src in" style="--d:.5s">Prices are a hypothesis to test in the pilot. Break-even assumes A$100 an hour for a senior.</p>
+      <div class="business-layout">
+        <div class="business-evidence">
+          <p class="business-kicker in" style="--d:.25s">The cost of not growing juniors</p>
+          <div class="business-metrics">
+            <div class="in" style="--d:.3s">
+              <p class="business-number grad">17%</p>
+              <p class="business-caption">less understanding<span class="business-detail">when AI does the work.</span></p>
+            </div>
+            <div class="in" style="--d:.45s">
+              <p class="business-number grad"><span class="approx">≈</span>A$67k</p>
+              <p class="business-caption">a year to buy a senior instead of growing one<span class="business-detail">The senior–junior salary gap in Australia.</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="business-model">
+          <div class="b" data-f="1">
+            <p class="business-kicker">How Viva earns · B2B</p>
+            <div class="business-offer">
+              <div class="business-offer-top">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 4.5a3 3 0 0 1 0 5.5M18 14a5 5 0 0 1 3 4.6V20"/></svg></span>
+                <h3>Team subscription</h3>
+              </div>
+              <p>One team. <strong>Priced by team size.</strong></p>
+            </div>
+          </div>
+          <div class="business-pilot b" data-f="2">
+            <div><b>Free pilot</b><span>Prove the value.</span></div>
+            <svg class="business-arrow" viewBox="0 0 44 24" aria-hidden="true"><path d="M2 12h37M31 4l8 8-8 8"/></svg>
+            <div><b class="grad">Paid team</b><span>Pay once it works.</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="business-value b" data-f="3">Viva turns <span style="color:var(--fg-2)">review cost</span> into <span class="grad">growth.</span></p>
+      <p class="business-sources in" style="--d:.55s">
+        <a href="https://www.anthropic.com/research/AI-assistance-coding-skills" target="_blank" rel="noopener">Anthropic RCT, 2026</a> · Quiz: 50% with AI vs. 67% without AI (n = 52).<br>
+        Salary snapshot supplied for this pitch: <a href="https://au.indeed.com/career/senior-software-engineer/salaries" target="_blank" rel="noopener">Indeed AU senior A$150,494</a> − <a href="https://au.indeed.com/career/junior-software-engineer/salaries" target="_blank" rel="noopener">junior A$83,876</a> ≈ A$67k/year. Salary gap, not measured Viva savings.
+      </p>
       <aside class="notes">
-        <p>The business model. Starter is free for up to three juniors. Team is about twenty dollars per junior per month, and seniors are always free. Enterprise adds SSO, private deployment and custom concept packs.</p>
-        <p>[click] With ten juniors, Team pays for itself if it saves a senior two hours a month. These prices are a hypothesis the pilot will test.</p>
+        <p>1. Developers who let AI do the work understood 17% less of their own code.</p>
+        <p>2. If juniors don't grow, you have to buy seniors instead, at around sixty-seven thousand dollars more a year per hire. That is the cost of not growing juniors, not a saving we claim. The saving Viva claims is senior review time, and our pilot measures it.</p>
+        <p>3. [click: team subscription] So companies subscribe for their whole team, priced by team size.</p>
+        <p>4. [click: pilot → paid team] Every customer starts with a free pilot, then pays once it works.</p>
+        <p>5. [click: value] Viva turns review cost into growth.</p>
+        <p>[Evidence note, not spoken: the RCT compared quiz averages of 50% and 67%. It does not establish a long-term hiring effect. The A$66,618 salary difference uses the Indeed values in the supplied pitch reference, not current salary data or a measured saving from Viva. Subscription pricing and pilot conversion are proposed business terms to validate.]</p>
       </aside>
     </section>
 
@@ -1270,16 +1432,26 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     const k = Math.min(box.width / 1600, box.height / 900);
     stage.style.transform = `translate(-50%, -50%) scale(${k})`;
   }
+  // slides that play on their own after the title lands: each item lights up in turn, no clicks
+  const AUTO = [['how', '.step', 1300, 4000]];
+  function autoSync(s, on, sel, first, gap) {
+    if (on === !!s._playing) return;
+    s._playing = on;
+    (s._auto || []).forEach(clearTimeout);
+    s._auto = [];
+    s.dataset.a = 0;
+    const items = $$(sel, s);
+    items.forEach(el => el.classList.remove('on'));
+    if (!on) return;
+    items.forEach((el, n) => s._auto.push(setTimeout(() => { s.dataset.a = n + 1; el.classList.add('on'); }, first + n * gap)));
+  }
   function render(entered, forward) {
     slides.forEach((s, i) => {
+      AUTO.forEach(([c, sel, first, gap]) => { if (s.classList.contains(c)) autoSync(s, i === cur, sel, first, gap); });
       s.classList.toggle('active', i === cur);
       s.classList.toggle('past', i < cur);
-      if (s.classList.contains('impact')) {
-        const hit = i < cur || (i === cur && step >= 1);
-        const was = s.classList.contains('hit') || s.classList.contains('hitting');
-        if (hit && !was) impactHit(s, i === cur && forward && !entered);
-        else if (!hit && was) impactReset(s);
-      }
+      $$('video', s).forEach(v => syncVideo(v, i === cur));
+      if (s.classList.contains('impact')) impactSync(s, i < cur ? 5 : i === cur ? step : 0, i === cur && forward && !entered);
       $$('[data-f]', s).forEach(f => {
         const on = i < cur || (i === cur && +f.dataset.f <= step);
         const was = f.classList.contains('on');
@@ -1306,117 +1478,165 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     cur = Math.max(0, Math.min(slides.length - 1, i));
     step = Math.max(0, Math.min(maxStep(slides[cur]), st));
     const entered = cur !== prev;
+    if (entered && cur === prev + 1 && prevStep === 1 && step === 0 && !remote) openScreen(slides[prev]);
     render(entered, entered ? cur > prev : step > prevStep);
     if (!remote) broadcast();
   }
 
-  // ---------- the impact slide: "What's the impact?" slams into the glass and it shatters ----------
-  function impactHit(s, animate) {
-    if (!animate || reduced || isPresenter) { s.classList.add('hit'); return; }
-    s.classList.add('hitting');
-    const glass = $('.glass', s);
-    const T = s._timers = [];
-    T.push(setTimeout(() => {
-      crack(s, glass);
-      stage.classList.remove('shake'); void stage.offsetWidth; stage.classList.add('shake');
-    }, 190));
-    T.push(setTimeout(() => {
-      shatter(s, glass); s.classList.add('hit');
-      $$('.cracks', s).forEach(c => c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' }));
-    }, 330));
-    T.push(setTimeout(() => { $$('.shards, .cracks', s).forEach(e => e.remove()); stage.classList.remove('shake'); }, 2700));
+  // ---------- the impact slide: each answer smashes the matching problem, one press at a time ----------
+  const SLAM = 'cubic-bezier(.55, 0, 1, .45)', EASE = 'cubic-bezier(.2, .7, .2, 1)';
+  function impactStatic(s, n) {
+    s.classList.toggle('t2', n >= 5);
+    s.dataset.p = n;
+    $('.now-t', s).classList.toggle('gone', n >= 5);
+    $$('.now-grid > div', s).forEach((c, i) => c.classList.toggle('gone', n > i));
   }
-  function impactReset(s) {
+  function impactClear(s) {
     (s._timers || []).forEach(clearTimeout);
-    s._timers = [];
-    s.classList.remove('hit', 'hitting');
-    stage.classList.remove('shake');
-    $$('.shards, .cracks', s).forEach(e => e.remove());
+    (s._anims || []).forEach(a => a.cancel());
+    (s._tmp || []).forEach(e => e.remove());
+    (s._split || []).forEach(({ el, pos }) => { el.style.visibility = ''; el.style.position = pos; });
+    s._timers = []; s._anims = []; s._tmp = []; s._split = [];
+    stage.classList.remove('shake', 'shake-s');
   }
-  // radial cracks from the middle and rings around it, like safety glass; outer nodes sit on the pane's edge
-  function glassGeometry(glass) {
-    const W = glass.offsetWidth, H = glass.offsetHeight, X = glass.offsetLeft, Y = glass.offsetTop;
-    const P = { x: W * .5, y: H * .5 }, K = 11, F = [0, .16, .4, .7, 1], rays = [];
-    for (let i = 0; i < K; i++) {
-      const a = (i + (Math.random() - .5) * .55) / K * Math.PI * 2, dx = Math.cos(a), dy = Math.sin(a);
-      const tx = dx > 1e-6 ? (W - P.x) / dx : dx < -1e-6 ? -P.x / dx : Infinity;
-      const ty = dy > 1e-6 ? (H - P.y) / dy : dy < -1e-6 ? -P.y / dy : Infinity;
-      const t = Math.min(tx, ty);
-      rays.push({ a, nodes: F.map((f, j) => { const k = j === 0 || j === F.length - 1 ? f : f + (Math.random() - .5) * .08; return { x: P.x + dx * t * k, y: P.y + dy * t * k }; }) });
-    }
-    rays.sort((m, n) => m.a - n.a);
-    return { W, H, X, Y, P, rays, R: F.length - 1 };
+  function impactSync(s, n, animate) {
+    const from = s._n || 0;
+    if (n === from) return;
+    s._n = n;
+    impactClear(s);
+    if (animate && n === from + 1 && !reduced && !isPresenter) { impactStatic(s, n - 1); impactPlay(s, n); }
+    else impactStatic(s, n);
   }
-  // the pane's corners that lie between two edge points, walking clockwise
-  function cornersBetween(a, b, W, H) {
-    const L = 2 * (W + H);
-    const per = q => {
-      const dT = Math.abs(q.y), dR = Math.abs(W - q.x), dB = Math.abs(H - q.y), dL = Math.abs(q.x), m = Math.min(dT, dR, dB, dL);
-      return m === dT ? q.x : m === dR ? W + q.y : m === dB ? W + H + (W - q.x) : 2 * W + H + (H - q.y);
+  function impactPlay(s, n) {
+    const k = stage.getBoundingClientRect().width / 1600, sr = s.getBoundingClientRect();
+    const A = (el, kf, o) => { const a = el.animate(kf, { fill: 'both', ...o }); s._anims.push(a); return a; };
+    const T = (fn, ms) => s._timers.push(setTimeout(fn, ms));
+    const rnd = (lo, hi) => lo + Math.random() * (hi - lo);
+    const centre = (el, dx) => { const r = el.getBoundingClientRect(); return [(r.left + (dx ?? r.width / 2) * k - sr.left) / k, (r.top + r.height / 2 - sr.top) / k]; };
+    const burst = (x, y, size, delay) => {
+      const f = document.createElement('div'); f.className = 'burst';
+      Object.assign(f.style, { left: x + 'px', top: y + 'px', width: size + 'px', height: size + 'px' });
+      s.appendChild(f); s._tmp.push(f);
+      A(f, [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.3)' }, { opacity: 1, offset: .25 }, { opacity: 0, transform: 'translate(-50%, -50%) scale(1.3)' }], { duration: 600, delay });
     };
-    const C = [[0, { x: 0, y: 0 }], [W, { x: W, y: 0 }], [W + H, { x: W, y: H }], [2 * W + H, { x: 0, y: H }]];
-    const sa = per(a); let sb = per(b); if (sb <= sa) sb += L;
-    const out = [];
-    C.forEach(([s0, c]) => [s0, s0 + L].forEach(v => { if (v > sa && v < sb) out.push({ v, c }); }));
-    return out.sort((m, n) => m.v - n.v).map(o => o.c);
-  }
-  function crack(s, glass) {
-    const g = s._geo = glassGeometry(glass), { W, H, X, Y, rays, R } = g;
-    const paths = rays.map(r => ({ d: 'M' + r.nodes.map(n => f1(n.x) + ' ' + f1(n.y)).join(' L'), j: 0 }));
-    for (let j = 1; j < R; j++) rays.forEach((r, i) => {
-      const n1 = r.nodes[j], n2 = rays[(i + 1) % rays.length].nodes[j];
-      paths.push({ d: `M${f1(n1.x)} ${f1(n1.y)} L${f1(n2.x)} ${f1(n2.y)}`, j });
-    });
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('class', 'cracks');
-    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-    Object.assign(svg.style, { left: X + 'px', top: Y + 'px', width: W + 'px', height: H + 'px' });
-    svg.innerHTML = paths.map(q => `<path pathLength="1" d="${q.d}" style="animation-delay:${q.j * 35}ms"/>`).join('');
-    s.appendChild(svg);
-  }
-  function shatter(s, glass) {
-    const g = s._geo || glassGeometry(glass), { W, H, X, Y, P, rays, R } = g, K = rays.length;
-    const box = document.createElement('div');
-    box.className = 'shards';
-    Object.assign(box.style, { left: X + 'px', top: Y + 'px', width: W + 'px', height: H + 'px' });
-    const inner = glass.innerHTML;
-    for (let i = 0; i < K; i++) {
-      const A = rays[i].nodes, Bn = rays[(i + 1) % K].nodes;
-      for (let j = 0; j < R; j++) {
-        let pts = [A[j], A[j + 1]];
-        if (j + 1 === R) pts = pts.concat(cornersBetween(A[R], Bn[R], W, H));
-        pts = pts.concat([Bn[j + 1], Bn[j]]);
-        const xs = pts.map(q => q.x), ys = pts.map(q => q.y);
-        const x0 = Math.max(0, Math.min(...xs)), y0 = Math.max(0, Math.min(...ys)), x1 = Math.min(W, Math.max(...xs)), y1 = Math.min(H, Math.max(...ys));
-        if (x1 - x0 < 2 || y1 - y0 < 2) continue;
-        const cx = xs.reduce((m, v) => m + v, 0) / xs.length, cy = ys.reduce((m, v) => m + v, 0) / ys.length;
-        const el = document.createElement('div');
-        el.className = 'shard';
-        Object.assign(el.style, {
-          left: x0 + 'px', top: y0 + 'px', width: (x1 - x0) + 'px', height: (y1 - y0) + 'px',
-          clipPath: `polygon(${pts.map(q => `${f1(q.x - x0)}px ${f1(q.y - y0)}px`).join(', ')})`,
-          transformOrigin: `${f1(cx - x0)}px ${f1(cy - y0)}px`
-        });
-        el.innerHTML = `<div class="glass glass-copy" style="left:${-x0}px;top:${-y0}px;width:${W}px;height:${H}px">${inner}</div>`;
-        box.appendChild(el);
-        const vx = cx - P.x, vy = cy - P.y, dist = Math.hypot(vx, vy) || 1, power = 1 - (j / R) * .45;
-        const dx = vx / dist * (240 + Math.random() * 520) * power;
-        const dy = vy / dist * (160 + Math.random() * 340) * power + 360 + Math.random() * 380;
-        const tz = 120 + Math.random() * 420, rx = (Math.random() - .5) * 170, ry = (Math.random() - .5) * 170, rz = (Math.random() - .5) * 230;
-        const tf = (kx, y, k) => `translate3d(${f1(dx * kx)}px, ${f1(y)}px, ${f1(tz * k)}px) rotateX(${f1(rx * k)}deg) rotateY(${f1(ry * k)}deg) rotateZ(${f1(rz * k)}deg)`;
-        el.animate([
-          { transform: tf(0, 0, 0), opacity: 1 },
-          { offset: .28, transform: tf(.42, dy * .1 - 26, .42), opacity: 1 },
-          { transform: tf(1, dy, 1), opacity: 0 }
-        ], { duration: 1150 + Math.random() * 700, delay: j * 24, easing: 'cubic-bezier(.2,.65,.35,1)', fill: 'both' });
+    const shake = (cls, delay) => T(() => {
+      stage.classList.remove('shake', 'shake-s'); void stage.offsetWidth; stage.classList.add(cls);
+    }, delay);
+    // break el's letters into three pieces each and let them fall
+    const smash = (el, delay) => {
+      const eb = el.getBoundingClientRect(), chars = [];
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      for (let nd; (nd = walker.nextNode());) {
+        const g = nd.parentElement.closest('.grad'), gb = g && g.getBoundingClientRect(), warm = g && g.classList.contains('warm');
+        for (let i = 0; i < nd.length; i++) {
+          if (!nd.data[i].trim()) continue;
+          const rg = document.createRange(); rg.setStart(nd, i); rg.setEnd(nd, i + 1);
+          const r = rg.getBoundingClientRect();
+          if (r.width) chars.push({ c: nd.data[i], r, gb, warm });
+        }
       }
+      s._split.push({ el, pos: el.style.position });
+      if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+      el.style.visibility = 'hidden';
+      chars.forEach(({ c, r, gb, warm }, idx) => {
+        const cx = rnd(35, 65), cy = rnd(35, 65), ly = rnd(40, 70);
+        const polys = [
+          [[-5, -5], [105, -5], [cx, cy], [-5, ly]],
+          [[105, -5], [105, 105], [cx, cy]],
+          [[-5, ly], [cx, cy], [105, 105], [-5, 105]]
+        ];
+        const absY = (r.top - sr.top) / k, side = ((r.left + r.width / 2) - (eb.left + eb.width / 2)) / eb.width;
+        polys.forEach(pts => {
+          const q = document.createElement('span');
+          q.className = 'ch' + (gb ? ' g' : '') + (warm ? ' w' : '');
+          q.textContent = c;
+          Object.assign(q.style, {
+            left: (r.left - eb.left) / k + 'px', top: (r.top - eb.top) / k + 'px', width: r.width / k + 'px', height: r.height / k + 'px', lineHeight: r.height / k + 'px',
+            clipPath: 'polygon(' + pts.map(([x, y]) => x + '% ' + y + '%').join(', ') + ')',
+            transformOrigin: (pts.reduce((m, p) => m + p[0], 0) / pts.length) + '% ' + (pts.reduce((m, p) => m + p[1], 0) / pts.length) + '%'
+          });
+          if (gb) Object.assign(q.style, { backgroundSize: gb.width / k + 'px ' + gb.height / k + 'px', backgroundPosition: -(r.left - gb.left) / k + 'px ' + -(r.top - gb.top) / k + 'px' });
+          el.appendChild(q); s._tmp.push(q);
+          const dx = side * 260 + rnd(-90, 90), dy = 930 - absY + rnd(0, 140), rot = rnd(-200, 200);
+          A(q, [
+            { transform: 'none', opacity: 1, easing: 'ease-out' },
+            { offset: .16, transform: `translate(${dx * .2}px, ${-rnd(10, 40)}px) rotate(${rot * .2}deg)`, opacity: 1, easing: 'cubic-bezier(.5, 0, 1, .7)' },
+            { offset: .85, opacity: 1 },
+            { transform: `translate(${dx}px, ${dy}px) rotate(${rot}deg)`, opacity: 0 }
+          ], { duration: rnd(1000, 1500), delay: delay + idx * 9 + rnd(0, 60) });
+        });
+      });
+    };
+
+    if (n === 5) {
+      // the title turns over: "The problem today" flips away and "What's the impact?" flips in
+      const q = $('.impact-q', s), old = $('.now-t', s), P = 'perspective(1400px) ';
+      s.classList.add('t2');
+      s.dataset.p = 5;
+      A(old, [{ transform: P + 'rotateX(0)', opacity: 1 }, { transform: P + 'rotateX(90deg)', opacity: 0 }], { duration: 420, easing: 'ease-in' });
+      A(q, [{ transform: P + 'rotateX(-90deg)', opacity: 0 }, { transform: P + 'rotateX(0)', opacity: 1 }], { duration: 560, delay: 380, easing: EASE });
+      T(() => { impactClear(s); impactStatic(s, n); }, 1100);
+      return;
     }
-    s.appendChild(box);
+    const base = 0;
+    s.dataset.p = n;
+    const oc = $$('.now-grid > div', s)[n - 1], nc = $$('.impact-grid > div', s)[n - 1];
+    const of = $('.for', oc), ow = $('.what', oc), nf = $('.for', nc), nw = $('.what', nc);
+    const [x, y] = centre(of, 70);
+    nf.style.transformOrigin = '0 50%';
+    A(nf, [{ opacity: 0, transform: 'scale(3.2)', filter: 'blur(12px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 320, delay: base, easing: SLAM });
+    A(nw, [{ opacity: 0, transform: 'translateY(28px)', filter: 'blur(10px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { duration: 800, delay: base + 760, easing: EASE });
+    smash(of, base + 320);
+    smash(ow, base + 360);
+    burst(x, y, 420, base + 200);
+    shake('shake-s', base + 320);
+    T(() => { impactClear(s); impactStatic(s, n); }, base + 2100);
+  }
+  // the demo video: plays when its slide comes up (after the curtains, if they are opening), stops and rewinds when it goes
+  let curtainUntil = 0;
+  function syncVideo(v, on) {
+    if (isPresenter || on === v._on) return;
+    v._on = on;
+    clearTimeout(v._t);
+    if (on) v.parentElement.classList.remove('stopped');
+    if (!on) { v.pause(); try { v.currentTime = 0; } catch (e) {} return; }
+    v._t = setTimeout(() => { const r = v.play(), done = () => v.dispatchEvent(new Event('pause')); if (r && r.then) r.then(done, done); }, Math.max(500, curtainUntil - performance.now()));
+  }
+  document.addEventListener('click', e => {
+    const s = e.target.closest && e.target.closest('.slide.demo'), v = s && $('.demo-video', s);
+    if (v && e.target.closest('.demo-video, .demo-play')) v.paused ? v.play() : v.pause();
+  });
+  $$('.demo-video').forEach(v => {
+    const mark = () => v.parentElement.classList.toggle('stopped', v.paused && performance.now() > curtainUntil);
+    ['play', 'pause', 'ended', 'loadeddata'].forEach(ev => v.addEventListener(ev, mark));
+    mark();
+  });
+  // leaving the architecture slide: the whole screen swings open like a pair of doors, and the next slide is there behind it
+  function openScreen(from) {
+    const back = $('.lap .sf.back', from);
+    if (!back || reduced || isPresenter) return;
+    const box = document.createElement('div');
+    box.className = 'doors';
+    const doors = ['l', 'r'].map(side => {
+      const d = document.createElement('div'), lap = document.createElement('div'), c = back.cloneNode(true), sh = document.createElement('div');
+      d.className = 'door ' + side; lap.className = 'lap'; sh.className = 'dshade'; c.style.transform = 'none';
+      lap.appendChild(c); d.append(lap, sh); box.appendChild(d);
+      return d;
+    });
+    stage.appendChild(box);
+    // the slide underneath goes at once, so only the doors are left to open
+    from.style.transition = 'none'; from.style.opacity = '0';
+    curtainUntil = performance.now() + 1700;
+    const o = { duration: 1500, delay: 100, easing: 'cubic-bezier(.65, 0, .25, 1)', fill: 'both' };
+    doors[0].animate([{ transform: 'rotateY(0)' }, { transform: 'rotateY(100deg)' }], o);
+    doors[1].animate([{ transform: 'rotateY(0)' }, { transform: 'rotateY(-100deg)' }], o);
+    doors.forEach(d => $('.dshade', d).animate([{ opacity: 0 }, { opacity: .85 }], o));
+    setTimeout(() => { box.remove(); from.style.transition = ''; from.style.opacity = ''; }, 1900);
   }
   function next() { if (step < maxStep(slides[cur])) setState(cur, step + 1); else if (cur < slides.length - 1) setState(cur + 1, 0); }
   // hold R: back to the first slide, every build reset, and the presenter timer waits for slide 2 again
   function restart() {
-    slides.forEach(s => { if (s.classList.contains('impact')) impactReset(s); delete s.dataset.step; });
+    slides.forEach(s => { if (s.classList.contains('impact')) { impactClear(s); s._n = 0; impactStatic(s, 0); } delete s.dataset.step; });
     t0 = null;
     setState(0, 0);
   }
