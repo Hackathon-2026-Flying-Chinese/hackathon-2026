@@ -300,10 +300,12 @@ h1, h2, h3, p { margin: 0; }
 .what { font: 600 38px/1.2 var(--display); letter-spacing: -.02em; text-wrap: balance; }
 .slide.impact { display: block; }
 .impact .halo { opacity: .26; }
-.glass { position: absolute !important; inset: 0; margin: auto; width: 1180px; height: max-content; padding: 56px 70px 60px; border-radius: 34px; text-align: center;
+.glass { position: absolute !important; inset: 0; margin: auto; width: 1400px; height: 760px; padding: 56px 70px 64px; border-radius: 34px; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 22px;
   background: linear-gradient(135deg, rgb(255 255 255 / .16) 0%, rgb(255 255 255 / .05) 38%, rgb(255 255 255 / .03) 62%, rgb(255 255 255 / .09) 100%);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22), inset 0 1px 0 rgb(255 255 255 / .4), 0 40px 120px -40px rgb(0 0 0 / .9); }
+.now-t { position: absolute; left: 0; right: 0; top: 34px; text-align: center; font: 700 96px/1.05 var(--display); letter-spacing: -.035em; }
+.now-grid { position: absolute; left: 80px; top: 230px; }
 .glass-t { font: 700 58px/1.12 var(--display); letter-spacing: -.025em; text-wrap: balance; }
 .impact.hit > .glass { visibility: hidden; }
 .impact-q { position: absolute !important; z-index: 4 !important; left: 0; right: 0; top: 104px; text-align: center; font: 700 96px/1.05 var(--display); letter-spacing: -.035em; opacity: 0; }
@@ -349,6 +351,10 @@ h1, h2, h3, p { margin: 0; }
 .slide.active .tier.br::after, .slide.active .tier.srv::after { animation: wire 1.8s linear infinite; }
 @keyframes wire { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 .tier.br::before, .tier.srv::before { content: ""; position: absolute; top: calc(50% + 15px); right: -51px; width: 10px; height: 10px; margin-top: -4px; border-top: 2px solid var(--blue); border-right: 2px solid var(--blue); transform: rotate(45deg); }
+.stack4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; width: 1320px; text-align: left; margin-top: 30px; }
+.blk.big { min-height: 250px; padding: 28px 28px; gap: 12px; }
+.blk.big b { font-size: 38px; line-height: 1.12; letter-spacing: -.02em; }
+.blk.big span { font-size: 19px; }
 .next-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 1320px; text-align: left; }
 .next-row .blk { min-height: 96px; }
 .row-h { width: 1320px; text-align: left; font: 600 18px/1.2 var(--display); margin-bottom: -14px; }
@@ -376,13 +382,13 @@ h1, h2, h3, p { margin: 0; }
 .pdesc { margin-top: 12px; font: 400 20px/1.45 var(--text); color: var(--fg-2); }
 
 /* ---------- s17 roadmap ---------- */
-.road { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; width: 1320px; text-align: left; }
+.road { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; width: 1320px; text-align: left; }
 .road::before { content: ""; position: absolute; left: 10px; right: 0; top: 9px; height: 2px; background: linear-gradient(90deg, var(--violet), var(--blue) 60%, rgb(91 140 255 / 0)); }
 .ms { position: relative; display: flex; flex-direction: column; gap: 10px; }
 .ms .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 3px solid var(--violet); margin-bottom: 16px; }
 .ms.now .dot { background: var(--violet); box-shadow: 0 0 24px var(--violet); }
 .when { font: 600 18px/1.2 var(--display); }
-.ms h3 { font: 600 31px/1.15 var(--display); letter-spacing: -.02em; }
+.ms h3 { font: 600 27px/1.15 var(--display); letter-spacing: -.02em; }
 .ms p { font: 400 19px/1.45 var(--text); color: var(--fg-2); }
 
 /* ---------- s18 one more thing ---------- */
@@ -795,8 +801,13 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     <section class="slide impact" data-title="Impact" data-speaker="Johnny" data-at="5:00">
       <div class="halo"></div>
       <div class="glass in" style="--d:.2s">
-        <p class="eyebrow grad">The problem</p>
-        <p class="glass-t">Companies require AI for speed.<br><span class="grad">Nothing checks whether the person shipping the code understands it.</span></p>
+        <p class="now-t">The <span class="grad">problem</span> today</p>
+        <div class="grid2 now-grid">
+          <div><p class="for grad">For companies</p><p class="what">Code no one understands ships, and gets found after it breaks.</p></div>
+          <div><p class="for grad">For seniors</p><p class="what">Every change looks the same, so they review all of it or guess.</p></div>
+          <div><p class="for grad">For juniors</p><p class="what">Ship AI code without learning from it. Courses sit apart from the work.</p></div>
+          <div><p class="for grad">For the industry</p><p class="what">Companies require AI, and hire fewer juniors.</p></div>
+        </div>
       </div>
       <div class="flash" aria-hidden="true"></div>
       <p class="impact-q">What’s the <span class="grad">impact</span>?</p>
@@ -807,7 +818,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         <div style="--j:3"><p class="for grad">For the industry</p><p class="what">Companies keep hiring juniors while still requiring AI.</p></div>
       </div>
       <aside class="notes">
-        <p>Remember the problem: companies require AI for speed, and nothing checks whether the person shipping the code understands it.</p>
+        <p>Remember where we are today. Companies ship code no one understands and find out after it breaks. Seniors can't tell which changes need them. Juniors ship AI code without learning from it. And companies require AI while hiring fewer juniors.</p>
         <p>[click: the question breaks the glass] So what's the impact? Companies catch code no one understands before it ships. Seniors review only what needs them, with the exact moment to watch. Juniors grow through real work, with a record they own. And the industry keeps hiring juniors while still requiring AI.</p>
         <p>These are design goals, and our pilot measures each one.</p>
       </aside>
@@ -817,48 +828,14 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     <section class="slide archi" data-title="Technical architecture" data-speaker="Johnny" data-at="5:25">
       <p class="eyebrow grad in">Technical architecture</p>
       <h2 class="h2 in" style="--d:.15s">How it’s built.</h2>
-      <div class="stack in" style="--d:.3s">
-        <div class="tier br">
-          <p class="tier-h grad">Browser</p>
-          <div class="blocks">
-            <div class="blk"><b>Viva workspace</b><span>HTML, CSS and plain JavaScript</span></div>
-            <div class="blk"><b>Voice and camera</b><span>MediaRecorder, saved in IndexedDB</span></div>
-            <div class="blk"><b>Reviewer view</b><span>Signed five-minute playback links, access log</span></div>
-          </div>
-        </div>
-        <div class="tier srv">
-          <p class="tier-h grad">Viva server · Python</p>
-          <div class="blocks">
-            <div class="blk core"><b>Viva engine</b><span>Runs the interview, calls Claude</span></div>
-            <div class="blk"><b>Check grader</b><span>Scores the three checks from fixed answers</span></div>
-            <div class="blk"><b>Learning loop API</b><span>FastAPI on Uvicorn</span></div>
-            <div class="blk"><b>Gap tracker</b><span>SQLite; a gap closes only on a new task</span></div>
-            <div class="blk next"><b>Triage</b><span>Risk × novelty × proven level, from the PR</span></div>
-            <div class="blk"><b>Tests</b><span>14 automated tests on GitHub Actions</span></div>
-          </div>
-        </div>
-        <div class="tier ai">
-          <p class="tier-h grad">AI</p>
-          <div class="blocks">
-            <div class="blk core"><b>Claude Sonnet 5.5</b><span>Asks one follow-up and marks against a fixed rubric</span></div>
-            <div class="blk"><b>What the model sees</b><span>A short snippet and your answer. Never the answer key.</span></div>
-            <div class="blk next"><b>Your own model</b><span>Amazon Bedrock in your AWS, or open-weight</span></div>
-          </div>
-        </div>
+      <div class="stack4 in" style="--d:.3s">
+        <div class="tier"><p class="tier-h grad">Frontend</p><div class="blk big core"><b>HTML, CSS and JavaScript</b><span>Plain, no framework</span></div></div>
+        <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn</span></div></div>
+        <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Tracks each gap until a new task closes it</span></div></div>
+        <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core"><b>Claude Sonnet 5.5</b><span>Asks one follow-up and marks against a fixed rubric</span></div></div>
       </div>
-      <p class="row-h grad in" style="--d:.45s">Next: into your workflow</p>
-      <div class="next-row in" style="--d:.5s">
-        <div class="blk next"><b>GitHub App</b><span>A required check with a status and a link</span></div>
-        <div class="blk next"><b>CI runner job</b><span>Diff only, secret scan, sandboxed run of the checks</span></div>
-        <div class="blk next"><b>Speech to text</b><span>faster-whisper, running locally</span></div>
-        <div class="blk next"><b>Egress policy</b><span>Code leaves only where each repo allows it</span></div>
-      </div>
-      <p class="legend in" style="--d:.6s"><span><i></i>Built in our prototype</span><span><i class="dash"></i>Next</span></p>
       <aside class="notes">
-        <p>Here's how it's built. In the browser: the Viva workspace, voice and camera recording, and a reviewer view with signed, five-minute playback links.</p>
-        <p>On our Python server: the Viva engine runs the interview and calls Claude, a grader scores the checks from fixed answers, and a gap tracker in SQLite only closes a gap on a new task. Fourteen automated tests run on every push.</p>
-        <p>Claude Sonnet asks one follow-up and marks against a fixed rubric. It sees a short snippet and your answer, never the answer key.</p>
-        <p>Dashed boxes are next: the GitHub App, a job on your own CI runner, local speech-to-text, and a per-repo egress policy.</p>
+        <p>Here's how it's built. The frontend is plain HTML, CSS and JavaScript. The backend is Python, FastAPI on Uvicorn. The database is SQLite. And the AI model is Claude Sonnet 5.5, which asks one follow-up and marks against a fixed rubric.</p>
       </aside>
     </section>
 
@@ -901,13 +878,14 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <h2 class="h2 in">What’s next.</h2>
       <div class="road">
         <div class="ms now b" data-f="1"><span class="dot"></span><p class="when grad">Now</p><h3>Working prototype</h3><p>The full loop, with a live AI follow-up question.</p></div>
-        <div class="ms b" data-f="2"><span class="dot"></span><p class="when grad">Next 4–6 weeks</p><h3>Pilot with one team</h3><p>Senior minutes per PR, escalation rate, retake pass rate, incidents.</p></div>
-        <div class="ms b" data-f="3"><span class="dot"></span><p class="when grad">3 months</p><h3>Paid pilot</h3><p>Conversion, renewal and weekly use.</p></div>
-        <div class="ms b" data-f="4"><span class="dot"></span><p class="when grad">Then</p><h3>New concept packs</h3><p>Beyond code: compliance review and data analysis.</p></div>
+        <div class="ms b" data-f="2"><span class="dot"></span><p class="when grad">Next 2–4 weeks</p><h3>Keep building</h3><p>Refine the loop and harden it for real teams.</p></div>
+        <div class="ms b" data-f="3"><span class="dot"></span><p class="when grad">Then 4–6 weeks</p><h3>Pilot with one team</h3><p>Senior minutes per PR, escalation rate, retake pass rate, incidents.</p></div>
+        <div class="ms b" data-f="4"><span class="dot"></span><p class="when grad">Then 3 months</p><h3>Paid pilot</h3><p>Conversion, renewal and weekly use.</p></div>
+        <div class="ms b" data-f="5"><span class="dot"></span><p class="when grad">Later</p><h3>New concept packs</h3><p>Beyond code: compliance review and data analysis.</p></div>
       </div>
       <p class="cap in" style="--d:.4s">Go to market: one design partner, then one 5–10 developer team, then team by team.</p>
       <aside class="notes">
-        <p>What's next. [click] Today, a working prototype. [click] Next, a four-to-six week pilot with one team. [click] Then a paid pilot, [click] and new concept packs beyond code, like compliance review and data analysis.</p>
+        <p>What's next. [click] Today, a working prototype. [click] Next, a few more weeks of building. [click] Then a four-to-six week pilot with one team. [click] Then a paid pilot, [click] and later, new concept packs beyond code, like compliance review and data analysis.</p>
         <p>One design partner, then one team, then team by team.</p>
       </aside>
     </section>
