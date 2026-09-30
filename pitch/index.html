@@ -1,6 +1,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Viva Launch Keynote</title>
+<title>Viva Launch Keynote · v4</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='1.5 3.5 25 24.5'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237b55ff'/%3E%3Cstop offset='1' stop-color='%234f86ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg transform='translate(1 2.5) scale(1.05)'%3E%3Cpath d='M7 2.5h10a5 5 0 0 1 5 5v6.3a5 5 0 0 1-5 5h-6l-4.2 3.3c-.7.6-1.7-.1-1.4-1l.7-2.5A5 5 0 0 1 2 13.8V7.5a5 5 0 0 1 5-5z' fill='url(%23g)'/%3E%3Ccircle cx='8.7' cy='8.3' r='2.3' fill='%23fff'/%3E%3Ccircle cx='15.3' cy='8.3' r='2.3' fill='%23fff'/%3E%3Ccircle cx='9' cy='8.6' r='1.15' fill='%230b0a10'/%3E%3Ccircle cx='15.6' cy='8.6' r='1.15' fill='%230b0a10'/%3E%3Cpath d='M8.6 12.9l2.4 2.4 4.5-4.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -372,14 +372,32 @@ h1, h2, h3, p { margin: 0; }
 .link:hover { text-decoration: underline; }
 .pill:focus-visible, .link:focus-visible, .ctl:focus-visible { outline: 3px solid #b7a6ff; outline-offset: 4px; }
 
-/* ---------- s16 pricing ---------- */
-.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; width: 1240px; }
-.plan { position: relative; padding: 34px 32px 32px; border-radius: 26px; background: var(--card); border: 1px solid var(--line); text-align: left; display: flex; flex-direction: column; gap: 8px; }
-.plan.featured { border: 1.5px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; box-shadow: 0 0 100px -30px rgb(139 107 255 / .65); }
-.pname { font: 600 22px/1.2 var(--display); color: var(--fg-2); }
-.price { font: 700 84px/1.05 var(--display); letter-spacing: -.035em; }
-.per { font: 400 18px/1.3 var(--text); color: var(--fg-2); min-height: 24px; }
-.pdesc { margin-top: 12px; font: 400 20px/1.45 var(--text); color: var(--fg-2); }
+/* ---------- business model: the cost of stalled growth, then the path to a team subscription ---------- */
+.slide.business { gap: 0; }
+.business-head { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 34px; }
+.business-layout { display: grid; grid-template-columns: 560px 1fr; gap: 84px; width: 1320px; text-align: left; }
+.business-kicker { font: 600 19px/1.2 var(--display); color: var(--fg-2); margin-bottom: 20px; }
+.business-metrics { display: flex; flex-direction: column; gap: 28px; }
+.business-number { display: flex; align-items: baseline; gap: 12px; font: 700 112px/.95 var(--display); letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.business-number small { font: 600 32px/1 var(--display); letter-spacing: -.025em; }
+.business-number .approx { font: 500 54px/1 var(--display); letter-spacing: -.03em; margin-right: -8px; }
+.business-caption { margin-top: 12px; font: 500 26px/1.22 var(--display); letter-spacing: -.015em; }
+.business-detail { display: block; margin-top: 6px; font: 400 19px/1.35 var(--text); color: var(--fg-2); }
+.business-offer { padding: 28px 32px; border: 1.5px solid transparent; border-radius: 24px; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; box-shadow: 0 0 95px -38px rgb(139 107 255 / .55); }
+.business-offer-top { display: flex; align-items: center; gap: 20px; }
+.business-offer .ico { width: 48px; height: 48px; flex: none; }
+.business-offer h3 { font: 600 39px/1.1 var(--display); letter-spacing: -.025em; }
+.business-offer p { margin-top: 18px; font: 400 26px/1.25 var(--text); color: var(--fg-2); }
+.business-offer p strong { font-weight: 500; color: var(--fg); }
+.business-pilot { display: grid; grid-template-columns: 1fr 52px 1fr; align-items: center; gap: 16px; margin-top: 22px; padding: 24px 30px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; }
+.business-pilot b { display: block; font: 600 28px/1.15 var(--display); letter-spacing: -.02em; }
+.business-pilot span { display: block; margin-top: 6px; font: 400 18px/1.3 var(--text); color: var(--fg-2); }
+.business-arrow { width: 44px; height: 24px; fill: none; stroke: url(#ig); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.business-value { width: 1320px; margin-top: 36px; font: 600 46px/1.15 var(--display); letter-spacing: -.025em; text-align: center; }
+.business-sources { position: absolute !important; left: 140px; right: 140px; bottom: 34px; text-align: center; font: 400 14px/1.55 var(--text); color: var(--fg-3); }
+.business-sources a { color: inherit; text-decoration-color: rgb(255 255 255 / .22); text-underline-offset: 3px; }
+.business-sources a:hover { color: var(--fg-2); }
+.business-sources a:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
 
 /* ---------- s17 roadmap ---------- */
 .road { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; width: 1320px; text-align: left; }
@@ -539,7 +557,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <h2 class="h2 in" style="--d:.15s">Small teams now write more AI code than they can confidently review.</h2>
       <div class="trio stats3">
         <div class="b" data-f="1">
-          <p class="role">SMEs are all in</p>
+          <p class="role">SMEs already use AI</p>
           <p class="stat-s grad"><span class="count" data-to="81">81</span>%</p>
           <h3>of Australian SMEs have adopted AI or automation in finance.</h3>
           <p class="src">Airwallex × YouGov, Sep 2025 · 505 decision makers · SMEs: 6–249 staff</p>
@@ -559,7 +577,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </div>
       <aside class="notes">
         <p>This creates a growing challenge for small and medium-sized tech companies, where senior review time is already limited.</p>
-        <p>[click] The businesses Airwallex serves are all in: your research with YouGov found 81% of Australian SMEs have adopted AI or automation in finance.</p>
+        <p>[click] The businesses Airwallex serves already use AI: your research with YouGov found 81% of Australian SMEs have adopted AI or automation in their finance functions. That is finance, not engineering, but it shows the pressure to adopt. Our market size rests on the ABS count, 5,320 software firms.</p>
         <p>[click] In engineering, the checking moves up: 38% of veteran developers are shifting their time to reviewing and validating code.</p>
         <p>[click] And for small organisations, AI output quality is the top adoption challenge, for 64% of them. Juniors gain the speed. Seniors inherit the checking.</p>
       </aside>
@@ -829,18 +847,80 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <p class="eyebrow grad in">Technical architecture</p>
       <h2 class="h2 in" style="--d:.15s">How it’s built.</h2>
       <div class="stack4 in" style="--d:.3s">
-        <div class="tier"><p class="tier-h grad">Frontend</p><div class="blk big core"><b>HTML, CSS and JavaScript</b><span>Plain, no framework</span></div></div>
-        <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn</span></div></div>
-        <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Tracks each gap until a new task closes it</span></div></div>
-        <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core"><b>Claude Sonnet 5.5</b><span>Asks one follow-up and marks against a fixed rubric</span></div></div>
+        <div class="tier"><p class="tier-h grad">Frontend</p><div class="blk big core"><b>Viva workspace</b><span>HTML, CSS and JavaScript. Interview, voice and video, reveal, senior review.</span></div></div>
+        <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn. Viva API, check grader, event log.</span></div></div>
+        <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Gaps, answers and corrections, one encryption key per tenant.</span></div></div>
+        <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core"><b>Claude Sonnet 5.5</b><span>One follow-up, a fixed rubric. Or Bedrock or open-weight in your own cloud.</span></div></div>
+      </div>
+      <p class="row-h grad in" style="--d:.45s">Where it plugs in</p>
+      <div class="next-row in" style="--d:.5s">
+        <div class="blk"><b>GitHub App</b><span>A required check with a status and a link. Never answers or media.</span></div>
+        <div class="blk"><b>Your CI runner</b><span>Takes only the diff, scans for secrets, runs the checks in a sandbox.</span></div>
+        <div class="blk"><b>Slack App</b><span>Reminders, and the review queue for seniors.</span></div>
+        <div class="blk"><b>Speech to text</b><span>Whisper, inside your own environment.</span></div>
       </div>
       <aside class="notes">
-        <p>Here's how it's built. The frontend is plain HTML, CSS and JavaScript. The backend is Python, FastAPI on Uvicorn. The database is SQLite. And the AI model is Claude Sonnet 5.5, which asks one follow-up and marks against a fixed rubric.</p>
+        <p>Here's the full design. The Viva workspace runs in the browser: the interview, voice and video, the reveal and senior review. The backend is Python, FastAPI on Uvicorn, with SQLite and one encryption key per tenant. Claude Sonnet 5.5 asks one follow-up and marks against a fixed rubric, or you run Bedrock or an open-weight model in your own cloud.</p>
+        <p>It plugs into the tools teams already use: a GitHub App that adds a required check, a job on your own CI runner that takes only the diff and runs the checks, a Slack App for reminders, and speech-to-text inside your environment.</p>
+        <p>[If asked what runs today: the demo is the workspace plus a small Python server calling Claude; the FastAPI and SQLite learning-loop backend is a separate prototype with 14 tests. GitHub, CI runner, Slack and Whisper are next.]</p>
       </aside>
     </section>
 
-    <!-- 16 · demo -->
-    <section class="slide" data-title="Demo" data-speaker="Johnny" data-at="5:55">
+    <!-- 16 · business model + value -->
+    <section class="slide business" data-title="Business model &amp; value" data-speaker="Johnny" data-at="5:55">
+      <div class="business-head">
+        <p class="eyebrow grad in">Business model &amp; value</p>
+        <h2 class="h2 in" style="--d:.15s">The case for growth.</h2>
+      </div>
+      <div class="business-layout">
+        <div class="business-evidence">
+          <p class="business-kicker in" style="--d:.25s">The cost of not growing juniors</p>
+          <div class="business-metrics">
+            <div class="in" style="--d:.3s">
+              <p class="business-number grad">17%</p>
+              <p class="business-caption">less understanding<span class="business-detail">when AI does the work.</span></p>
+            </div>
+            <div class="in" style="--d:.45s">
+              <p class="business-number grad"><span class="approx">≈</span>A$67k</p>
+              <p class="business-caption">a year to buy a senior instead of growing one<span class="business-detail">The senior–junior salary gap in Australia.</span></p>
+            </div>
+          </div>
+        </div>
+        <div class="business-model">
+          <div class="b" data-f="1">
+            <p class="business-kicker">How Viva earns · B2B</p>
+            <div class="business-offer">
+              <div class="business-offer-top">
+                <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 4.5a3 3 0 0 1 0 5.5M18 14a5 5 0 0 1 3 4.6V20"/></svg></span>
+                <h3>Team subscription</h3>
+              </div>
+              <p>One team. <strong>Priced by team size.</strong></p>
+            </div>
+          </div>
+          <div class="business-pilot b" data-f="2">
+            <div><b>Free pilot</b><span>Prove the value.</span></div>
+            <svg class="business-arrow" viewBox="0 0 44 24" aria-hidden="true"><path d="M2 12h37M31 4l8 8-8 8"/></svg>
+            <div><b class="grad">Paid team</b><span>Pay once it works.</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="business-value b" data-f="3">Viva turns <span style="color:var(--fg-2)">review cost</span> into <span class="grad">growth.</span></p>
+      <p class="business-sources in" style="--d:.55s">
+        <a href="https://www.anthropic.com/research/AI-assistance-coding-skills" target="_blank" rel="noopener">Anthropic RCT, 2026</a> · Quiz: 50% with AI vs. 67% without AI (n = 52).<br>
+        Salary snapshot supplied for this pitch: <a href="https://au.indeed.com/career/senior-software-engineer/salaries" target="_blank" rel="noopener">Indeed AU senior A$150,494</a> − <a href="https://au.indeed.com/career/junior-software-engineer/salaries" target="_blank" rel="noopener">junior A$83,876</a> ≈ A$67k/year. Salary gap, not measured Viva savings.
+      </p>
+      <aside class="notes">
+        <p>1. Developers who let AI do the work understood 17% less of their own code.</p>
+        <p>2. If juniors don't grow, you have to buy seniors instead, at around sixty-seven thousand dollars more a year per hire. That is the cost of not growing juniors, not a saving we claim. The saving Viva claims is senior review time, and our pilot measures it.</p>
+        <p>3. [click: team subscription] So companies subscribe for their whole team, priced by team size.</p>
+        <p>4. [click: pilot → paid team] Every customer starts with a free pilot, then pays once it works.</p>
+        <p>5. [click: value] Viva turns review cost into growth.</p>
+        <p>[Evidence note, not spoken: the RCT compared quiz averages of 50% and 67%. It does not establish a long-term hiring effect. The A$66,618 salary difference uses the Indeed values in the supplied pitch reference, not current salary data or a measured saving from Viva. Subscription pricing and pilot conversion are proposed business terms to validate.]</p>
+      </aside>
+    </section>
+
+    <!-- 17 · demo -->
+    <section class="slide" data-title="Demo" data-speaker="Johnny" data-at="6:25">
       <p class="eyebrow grad in">Demo</p>
       <h2 class="hero in" style="--d:.15s">Let’s see it.</h2>
       <p class="sub in" style="--d:.35s">Tony takes his viva on PR #214.</p>
@@ -852,24 +932,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <p class="src in" style="--d:.8s">Synthetic company and data. Scores are labelled Simulated.</p>
       <aside class="notes">
         <p>Let's see it. Tony takes his viva on PR #214. The company and data are synthetic, and scores are labelled Simulated.</p>
-        <p>[Switch to the demo. About 75 seconds. Come back with →.]</p>
-      </aside>
-    </section>
-
-    <!-- 17 · business model -->
-    <section class="slide" data-title="Business model" data-speaker="Johnny" data-at="7:10">
-      <p class="eyebrow grad in">Business model</p>
-      <h2 class="h2 in" style="--d:.15s">Pricing.</h2>
-      <div class="plans in" style="--d:.3s">
-        <div class="plan"><span class="pname">Starter</span><span class="price">Free</span><span class="per">&nbsp;</span><span class="pdesc">Up to 3 juniors. The full loop.</span></div>
-        <div class="plan featured"><span class="pname">Team</span><span class="price">A$20</span><span class="per">per junior, per month</span><span class="pdesc">Unlimited juniors, senior review, gap reports. Seniors are always free.</span></div>
-        <div class="plan"><span class="pname">Enterprise</span><span class="price">Custom</span><span class="per">&nbsp;</span><span class="pdesc">SSO, private deployment, custom concept packs.</span></div>
-      </div>
-      <p class="cap b" data-f="1">Break-even: at 10 juniors, Team pays for itself if it saves a senior 2 hours a month.</p>
-      <p class="src in" style="--d:.5s">Prices are a hypothesis to test in the pilot. Break-even assumes A$100 an hour for a senior.</p>
-      <aside class="notes">
-        <p>The business model. Starter is free for up to three juniors. Team is about twenty dollars per junior per month, and seniors are always free. Enterprise adds SSO, private deployment and custom concept packs.</p>
-        <p>[click] With ten juniors, Team pays for itself if it saves a senior two hours a month. These prices are a hypothesis the pilot will test.</p>
+        <p>[Switch to the demo. About 65 seconds. Come back with →.]</p>
       </aside>
     </section>
 
@@ -1256,15 +1319,15 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
 
   // ---------- sync between the audience window and the presenter window ----------
   let bc = null;
-  try { bc = new BroadcastChannel('viva-deck'); bc.onmessage = e => apply(e.data); } catch (e) {}
+  try { bc = new BroadcastChannel('viva-deck-v4'); bc.onmessage = e => apply(e.data); } catch (e) {}
   function apply(m) { if (m && (m.cur !== cur || m.step !== step)) setState(m.cur, m.step, true); }
   function broadcast() {
     const msg = { cur, step, t: Date.now() };
     try { bc && bc.postMessage(msg); } catch (e) {}
-    try { localStorage.setItem('viva-deck-state', JSON.stringify(msg)); } catch (e) {}
+    try { localStorage.setItem('viva-deck-v4-state', JSON.stringify(msg)); } catch (e) {}
   }
   addEventListener('storage', e => {
-    if (e.key !== 'viva-deck-state' || !e.newValue) return;
+    if (e.key !== 'viva-deck-v4-state' || !e.newValue) return;
     try { apply(JSON.parse(e.newValue)); } catch (err) {}
   });
 
@@ -1309,7 +1372,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     $('#ppPrev').onclick = back;
     $('#ppGo').onclick = next;
     setInterval(clock, 500);
-    try { const m = JSON.parse(localStorage.getItem('viva-deck-state') || 'null'); if (m) { cur = m.cur; step = m.step; } } catch (e) {}
+    try { const m = JSON.parse(localStorage.getItem('viva-deck-v4-state') || 'null'); if (m) { cur = m.cur; step = m.step; } } catch (e) {}
   } else {
     const m = /^#s(\d+)$/.exec(location.hash);
     if (m) cur = Math.max(0, Math.min(slides.length - 1, +m[1] - 1));
@@ -1327,7 +1390,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     else if (k === 'End') setState(slides.length - 1, maxStep(slides[slides.length - 1]));
     else if (k === 'f' || k === 'F') toggleFullscreen();
     else if (k === 'n' || k === 'N') { if (!isPresenter) notesPane.hidden = !notesPane.hidden; }
-    else if (k === 'p' || k === 'P') { if (!isPresenter) { const w = window.open(location.href.split('#')[0] + '#presenter', 'viva-presenter', 'width=1400,height=860'); if (w) broadcast(); } }
+    else if (k === 'p' || k === 'P') { if (!isPresenter) { const w = window.open(location.href.split('#')[0] + '#presenter', 'viva-presenter-v4', 'width=1400,height=860'); if (w) broadcast(); } }
     else if (k === 't' || k === 'T') { if (isPresenter) { t0 = Date.now(); clock(); } }
   });
   $('#viewport').addEventListener('click', e => {
