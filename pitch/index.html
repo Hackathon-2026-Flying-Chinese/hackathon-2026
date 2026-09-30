@@ -508,20 +508,6 @@ h1, h2, h3, p { margin: 0; }
 .hfill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, #8b6bff, #5b8cff 45%, #ff8f7a 70%, #3fb950); box-shadow: 0 0 14px rgb(139 107 255 / .7); transition: width 1.4s var(--ease) .1s; }
 .how[data-a="2"] .hfill { width: 341px; } .how[data-a="3"] .hfill { width: 682px; } .how[data-a="4"] .hfill { width: 1023px; }
 
-.hpr { --x: 38px; --c: 167 139 255; --dy: 0px; position: absolute; z-index: 1; left: -22px; top: 33px; width: 44px; height: 28px; border-radius: 7px; background: #1b1a26; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 0 8px;
-  box-shadow: inset 0 0 0 1.5px rgb(var(--c) / .8), 0 6px 18px -6px rgb(0 0 0 / .9);
-  transform: translate(calc(var(--x) - var(--k) * 54px), var(--dy)); opacity: 0;
-  transition: transform 1.5s var(--ease) calc(var(--k) * .12s), opacity .6s var(--ease), box-shadow .6s var(--ease) .6s; }
-.hpr b { height: 3px; border-radius: 2px; background: rgb(var(--c) / .85); transition: background .6s var(--ease) .6s; }
-.hpr b + b { width: 60%; background: rgb(255 255 255 / .35); }
-.slide.active .hpr { opacity: 1; }
-.how[data-a="1"] .hpr { --x: 258px; }
-.how[data-a="2"] .hpr { --x: 599px; }
-.how[data-a="3"] .hpr { --x: 940px; --c: 255 143 122; }
-.how[data-a="4"] .hpr { --x: 1282px; --c: 63 185 80; }
-/* small, safe changes never reach a senior: they drop out after the viva */
-.how[data-a="3"] .hpr.d, .how[data-a="4"] .hpr.d { --x: 690px; --dy: 26px; --c: 63 185 80; opacity: 0; }
-.how[data-a="3"] .hpr.d, .how[data-a="4"] .hpr.d { transition-duration: 1s, .9s, .6s; }
 
 .needle { transform-box: view-box; transform-origin: 12px 16px; transform: rotate(-75deg); transition: transform 1.3s cubic-bezier(.34, 1.56, .64, 1) .7s; }
 .step.on .needle { transform: none; }
@@ -533,6 +519,29 @@ h1, h2, h3, p { margin: 0; }
 @keyframes nudge { 50% { transform: scale(1.35); } }
 .tick { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .7s var(--ease); }
 .step.on .tick { stroke-dashoffset: 0; transition-delay: .95s; }
+
+/* after the four steps have played, two clicks open up what happens inside step 1 and step 2 */
+.how .steps { min-height: 330px; }
+.how .steps > .step, .how .steps > .hrail { transition: opacity .6s var(--ease); }
+.slide.how[data-step="1"] .steps > .step, .slide.how[data-step="2"] .steps > .step,
+.slide.how[data-step="1"] .steps > .hrail, .slide.how[data-step="2"] .steps > .hrail { opacity: 0; }
+.hx { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; opacity: 0; pointer-events: none; transform: translateY(26px); filter: blur(10px); transition: opacity .7s var(--ease), transform .8s var(--ease), filter .7s var(--ease); }
+.slide.how[data-step="1"] .hx2, .slide.how[data-step="2"] .hx1 { opacity: 1; transform: none; filter: none; transition-delay: .35s; }
+.hx-k { font: 600 24px/1.2 var(--display); }
+.fml { display: flex; align-items: flex-start; gap: 34px; }
+.ft { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.fv { font: 700 64px/1.05 var(--display); letter-spacing: -.03em; }
+.ft small { font: 400 20px/1.3 var(--text); color: var(--fg-2); }
+.fo { font: 500 56px/1.1 var(--display); color: var(--fg-2); }
+.ft.res .fv { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.route { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 1200px; }
+.rt { display: flex; flex-direction: column; gap: 10px; padding: 26px 32px 30px; border-radius: 22px; background: var(--card); border: 1.5px solid var(--line-2); text-align: left; }
+.rt .rs { font: 600 20px/1.2 var(--display); color: var(--fg-2); }
+.rt h3 { font: 700 44px/1.1 var(--display); letter-spacing: -.025em; }
+.rt p { font: 400 22px/1.4 var(--text); color: var(--fg-2); }
+.rt.low .rs { color: #7ee787; }
+.rt.high { border-color: transparent; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; box-shadow: 0 0 70px -20px rgb(139 107 255 / .7); }
+.rt.high .rs { color: #b7a6ff; }
 
 /* ---------- s14 impact: each answer smashes the matching problem ---------- */
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 50px 90px; width: 1240px; text-align: left; }
@@ -809,18 +818,18 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </div>
       <div class="lower"><b>Tony</b><span>Flying Chinese</span></div>
       <aside class="notes">
-        <p>[Introduce yourself.] Imagine I buy a car with full autopilot. I switch it on, and I never touch the wheel.</p>
-        <p>[click: the car drives] It takes me all the way there. Every turn, on time, not a scratch. So, does it make me a good driver?</p>
-        <p>[click] Of course not. Arriving proves the car works. It doesn't prove the driver can drive.</p>
-        <p>[click: three ticks turn green] In the AI era, software has an autopilot too. The code is written, the tests pass, the task is closed.</p>
-        <p>[click] So if AI does all of that for me, does it make me a good developer?</p>
-        <p>[click: the ring sweeps green, yellow, red] Everything looks green. But the more the AI does, the more risk sits behind that green, and nobody checks the person behind it.</p>
-        <p>[→ next slide as you say:] And this is no longer a hypothetical question.</p>
+        <p>[Introduce yourself.] Imagine I buy a car with full autopilot and never touch the wheel.</p>
+        <p>[click: the car drives] It takes me all the way there, every turn, not a scratch. Does that make me a good driver?</p>
+        <p>[click] No. Arriving proves the car works. It doesn't prove the driver can drive.</p>
+        <p>[click: three ticks turn green] In software, the code is written, the tests pass, the task is closed.</p>
+        <p>[click] Does that make me a good developer?</p>
+        <p>[click: the ring sweeps green, yellow, red] Everything looks green, but nobody checks the person behind it.</p>
+        <p>[→ next slide as you say:] And this is no longer hypothetical.</p>
       </aside>
     </section>
 
     <!-- 3 · data -->
-    <section class="slide data" data-title="Data: juniors lean on AI" data-speaker="Tony" data-at="0:45">
+    <section class="slide data" data-title="Data: juniors lean on AI" data-speaker="Tony" data-at="0:40">
       <h2 class="h2 grad in" style="margin-bottom:36px">No longer hypothetical.</h2>
       <div class="trio stats3 viz">
         <div class="in" style="--d:.3s">
@@ -851,15 +860,13 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
       </div>
       <aside class="notes">
-        <p>84% of developers now use AI when they build software.</p>
-        <p>And juniors feel the gains most: 75% of the least-experienced developers say AI makes them faster, against 55% of veterans.</p>
-        <p>However, only 16% of senior engineers say juniors fully understand the AI code they submit.</p>
+        <p>84% of developers use AI. Juniors love the speed: 75% say it makes them faster. But only 16% of seniors say juniors fully understand the AI code they submit.</p>
         <p>[click: the three cards light up in turn] Everyone builds with AI. Juniors love the speed. Seniors see the gap.</p>
       </aside>
     </section>
 
     <!-- 4 · market: the small company, drawn as its own pipeline -->
-    <section class="slide market" data-title="Market: speed, not skill" data-speaker="Tony" data-at="1:05">
+    <section class="slide market" data-title="Market: speed, not skill" data-speaker="Tony" data-at="0:55">
       <h2 class="h2 in">SMEs got AI’s speed.<br><span class="grad">Their engineers didn’t keep up.</span></h2>
       <div class="flow-wrap in" style="--d:.35s">
         <div class="lane" aria-hidden="true">
@@ -881,67 +888,39 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
       </div>
       <aside class="notes">
-        <p>SMEs got AI's speed, but their engineers didn't keep up. Airwallex's own research with YouGov found 81% of Australian SMEs have adopted AI or automation.</p>
-        <p>So AI writes it, and juniors ship it. They rely on it heavily: more productive, but in a controlled study they learned less, 50% on a concept quiz against 67% for those who coded by hand.</p>
-        <p>The checking lands on a few seniors. On the teams that use AI most, PR review time is up 91%.</p>
-        <p>And it reaches customers: 80% of executives traced an incident or defect to AI code in the past year.</p>
-      </aside>
-    </section>
-
-    <!-- 7 · problem: the facts so far, then the one they add up to -->
-    <section class="slide problem" data-title="The problem" data-speaker="Tony" data-at="1:30">
-      <div class="facts">
-        <div class="fact in" style="--d:0.30s"><span class="fk">Fact 01</span><p>SMEs need <span class="grad">AI’s speed.</span></p></div>
-        <div class="fact in" style="--d:0.85s"><span class="fk">Fact 02</span><p>Juniors ship more, <span class="warn">understand less.</span></p></div>
-        <div class="fact in" style="--d:1.40s"><span class="fk">Fact 03</span><p>Seniors review more, <span class="warn">with less time.</span></p></div>
-        <div class="fact in" style="--d:1.95s"><span class="fk">Fact 04</span><p>AI failures are <span class="warn">already common.</span></p></div>
-      </div>
-      <div class="pb-cover" data-f="1">
-        <p class="eyebrow grad">The problem</p>
-        <p class="pb-t">Juniors stop <span class="warn">growing.</span></p>
-        <p class="sub">They ship with AI, but never build the skill to take the wheel.</p>
-      </div>
-      <aside class="notes">
-        <p>So here's what we know. SMEs need AI's speed. Juniors ship more, and understand less. Seniors review more, with less time. And AI failures are already common.</p>
-        <p>[click] Put together, that's the problem: juniors stop growing. They ship with AI, but never build the skill to take the wheel. And a small company that can't grow its juniors can't grow its next seniors.</p>
+        <p>SMEs got AI's speed: 81% of Australian SMEs have adopted AI or automation, in Airwallex's own research with YouGov. AI writes it, and juniors ship it. In a controlled study they learned less: 50% on a concept quiz against 67%. A few seniors carry the checking, with review time up 91%. And 80% of executives traced an incident to AI code.</p>
+        <p>So juniors stop growing. And a small company that can't grow its juniors can't grow its next seniors.</p>
       </aside>
     </section>
 
     <!-- 10 · competitors -->
-    <section class="slide compare" data-title="Competitors" data-speaker="Tony" data-at="1:55">
+    <section class="slide compare" data-title="Competitors" data-speaker="Tony" data-at="1:20">
       <h2 class="h2 in">How others approach it.</h2>
       <div class="cmp in" id="cmp" style="--d:.3s"></div>
       <p class="src in" style="--d:.5s">From each vendor’s public website and docs, 1 Oct 2026; we did not try the products. — means not offered or not stated.</p>
       <aside class="notes">
-        <p>Most tools that try to make you learn do it by taking the AI away. Coding tests like HackerRank and CodeSignal proctor you and flag AI use. AI learning modes, like ChatGPT Study Mode or Claude's learning mode, hold back the answer so you write it yourself.</p>
-        <p>But no company will slow its juniors down like that at work. PR quiz tools let you keep AI, and they skip quizzes only by how risky the PR looks.</p>
-        <p>[click: two rows light up] Viva is the only one that does both: juniors keep their full AI, and once they prove they understand, their next check gets lighter.</p>
-      </aside>
-    </section>
-
-    <!-- 11 · originality -->
-    <section class="slide" data-title="Originality" data-speaker="Tony" data-at="2:20">
-      <p class="h1 in" style="--d:.15s">Others ask, “Did you understand this PR?”</p>
-      <p class="h1 grad in" style="--d:.8s">We ask, “Are you getting better?”</p>
-      <aside class="notes">
-        <p>Others ask: did you understand this PR? [pause] We ask: are you getting better?</p>
+        <p>Most tools make you learn by taking AI away. Coding tests like HackerRank and CodeSignal flag AI use, and learning modes like ChatGPT Study Mode hold back the answer. No company will slow its juniors down like that at work. PR quiz tools keep AI, but skip quizzes only by how risky the PR looks.</p>
+        <p>[click: two rows light up] Viva does both: juniors keep full AI, and once they prove they understand, their next check gets lighter.</p>
+        <p>Others ask, did you understand this PR? We ask, are you getting better at reading AI's code?</p>
       </aside>
     </section>
 
     <!-- 12 · back to the car -->
-    <section class="slide" data-title="Keep the autopilot" data-speaker="Tony" data-at="2:30">
+    <section class="slide" data-title="Keep the autopilot" data-speaker="Tony" data-at="1:55">
       <span class="ico in" style="width:76px;height:76px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6"/><path d="M3.2 11.2c3 .1 5.4.3 6.3.8M20.8 11.2c-3 .1-5.4.3-6.3.8M12 14.6V21"/></svg></span>
       <p class="punch in" style="--d:.15s">Keep the autopilot.</p>
       <p class="punch grad in" style="--d:.7s">Check the driver.</p>
-      <p class="sub in" style="--d:1.4s">Can they still understand it, explain it and take control?</p>
+      <p class="sub in" style="--d:1.4s">AI does the beginner work now. The new first rung is understanding it.</p>
+      <p class="cap in" style="--d:2.1s">Viva makes every pull request one practice rep, with someone correcting you.</p>
+      <p class="src in" style="--d:2.7s">Anthropic RCT, Jan 2026, n = 52: the biggest gap was debugging; developers who generated code, then asked questions to understand it, kept their learning.<br>Explaining in your own words (Chi et al., 1989) and being tested (Roediger &amp; Karpicke, 2006) both improve learning.</p>
       <aside class="notes">
-        <p>Companies don't need to take AI away from junior employees, just as we don't take the technology out of modern cars.</p>
-        <p>They need a way to know that the person behind it can still understand it, explain it and take control.</p>
+        <p>Companies don't need to take AI away, just as we don't take the technology out of modern cars. They need to know the person behind it can understand it, explain it and take control.</p>
+        <p>Every expert got good through small work with someone correcting them. AI now does that work, so the bottom rung has moved: the first skill is understanding what AI wrote. Viva makes every pull request one practice rep, with correction.</p>
       </aside>
     </section>
 
     <!-- 13 · reveal -->
-    <section class="slide reveal" data-title="Introducing Viva" data-speaker="Tony" data-at="2:45" data-glow>
+    <section class="slide reveal" data-title="Introducing Viva" data-speaker="Tony" data-at="2:25" data-glow>
       <div class="halo rise"></div>
       <div class="rv">
         <p class="cap in" style="--d:.3s">Introducing</p>
@@ -967,7 +946,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     </section>
 
     <!-- 5 · audience -->
-    <section class="slide" data-title="Target audience" data-speaker="Tony" data-at="3:05">
+    <section class="slide" data-title="Target audience" data-speaker="Tony" data-at="2:40">
       <h2 class="h2 in">Built for the small company<br>that hires juniors and runs on AI.</h2>
       <p class="sub in" style="--d:.3s">And for the three people inside it.</p>
       <div class="trio">
@@ -994,23 +973,41 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <p class="cap b" data-f="4">First market: <span style="color:var(--fg)">5,320</span> Australian software firms with 5 to 199 staff.</p>
       <p class="src b" data-f="4">ABS 8165.0, June 2025, ANZSIC 7000 · 1,422 with 20–199 staff, 3,898 with 5–19</p>
       <aside class="notes">
-        <p>Who is Viva for? Not every SME: the small tech company that hires juniors and runs on AI, with few seniors to check it. Inside it, three people.</p>
-        <p>[click] The junior engineer, who ships with ChatGPT, Claude, Copilot or Cursor every day.</p>
+        <p>Who is Viva for? The small tech company that hires juniors, runs on AI, and has few seniors.</p>
+        <p>[click] Junior engineers, who ship with AI every day.</p>
         <p>[click] The one or two seniors who review everything.</p>
-        <p>[click] And the CTO or engineering lead, who wants that speed without the risk, and pays for Viva.</p>
-        <p>[click] In Australia alone, that's about 5,300 software firms with 5 to 199 staff. Johnny, show them how it works.</p>
+        <p>[click] And the CTO, who wants AI's speed without the risk, and pays for Viva.</p>
+        <p>[click] In Australia alone, that's about 5,300 firms with 5 to 199 staff. Johnny, show them how it works.</p>
       </aside>
     </section>
 
     <!-- ===================== JOHNNY ===================== -->
 
     <!-- 13 · how it works -->
-    <section class="slide how" data-title="How Viva solves it" data-speaker="Johnny" data-at="4:20">
+    <section class="slide how" data-title="How Viva solves it" data-speaker="Johnny" data-at="3:10">
       <p class="eyebrow grad in">How Viva solves it</p>
       <h2 class="h2 in" style="--d:.15s">Four steps. Inside every pull request.</h2>
       <div class="steps in" style="--d:.35s">
+                <div class="hx hx1" data-f="2">
+          <p class="hx-k grad">Triage</p>
+          <div class="fml">
+            <div class="ft"><span class="fv">Risk</span><small>what could break</small></div>
+            <span class="fo">+</span>
+            <div class="ft"><span class="fv">Novelty</span><small>new to this coder</small></div>
+            <span class="fo">−</span>
+            <div class="ft"><span class="fv">Proven level</span><small>what they've already shown</small></div>
+            <span class="fo">=</span>
+            <div class="ft res"><span class="fv">PR score</span><small>decides the check</small></div>
+          </div>
+        </div>
+        <div class="hx hx2" data-f="1">
+          <p class="hx-k grad">The score picks the check</p>
+          <div class="route">
+            <div class="rt low"><span class="rs">Low score</span><h3>Multiple choice only</h3><p>A few quick questions. No viva.</p></div>
+            <div class="rt high"><span class="rs">High score</span><h3>Three-minute viva</h3><p>Explain the change in your own words.</p></div>
+          </div>
+        </div>
         <span class="hrail" aria-hidden="true"><i class="hfill"></i></span>
-        <i class="hpr" style="--k:0" aria-hidden="true"><b></b><b></b></i><i class="hpr d" style="--k:1" aria-hidden="true"><b></b><b></b></i><i class="hpr d" style="--k:2" aria-hidden="true"><b></b><b></b></i>
         <div class="step">
           <span class="hnode"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path class="needle" d="M12 16l4.2-5"/><circle cx="12" cy="16" r="1.3"/></svg></span>
           <span class="sn grad">1 · Triage</span>
@@ -1023,27 +1020,28 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
         <div class="step">
           <span class="hnode warm"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path class="play" d="M10 9.3v5.4l4.5-2.7z"/></svg></span>
-          <span class="sn grad">3 · Only real gaps</span>
-          <h3>Seniors see clips</h3>
+          <span class="sn grad">3 · Get corrected</span>
+          <h3>See what you missed</h3>
         </div>
         <div class="step">
           <span class="hnode good"><svg viewBox="0 0 24 24"><path d="M12 2.8l2.4 1.8 3-.2.9 2.8 2.4 1.8-1 2.8 1 2.8-2.4 1.8-.9 2.8-3-.2L12 21.2l-2.4-1.8-3 .2-.9-2.8-2.4-1.8 1-2.8-1-2.8 2.4-1.8.9-2.8 3 .2z"/><path class="tick" pathLength="1" d="M8.5 12.2l2.3 2.3 4.7-4.8"/></svg></span>
-          <span class="sn grad">4 · Earn trust</span>
-          <h3>Each pass gets lighter</h3>
+          <span class="sn grad">4 · Grow</span>
+          <h3>Gaps close, checks get lighter</h3>
         </div>
       </div>
       <div class="lower"><b>Johnny</b><span>Flying Chinese</span></div>
       <aside class="notes">
-        <p>Thanks, Tony. Four steps, inside every pull request. This plays by itself; no clicks.</p>
+        <p>Four steps, inside every pull request. The four steps play by themselves; then two clicks open up steps 1 and 2.</p>
         <p>One: triage. Every PR is scored by risk, novelty and your proven level. A typo fix passes untouched.</p>
-        <p>Two: a three-minute viva. Risky or new work gets a short AI interview: how it works and why, in your own words. We grade what you say, never your face, voice or accent.</p>
-        <p>Three: only real gaps reach a senior. A first miss is feedback and fresh questions. A repeat miss, or very high risk, goes to a senior as timestamped clips.</p>
-        <p>Four: every pass makes the next one lighter.</p>
+        <p>Two: a three-minute viva. You explain your change in your own words. We grade what you say, never your face or voice.</p>
+        <p>Three: get corrected. A first miss shows what you missed, with fresh questions. Only a repeat miss, or very high risk, reaches a senior.</p>
+        <p>Four: grow. Gaps stay open until a later change closes them, and every pass makes the next check lighter. So juniors have a reason to learn: understanding earns faster merges, the speed they love.</p>
+        <p>[click: the score picks the check] A low score gets a few multiple-choice questions; a high score gets the viva. [click: how the score is made] Risk plus novelty, minus what you have already proven.</p>
       </aside>
     </section>
 
     <!-- 14 · impact -->
-    <section class="slide impact" data-title="Impact" data-speaker="Johnny" data-at="5:00">
+    <section class="slide impact" data-title="Impact" data-speaker="Johnny" data-at="3:55">
       <div class="halo warm"></div><div class="halo cool"></div>
       <p class="now-t in" style="--d:.15s">The <span class="grad warm">problem</span> today</p>
       <div class="grid2 now-grid in" style="--d:.3s">
@@ -1056,22 +1054,21 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <div class="grid2 impact-grid">
         <div data-f="1"><p class="for grad">For companies</p><p class="what">Catch code no one understands before it ships, not after it breaks.</p></div>
         <div data-f="2"><p class="for grad">For seniors</p><p class="what">Review only the changes that need them, with the exact moment to watch.</p></div>
-        <div data-f="3"><p class="for grad">For juniors</p><p class="what">Grow through real work instead of separate courses, with a record they own.</p></div>
+        <div data-f="3"><p class="for grad">For juniors</p><p class="what">Every PR is a practice rep with correction, not a separate course.</p></div>
         <div data-f="4"><p class="for grad">For the industry</p><p class="what">Companies keep hiring juniors while still requiring AI.</p></div>
       </div>
       <aside class="notes">
-        <p>Remember where we are today. Companies ship code no one understands and find out after it breaks. Seniors can't tell which changes need them. Juniors ship AI code without learning from it. And companies require AI while hiring fewer juniors.</p>
-        <p>[click: the answer smashes the problem] For companies: catch code no one understands before it ships, not after it breaks.</p>
-        <p>[click] For seniors: review only what needs them, with the exact moment to watch.</p>
-        <p>[click] For juniors: grow through real work, with a record they own.</p>
-        <p>[click] For the industry: companies keep hiring juniors while still requiring AI.</p>
-        <p>[click: the title flips] So what's the impact? That's it.</p>
-        <p>These are design goals, and our pilot measures each one.</p>
+        <p>Today, companies ship code no one understands, seniors can't tell which changes need them, juniors ship AI code without learning, and companies hire fewer juniors.</p>
+        <p>[click: the answer smashes the problem] For companies: catch it before it ships.</p>
+        <p>[click] For seniors: review only what needs them.</p>
+        <p>[click] For juniors: every pull request is a practice rep with correction.</p>
+        <p>[click] For the industry: keep hiring juniors while requiring AI.</p>
+        <p>[click: the title flips] That's the impact. These are design goals, and our pilot measures each one.</p>
       </aside>
     </section>
 
     <!-- 15 · architecture -->
-    <section class="slide archi" data-title="Technical architecture" data-speaker="Johnny" data-at="5:25">
+    <section class="slide archi" data-title="Technical architecture" data-speaker="Johnny" data-at="4:25">
       <p class="eyebrow grad lap-eyebrow">Technical architecture</p>
       <div class="lap in" style="--d:.2s">
         <div class="lid"></div>
@@ -1096,24 +1093,24 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
       </div>
       <aside class="notes">
-        <p>Here's how it's built. The frontend is plain HTML, CSS and JavaScript.</p>
-        <p>[click: the screen lifts out of the laptop and turns over] Behind it, in the middle, the backend is Python, FastAPI on Uvicorn. On one side, the database is SQLite, which tracks each gap until a new task closes it. On the other, the AI model is Claude Sonnet 5.5, which asks one follow-up and marks against a fixed rubric.</p>
+        <p>The frontend is plain HTML, CSS and JavaScript.</p>
+        <p>[click: the screen lifts out of the laptop and turns over] Behind it, the backend is Python, FastAPI. SQLite tracks each gap until a new task closes it. And Claude Sonnet 5.5 asks one follow-up and marks against a fixed rubric.</p>
         <p>[click: the screen swings open like doors onto the demo]</p>
       </aside>
     </section>
 
     <!-- 16 · demo -->
-    <section class="slide demo" data-title="Demo" data-speaker="Johnny" data-at="5:55">
+    <section class="slide demo" data-title="Demo" data-speaker="Johnny" data-at="4:50">
       <video class="demo-video" src="demo.mp4" poster="demo-poster.jpg" playsinline preload="auto"></video>
       <button class="demo-play" type="button" aria-label="Play the demo video"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></button>
       <aside class="notes">
-        <p>Let's see it. Tony takes his viva on PR #214. The company and data are synthetic, and scores are labelled Simulated.</p>
+        <p>Tony takes his viva on PR #214. The data is synthetic and scores are labelled Simulated. Watch what happens when he misses.</p>
         <p>[The demo video plays by itself, about 60 seconds. Click the video to pause or play. Come back with →.]</p>
       </aside>
     </section>
 
     <!-- 17 · business model + value -->
-    <section class="slide business" data-title="Business model &amp; value" data-speaker="Johnny" data-at="7:10">
+    <section class="slide business" data-title="Business model &amp; value" data-speaker="Johnny" data-at="5:55">
       <div class="business-head">
         <p class="eyebrow grad in">Business model &amp; value</p>
         <h2 class="h2 in" style="--d:.15s">The case for growth.</h2>
@@ -1157,7 +1154,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </p>
       <aside class="notes">
         <p>1. Developers who let AI do the work understood 17% less of their own code.</p>
-        <p>2. If juniors don't grow, you have to buy seniors instead, at around sixty-seven thousand dollars more a year per hire. That is the cost of not growing juniors, not a saving we claim. The saving Viva claims is senior review time, and our pilot measures it.</p>
+        <p>2. If juniors don't grow, you buy seniors instead, about sixty-seven thousand dollars more a year per hire. That is the cost of not growing juniors, not a saving we claim.</p>
         <p>3. [click: team subscription] So companies subscribe for their whole team, priced by team size.</p>
         <p>4. [click: pilot → paid team] Every customer starts with a free pilot, then pays once it works.</p>
         <p>5. [click: value] Viva turns review cost into growth.</p>
@@ -1166,7 +1163,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     </section>
 
     <!-- 18 · roadmap -->
-    <section class="slide" data-title="What's next" data-speaker="Johnny" data-at="7:30">
+    <section class="slide" data-title="What's next" data-speaker="Johnny" data-at="6:20">
       <h2 class="h2 in">What’s next.</h2>
       <div class="road">
         <div class="ms now b" data-f="1"><span class="dot"></span><p class="when grad">Now</p><h3>Working prototype</h3><p>The full loop, with a live AI follow-up question.</p></div>
@@ -1177,37 +1174,13 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </div>
       <p class="cap in" style="--d:.4s">Go to market: one design partner, then one 5–10 developer team, then team by team.</p>
       <aside class="notes">
-        <p>What's next. [click] Today, a working prototype. [click] Next, a few more weeks of building. [click] Then a four-to-six week pilot with one team. [click] Then a paid pilot, [click] and later, new concept packs beyond code, like compliance review and data analysis.</p>
+        <p>[click] Today, a working prototype. [click] Next, a few more weeks of building. [click] Then a four-to-six week pilot with one team. [click] Then a paid pilot, [click] and later, new concept packs beyond code.</p>
         <p>One design partner, then one team, then team by team.</p>
       </aside>
     </section>
 
-    <!-- 19 · one more thing -->
-    <section class="slide" data-title="One more thing" data-speaker="Johnny" data-at="7:45">
-      <p class="omt" data-out="1">One more thing.</p>
-      <div class="pp-wrap b" data-f="1">
-        <div class="pass">
-          <div class="pass-top"><span class="logo-host" data-logo="light"></span><span>Understanding Passport</span></div>
-          <p class="pass-name">Tony</p>
-          <div class="pass-row"><b>Access control</b><span>Level 2</span><small>Proved on PR #214, then on a new endpoint</small></div>
-          <div class="pass-row"><b>Currency precision</b><span>Level 1</span><small>First viva passed</small></div>
-          <p class="pass-foot">Illustrative. Shared only when Tony chooses to.</p>
-        </div>
-        <div class="pass-text">
-          <p class="eyebrow grad">On our roadmap</p>
-          <h2 class="h2">Understanding Passport</h2>
-          <p class="sub">Every concept you prove, in one record you own. Take it to your next employer, or keep it to yourself.</p>
-          <p class="cap">Same engine, new places: assignment defences at universities.</p>
-        </div>
-      </div>
-      <aside class="notes">
-        <p>One more thing. [pause]</p>
-        <p>[click] The Understanding Passport: every concept you prove, in one record you own. Take it to your next employer, or keep it to yourself. It's on our roadmap, and the same engine can run assignment defences at universities.</p>
-      </aside>
-    </section>
-
     <!-- 20 · close -->
-    <section class="slide" data-title="Close" data-speaker="Johnny" data-at="8:05" data-glow-step="1">
+    <section class="slide" data-title="Close" data-speaker="Johnny" data-at="6:35" data-glow-step="1">
       <p class="h1 in" style="--d:.15s">Tony didn’t need less AI.</p>
       <p class="h1 grad in" style="--d:.6s">He needed one question before merge.</p>
       <div class="win merge in" data-s="1" style="--d:.9s; width:900px">
@@ -1221,12 +1194,12 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <aside class="notes">
         <p>Back to Tony. He didn't need less AI. He needed one question before merge.</p>
         <p>[click] With Viva he gets it, misses once, learns why, and proves it on the next endpoint. The check turns green, and now it means something.</p>
-        <p>[click] Code review checks the code. Viva checks the coder. Pilot it with one of your teams, and we'll show you how the next person gets good. Thank you.</p>
+        <p>[click] Code review checks the code. Viva checks the coder. Pilot it with one of your teams. Thank you.</p>
       </aside>
     </section>
 
     <!-- 21 · end -->
-    <section class="slide" data-title="Thank you" data-speaker="Tony and Johnny" data-at="8:30">
+    <section class="slide" data-title="Thank you" data-speaker="Tony and Johnny" data-at="7:00">
       <div class="halo"></div>
       <span class="logo-host logo-l" data-logo="draw"></span>
       <p class="hero in" style="--d:1.3s">Thank you.</p>
@@ -1234,6 +1207,10 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <aside class="notes">
         <p>[Q&amp;A backdrop. Leave this up while the judges ask questions.]</p>
         <p>If asked: demo data is synthetic and scores are labelled Simulated; the GitHub check is the next build step; nothing is measured yet, the pilot measures it.</p>
+        <p>If asked why people should understand code when AI keeps getting better: someone has to be accountable for what ships, and future seniors come from juniors who can judge code. 80% of executives traced an incident to AI code; only 16% of seniors say juniors fully understand it.</p>
+        <p>If asked whether explaining is the same as understanding: we ask how it works and why it was built that way, then one follow-up aimed at the weakest part, so a recited summary is meant to break on the follow-up. Harder judgement questions, like spotting the risk in a change, are the next build. Nothing is measured yet; the pilot measures it.</p>
+        <p>If asked for the Anthropic study: Jan 2026, 52 mostly junior engineers; the AI group scored 50% on a concept quiz against 67% by hand; the biggest gap was debugging, the ability to tell when code is wrong and why; developers who generated code and then asked questions to understand it kept their learning. Small sample, so say it is a signal, not proof.</p>
+        <p>If asked why this works: explaining in your own words (self-explanation) and being corrected on what you missed (retrieval practice with feedback) are well-established learning effects. Sources: Chi, Bassok, Lewis, Reimann and Glaser, 1989, Cognitive Science 13(2), 145–182 (self-explanation); Roediger and Karpicke, 2006, Psychological Science 17(3), 249–255 (testing effect: 68% vs 54% recall after two days). Note the testing-effect study used free recall, not code, so say it supports the principle, not our product.</p>
         <p>If asked about vivaproof.com, also called Viva: it is for schools and checks who wrote an assignment. We work inside the pull request at work, and build skill over time.</p>
         <p>Numbers: 84% and 75% (veterans 55%) Info-Tech 2026, 500+ practitioners; 16% BairesDev Q2 2026, n = 1,569; 81% Airwallex × YouGov, Sep 2025, n = 505, finance functions, SMEs 6–249 staff; +91% Faros AI 2025; 80% Sauce Labs 2026, 400 executives; 50% vs 67% Anthropic RCT, Jan 2026, n = 52; 5,320 = ABS June 2025, ANZSIC 7000, 5–199 staff.</p>
         <p>If asked about competitors: HackerRank and CodeSignal detect and flag AI use in assessments; ChatGPT Study Mode guides with questions instead of answers; Claude Code's learning mode asks you to write key lines yourself; SlopBlock skips quizzes only for low-risk PRs. None of them ban AI at work, and we don't either.</p>
@@ -1433,7 +1410,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     stage.style.transform = `translate(-50%, -50%) scale(${k})`;
   }
   // slides that play on their own after the title lands: each item lights up in turn, no clicks
-  const AUTO = [['how', '.step', 1300, 4000]];
+  const AUTO = [['how', '.step', 1300, 2000]];
   function autoSync(s, on, sel, first, gap) {
     if (on === !!s._playing) return;
     s._playing = on;
