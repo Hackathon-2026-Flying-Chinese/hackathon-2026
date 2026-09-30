@@ -1,0 +1,1369 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Viva Launch Keynote</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='1.5 3.5 25 24.5'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237b55ff'/%3E%3Cstop offset='1' stop-color='%234f86ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg transform='translate(1 2.5) scale(1.05)'%3E%3Cpath d='M7 2.5h10a5 5 0 0 1 5 5v6.3a5 5 0 0 1-5 5h-6l-4.2 3.3c-.7.6-1.7-.1-1.4-1l.7-2.5A5 5 0 0 1 2 13.8V7.5a5 5 0 0 1 5-5z' fill='url(%23g)'/%3E%3Ccircle cx='8.7' cy='8.3' r='2.3' fill='%23fff'/%3E%3Ccircle cx='15.3' cy='8.3' r='2.3' fill='%23fff'/%3E%3Ccircle cx='9' cy='8.6' r='1.15' fill='%230b0a10'/%3E%3Ccircle cx='15.6' cy='8.6' r='1.15' fill='%230b0a10'/%3E%3Cpath d='M8.6 12.9l2.4 2.4 4.5-4.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a 1600×900 keynote stage, black like an Apple event. One idea per slide, centred on a 1320px measure;
+   product shots sit in the right half when a story needs them. Viva's violet and blue carry every highlight, and the
+   brand's pink and lemon only appear in the glow that marks the launch. Deliberately one dark look. */
+:root {
+  --bg: #000000;
+  --fg: #f5f5f7;
+  --fg-2: #a1a1a6;
+  --fg-3: #6e6e73;
+  --card: #111114;
+  --line: rgb(255 255 255 / .10);
+  --line-2: rgb(255 255 255 / .18);
+  --violet: #8b6bff;
+  --blue: #5b8cff;
+  --pink: #f0508a;
+  --lemon: #ffc53d;
+  --grad: linear-gradient(95deg, #a78bff 0%, #6f8cff 52%, #d68bff 100%);
+  --glow: conic-gradient(from var(--ang), #7b55ff, #3e7bff, #f0508a, #ffc53d, #7b55ff);
+
+  /* GitHub's dark theme, used only inside the product shots */
+  --gh-bg: #0d1117;
+  --gh-bar: #161b22;
+  --gh-line: #30363d;
+  --gh-line-2: #21262d;
+  --gh-fg: #e6edf3;
+  --gh-muted: #7d8590;
+  --gh-green: #3fb950;
+  --gh-btn: #238636;
+  --gh-red: #f85149;
+  --gh-amber: #d29922;
+  --gh-purple: #8957e5;
+
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
+  --text: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  color-scheme: dark;
+}
+@property --ang { syntax: "<angle>"; initial-value: 0deg; inherits: false; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--text); overflow: hidden; -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p { margin: 0; }
+::selection { background: rgb(139 107 255 / .4); }
+
+/* ---------- stage ---------- */
+.viewport { position: fixed; inset: 0; background: var(--bg); overflow: hidden; }
+.stage { position: absolute; left: 50%; top: 50%; width: 1600px; height: 900px; transform-origin: 50% 50%; overflow: visible; background: var(--bg); }
+
+.slide {
+  position: absolute; inset: 0; z-index: 1; padding: 90px 140px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px; text-align: center;
+  opacity: 0; visibility: hidden; transform: scale(1.015);
+  transition: opacity .6s var(--ease), transform 1s var(--ease), visibility 0s linear .6s;
+}
+.slide.active { opacity: 1; visibility: visible; transform: none; transition: opacity .9s var(--ease) .1s, transform 1.2s var(--ease); }
+.slide.past { transform: scale(.985); }
+.notes { display: none; }
+
+/* the edge glow that marks the launch: Viva's four colours running round the frame */
+.edge { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; filter: blur(16px); transition: opacity 1.4s var(--ease); }
+.edge::before { content: ""; position: absolute; inset: 0; padding: 12px; background: var(--glow); animation: spin 7s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.viewport.glowing .edge { opacity: .95; }
+@keyframes spin { to { --ang: 360deg; } }
+.halo { position: absolute; left: 50%; top: 50%; width: 900px; height: 900px; margin: -450px 0 0 -450px; border-radius: 50%; pointer-events: none; z-index: 0;
+  background: conic-gradient(#7b55ff, #3e7bff, #f0508a, #ffc53d, #7b55ff); filter: blur(130px); opacity: .2; animation: turn 14s linear infinite; }
+@keyframes turn { to { rotate: 360deg; } }
+.slide.active .halo.rise { animation: turn 14s linear infinite, haloIn 2.4s var(--ease) both; }
+@keyframes haloIn { from { opacity: 0; scale: .6; } to { opacity: .32; } }
+.slide > *:not(.halo):not(.omt) { position: relative; z-index: 1; }
+
+/* ---------- type ---------- */
+.eyebrow { font: 600 26px/1.2 var(--display); letter-spacing: -.005em; }
+.hero { font: 700 120px/1.02 var(--display); letter-spacing: -.035em; text-wrap: balance; }
+.h1 { font: 700 88px/1.05 var(--display); letter-spacing: -.03em; text-wrap: balance; }
+.h2 { font: 700 68px/1.08 var(--display); letter-spacing: -.025em; text-wrap: balance; }
+.h3 { font: 600 40px/1.15 var(--display); letter-spacing: -.02em; text-wrap: balance; }
+.sub { font: 400 32px/1.36 var(--text); color: var(--fg-2); letter-spacing: -.012em; max-width: 30em; text-wrap: balance; }
+.cap { font: 400 22px/1.45 var(--text); color: var(--fg-2); text-wrap: balance; }
+.src { font: 400 15px/1.45 var(--text); color: var(--fg-3); }
+/* gradient text is only painted inside its own box: pad the box so descenders (y, g, q) and the last letter's overhang
+   get colour too, and cancel the padding with margins so nothing moves */
+.grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; padding: .06em .08em .18em; margin: -.06em -.08em -.18em; }
+.quote { font: 700 100px/1.04 var(--display); letter-spacing: -.035em; }
+.quote span { display: block; }
+.punch { font: 700 86px/1.06 var(--display); letter-spacing: -.032em; }
+.stat { font: 700 280px/.9 var(--display); letter-spacing: -.055em; font-variant-numeric: tabular-nums; }
+
+/* entrances and builds: fade up out of a blur, the way keynote text arrives */
+.slide.active .in { animation: rise 1s var(--ease) both; animation-delay: var(--d, .15s); }
+@keyframes rise { from { opacity: 0; transform: translateY(26px); filter: blur(10px); } to { opacity: 1; transform: none; filter: none; } }
+.b { opacity: 0; transform: translateY(26px); filter: blur(10px); transition: opacity .8s var(--ease), transform .9s var(--ease), filter .8s var(--ease); }
+.b.on { opacity: 1; transform: none; filter: none; }
+
+/* presenter name, shown once when a speaker takes over */
+.lower { position: absolute !important; left: 140px; bottom: 64px; display: flex; flex-direction: column; gap: 4px; text-align: left; opacity: 0; }
+.lower::before { content: ""; position: absolute; left: -20px; top: 3px; bottom: 3px; width: 3px; border-radius: 2px; background: var(--grad); }
+.lower b { font: 600 28px/1.1 var(--display); }
+.lower span { font: 400 18px/1.3 var(--text); color: var(--fg-2); }
+.slide.active .lower { animation: lower 6s var(--ease) .8s both; }
+@keyframes lower { 0% { opacity: 0; transform: translateX(-18px); } 10%, 86% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+
+/* ---------- logo (the product's own, with a light wordmark for the dark stage) ---------- */
+.logo-host { display: block; }
+.logo-host .logo { display: block; width: 100%; height: auto; overflow: visible; }
+.logo .lg-l, .logo .lg-chk { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.logo .lg-mark, .logo .lg-eyes, .logo .lg-blink, .logo .lg-dot { transform-box: fill-box; transform-origin: center; }
+.logo .lg-blink { animation: blink 6s 3s infinite; }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+.slide.active .logo.draw .lg-mark { animation: markIn 1.1s var(--ease) var(--t0, .3s) both; }
+.slide.active .logo.draw .lg-eyes { animation: markIn .7s var(--ease) calc(var(--t0, .3s) + .35s) both; }
+.slide.active .logo.draw .lg-chk { animation: draw .5s var(--ease) calc(var(--t0, .3s) + .5s) both; }
+.slide.active .logo.draw .lg-l { animation: draw .6s var(--ease) calc(var(--t0, .3s) + .65s + var(--k) * .12s) both; }
+.slide.active .logo.draw .lg-dot { animation: markIn .6s var(--ease) calc(var(--t0, .3s) + 1.35s) both; }
+@keyframes markIn { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+/* ---------- s1 title: the opener ---------- */
+.slide.title { gap: 0; }
+.title .halo { width: 1300px; height: 1300px; margin: -650px 0 0 -650px; top: 330px; filter: blur(150px); opacity: .5; }
+.slide.active.title .halo { animation: turn 16s linear infinite, burst 2.6s var(--ease) both; }
+@keyframes burst { from { opacity: 0; scale: .3; } 45% { opacity: .8; } to { opacity: .5; scale: 1; } }
+.mark-hero { width: 300px; margin-bottom: 44px; }
+.mark-hero .logo { filter: drop-shadow(0 30px 70px rgb(123 85 255 / .55)); animation: float 5s ease-in-out 2.2s infinite; }
+.slide.active .mark-hero { animation: markHero 1.6s var(--ease) .35s both; }
+@keyframes markHero { from { opacity: 0; transform: scale(.55); filter: blur(28px); } 55% { opacity: 1; filter: blur(0); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes float { 50% { translate: 0 -12px; } }
+.title-team { font: 700 128px/1 var(--display); letter-spacing: -.04em; padding: .06em .08em .18em; margin: -.06em -.08em calc(26px - .18em);
+  background: linear-gradient(100deg, #f5f5f7 0%, #f5f5f7 42%, #c9b8ff 50%, #f5f5f7 58%, #f5f5f7 100%); background-size: 260% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.slide.active .title-team.in { animation: rise 1.1s var(--ease) .95s both, shine 2.4s ease-in-out 2s both; }
+@keyframes shine { from { background-position: 100% 0; } to { background-position: 0% 0; } }
+.title-sub { font: 500 40px/1.2 var(--display); letter-spacing: -.012em; }
+.logo-xl { width: 760px; --t0: .6s; }
+.logo-l { width: 460px; --t0: .2s; }
+
+/* ---------- icons ---------- */
+.ico { width: 60px; height: 60px; display: block; }
+.ico svg, .sico svg { width: 100%; height: 100%; fill: none; stroke: url(#ig); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- s2 hook: the lasagna ---------- */
+.slide.lasagna { display: block; }
+.lasagna .warm { position: absolute !important; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 52% 58% at 50% 56%, rgb(255 168 76 / .22), rgb(255 120 40 / .07) 45%, rgb(0 0 0 / 0) 70%); transition: transform 1.1s var(--ease); }
+.lasagna .dish { position: absolute !important; left: 350px; top: 150px; width: 900px; height: 600px; transition: transform 1.1s var(--ease); }
+.lasagna[data-step="1"] .dish, .lasagna[data-step="1"] .warm { transform: translateX(-230px) scale(.9); }
+.slide.active.lasagna .dish { animation: dishIn 1.6s var(--ease) .15s both; }
+@keyframes dishIn { from { opacity: 0; scale: .94; filter: blur(12px) brightness(.4); } to { opacity: 1; scale: 1; filter: none; } }
+.lz, .binart { display: block; width: 100%; height: 100%; overflow: visible; }
+.lz .steam path { opacity: 0; animation: steam 4.6s ease-in-out infinite; }
+.lz .steam path:nth-child(2) { animation-delay: 1.5s; }
+.lz .steam path:nth-child(3) { animation-delay: 3s; }
+@keyframes steam { 0% { opacity: 0; translate: 0 26px; } 35% { opacity: .5; } 100% { opacity: 0; translate: 0 -46px; } }
+.lasagna .bin { position: absolute !important; right: 150px; bottom: 56px; width: 360px; height: 497px; }
+.lasagna .bin.b { opacity: 0; filter: none; transform: translateY(470px); transition: transform .95s cubic-bezier(.34, 1.4, .64, 1), opacity .25s; }
+.lasagna .bin.b.on { opacity: 1; transform: none; }
+.binart .box { transform: translateY(270px); transition: transform .85s cubic-bezier(.34, 1.56, .64, 1) .55s; }
+.bin.on .binart .box { transform: none; }
+.binart .lid { transform-origin: 364px 200px; transition: transform .6s cubic-bezier(.34, 1.56, .64, 1) .4s; }
+.bin.on .binart .lid { transform: rotate(100deg); }
+
+/* ---------- s3 market ---------- */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 90px; width: 1280px; }
+.duo > div { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+.stat-m { font: 700 190px/.95 var(--display); letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+
+/* ---------- s4 audience, s7 numbers ---------- */
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 60px; width: 1320px; text-align: left; }
+.trio > div { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.role { font: 600 18px/1.2 var(--display); letter-spacing: .01em; }
+.trio h3 { font: 600 34px/1.15 var(--display); letter-spacing: -.02em; }
+.trio p.t { font: 400 20px/1.5 var(--text); color: var(--fg-2); }
+.stats3 { text-align: center; }
+.stats3 > div { align-items: center; }
+.stat-s { font: 700 150px/.95 var(--display); letter-spacing: -.05em; font-variant-numeric: tabular-nums; }
+.stats3 h3 { font: 600 27px/1.25 var(--display); max-width: 14em; }
+
+/* ---------- s5 Tony (split with a product shot) ---------- */
+.slide.split { flex-direction: row; justify-content: space-between; text-align: left; gap: 70px; }
+.split-l { width: 560px; flex: none; display: flex; flex-direction: column; gap: 22px; }
+.split-r { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+.big-line { font: 600 40px/1.18 var(--display); letter-spacing: -.02em; text-wrap: balance; }
+.foot-src { position: absolute !important; left: 140px; bottom: 40px; }
+
+.win { background: var(--gh-bg); border-radius: 16px; overflow: hidden; text-align: left; color: var(--gh-fg);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / .09), 0 50px 120px -30px rgb(0 0 0 / .95), 0 0 140px -30px rgb(123 85 255 / .45); }
+.win-bar { height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; background: var(--gh-bar); border-bottom: 1px solid var(--gh-line); }
+.win-bar i { width: 12px; height: 12px; border-radius: 50%; background: #3a3a3c; }
+.win-bar i:nth-child(1) { background: #ff5f57; } .win-bar i:nth-child(2) { background: #febc2e; } .win-bar i:nth-child(3) { background: #28c840; }
+.win-bar span { margin-left: 14px; font: 500 14px/1 var(--text); color: var(--gh-muted); }
+.pr-body { padding: 22px 26px 18px; display: flex; flex-direction: column; gap: 14px; }
+.pr-t { font: 600 26px/1.25 var(--text); letter-spacing: -.01em; }
+.pr-t span { color: var(--gh-muted); font-weight: 400; }
+.pr-m { display: flex; align-items: center; gap: 10px; font: 400 15px/1 var(--text); color: var(--gh-muted); }
+.pr-m code { font: 500 13px/1 var(--mono); color: #9ecbff; background: rgb(56 139 253 / .15); padding: 4px 7px; border-radius: 6px; }
+.merged { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; background: var(--gh-purple); color: #fff; font: 600 14px/1 var(--text); }
+.merged svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+.code { margin: 0; background: #010409; border: 1px solid var(--gh-line-2); border-radius: 10px; padding: 14px 16px; font: 400 15.5px/1.6 var(--mono); color: #c9d1d9; white-space: pre; overflow: hidden; }
+.code .k { color: #ff7b72; } .code .f { color: #d2a8ff; } .code .c { color: #8b949e; }
+.code .hl { background: rgb(248 81 73 / .18); border-radius: 4px; box-shadow: 0 0 0 1px rgb(248 81 73 / .55); color: #ffa198; }
+.checks { display: flex; flex-direction: column; border: 1px solid var(--gh-line); border-radius: 10px; }
+.checks div { display: flex; align-items: center; gap: 12px; padding: 11px 14px; font: 600 15px/1.2 var(--text); border-top: 1px solid var(--gh-line-2); }
+.checks div:first-child { border-top: 0; }
+.checks em { margin-left: auto; font-style: normal; font-weight: 400; color: var(--gh-muted); }
+.checks .none { color: var(--gh-muted); }
+.ok { width: 18px; height: 18px; flex: none; color: var(--gh-green); }
+.ok svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.nochk { width: 16px; height: 16px; flex: none; border-radius: 50%; border: 2px dashed var(--gh-muted); }
+.term { align-self: flex-end; width: 600px; margin-right: -50px; z-index: 2; box-shadow: 0 0 0 1px rgb(255 255 255 / .1), 0 40px 100px -20px rgb(0 0 0 / .95), 0 0 100px -20px rgb(248 81 73 / .35); }
+.term-body { margin: 0; padding: 16px 18px; font: 400 15px/1.6 var(--mono); color: #c9d1d9; white-space: pre; }
+.term-body .p { color: var(--gh-muted); }
+.term-body .bad { color: var(--gh-red); font-weight: 700; }
+
+/* ---------- s9 compare ---------- */
+.cmp { position: relative; display: grid; grid-template-columns: 1.75fr repeat(4, 1fr); width: 1320px; }
+.cmp > div { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; padding: 15px 12px; border-bottom: 1px solid var(--line); font: 400 19px/1.3 var(--text); color: var(--fg-2); }
+.cmp .rh { justify-content: flex-start; text-align: left; color: var(--fg); font-weight: 500; }
+.cmp .ch { flex-direction: column; gap: 6px; padding: 18px 10px 18px; border-bottom-color: var(--line-2); font: 600 21px/1.2 var(--display); color: var(--fg); }
+.cmp .ch small { font: 400 14px/1.3 var(--text); color: var(--fg-3); }
+.cmp .ch.us { font-size: 26px; }
+.cmp .last { border-bottom: 0; }
+.cmp .ck { width: 24px; height: 24px; fill: none; stroke: var(--fg-2); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.cmp .us .ck { stroke: url(#ig); stroke-width: 2.8; width: 28px; height: 28px; }
+.cmp .dash { color: var(--fg-3); }
+.us-col { position: absolute !important; z-index: 0 !important; top: -10px; bottom: -10px; left: calc(100% * 4.75 / 5.75); width: calc(100% / 5.75); border-radius: 22px; border: 1.5px solid transparent;
+  background: linear-gradient(#0c0b12, #0c0b12) padding-box, var(--grad) border-box; box-shadow: 0 0 90px -24px rgb(139 107 255 / .6); }
+
+/* ---------- s11 reveal ---------- */
+.reveal { gap: 24px; }
+/* the logo sits in the middle first, then glides up to make room for the product shot */
+.rv { display: flex; flex-direction: column; align-items: center; gap: 24px; transition: transform 1.2s var(--ease); }
+.reveal[data-step="0"] .rv { transform: translateY(170px); }
+.hero-shot { perspective: 1500px; width: 900px; }
+.hero-shot .win { transform: rotateX(24deg) translateY(40px); transform-origin: 50% 0; transition: transform 1.3s var(--ease); }
+.hero-shot.on .win { transform: rotateX(8deg); }
+.mb { font: 400 16px/1.4 var(--text); }
+.mb-head { display: flex; gap: 14px; align-items: center; padding: 16px 22px; border-bottom: 1px solid var(--gh-line); }
+.mb-head b { display: block; font: 600 18px/1.3 var(--text); }
+.mb-head small { color: var(--gh-muted); font-size: 14px; }
+.mb-row { display: flex; align-items: center; gap: 12px; padding: 13px 22px; border-bottom: 1px solid var(--gh-line-2); }
+.mb-row b { font: 600 16px/1.3 var(--text); white-space: nowrap; }
+.mb-row em { font-style: normal; color: var(--gh-muted); }
+.mb-row .req { margin-left: auto; font: 500 12.5px/1 var(--text); color: var(--gh-muted); border: 1px solid var(--gh-line); border-radius: 999px; padding: 5px 10px; }
+.mb-row.viva { background: rgb(139 107 255 / .10); box-shadow: inset 0 0 0 1px rgb(139 107 255 / .5); }
+.mb-foot { display: flex; align-items: center; gap: 14px; padding: 14px 22px 18px; color: var(--gh-muted); font-size: 14px; }
+.mbtn { font: 600 15px/1 var(--text); padding: 10px 16px; border-radius: 8px; background: var(--gh-line-2); color: var(--gh-muted); border: 1px solid var(--gh-line); transition: background .5s, color .5s; }
+.st { position: relative; width: 18px; height: 18px; flex: none; }
+.st i { position: absolute; inset: 2px; border-radius: 50%; background: var(--gh-amber); animation: live 1.6s ease-in-out infinite; transition: opacity .3s; }
+.st svg { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; stroke: var(--gh-green); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; opacity: 0; transform: scale(.4); transition: opacity .3s, transform .6s var(--ease); }
+@keyframes live { 50% { opacity: .35; transform: scale(.8); } }
+.merge.go .st i { opacity: 0; }
+.merge.go .st svg { opacity: 1; transform: none; }
+.merge.go .mbtn { background: var(--gh-btn); color: #fff; border-color: rgb(240 246 252 / .1); }
+.merge .when-pass { display: none; }
+.merge.go .when-pass { display: inline; }
+.merge.go .when-wait { display: none; }
+.merge.go .mb-row.viva { background: rgb(63 185 80 / .10); box-shadow: inset 0 0 0 1px rgb(63 185 80 / .45); transition: background .6s, box-shadow .6s; }
+
+/* ---------- s12 steps ---------- */
+.steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 44px; width: 1320px; text-align: left; }
+.step { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sico { width: 64px; height: 64px; display: block; margin-bottom: 8px; }
+.sn { font: 600 18px/1.2 var(--display); }
+.step h3 { font: 600 34px/1.12 var(--display); letter-spacing: -.02em; }
+.step p { font: 400 20px/1.5 var(--text); color: var(--fg-2); }
+
+/* ---------- s14 impact: the problem sits on glass, and the question breaks it ---------- */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 50px 90px; width: 1240px; text-align: left; }
+.grid2 > div { display: flex; flex-direction: column; gap: 10px; }
+.for { font: 600 24px/1.2 var(--display); }
+.what { font: 600 38px/1.2 var(--display); letter-spacing: -.02em; text-wrap: balance; }
+.slide.impact { display: block; }
+.impact .halo { opacity: .26; }
+.glass { position: absolute !important; inset: 0; margin: auto; width: 1180px; height: max-content; padding: 56px 70px 60px; border-radius: 34px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 22px;
+  background: linear-gradient(135deg, rgb(255 255 255 / .16) 0%, rgb(255 255 255 / .05) 38%, rgb(255 255 255 / .03) 62%, rgb(255 255 255 / .09) 100%);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .22), inset 0 1px 0 rgb(255 255 255 / .4), 0 40px 120px -40px rgb(0 0 0 / .9); }
+.glass-t { font: 700 58px/1.12 var(--display); letter-spacing: -.025em; text-wrap: balance; }
+.impact.hit > .glass { visibility: hidden; }
+.impact-q { position: absolute !important; z-index: 4 !important; left: 0; right: 0; top: 104px; text-align: center; font: 700 96px/1.05 var(--display); letter-spacing: -.035em; opacity: 0; }
+.impact.hit .impact-q { opacity: 1; }
+.impact.hitting .impact-q { animation: slam 1.9s both; }
+@keyframes slam {
+  0% { opacity: 0; transform: translateY(292px) scale(2.8); filter: blur(14px); animation-timing-function: cubic-bezier(.55, 0, 1, .45); }
+  11% { opacity: 1; transform: translateY(292px) scale(1); filter: blur(0); }
+  58% { opacity: 1; transform: translateY(292px) scale(1); animation-timing-function: cubic-bezier(.2, .7, .2, 1); }
+  100% { opacity: 1; transform: none; }
+}
+.impact-grid { position: absolute !important; left: 50%; top: 300px; margin-left: -620px; }
+.impact-grid > div { opacity: 0; }
+.impact.hit .impact-grid > div { opacity: 1; }
+.impact.hitting .impact-grid > div { animation: rise .9s var(--ease) both; animation-delay: calc(1.5s + var(--j) * .16s); }
+.flash { position: absolute !important; z-index: 3 !important; left: 50%; top: 50%; width: 1000px; height: 1000px; margin: -500px 0 0 -500px; border-radius: 50%; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle, rgb(255 255 255 / .6), rgb(183 166 255 / .25) 28%, rgb(0 0 0 / 0) 62%); }
+.impact.hitting .flash { animation: flash .6s ease-out .2s both; }
+@keyframes flash { 0% { opacity: 0; scale: .4; } 22% { opacity: 1; } 100% { opacity: 0; scale: 1.35; } }
+.shards { position: absolute !important; z-index: 2 !important; pointer-events: none; perspective: 1300px; }
+.shard { position: absolute; overflow: hidden; }
+.glass-copy { right: auto !important; bottom: auto !important; margin: 0 !important; }
+.cracks { position: absolute !important; z-index: 3 !important; pointer-events: none; overflow: visible; filter: drop-shadow(0 0 6px rgb(255 255 255 / .7)); }
+.cracks path { fill: none; stroke: rgb(255 255 255 / .92); stroke-width: 2.2; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .13s linear forwards; }
+.stage.shake { animation: shake .45s linear; }
+@keyframes shake { 0%, 100% { translate: 0 0; } 12% { translate: -16px 9px; } 26% { translate: 13px -8px; } 40% { translate: -10px 6px; } 55% { translate: 7px -4px; } 72% { translate: -4px 2px; } 86% { translate: 2px -1px; } }
+
+/* ---------- s15 architecture: components and stack, not the workflow ---------- */
+.slide.archi { gap: 26px; }
+.stack { display: grid; grid-template-columns: 340px 1fr 340px; gap: 60px; width: 1320px; text-align: left; }
+.tier { position: relative; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.tier-h { font: 600 18px/1.2 var(--display); }
+.blocks { display: grid; gap: 12px; flex: 1; grid-auto-rows: 1fr; }
+.srv .blocks { grid-template-columns: 1fr 1fr; }
+.blk { padding: 15px 18px; border-radius: 16px; background: var(--card); border: 1.5px solid var(--line-2); display: flex; flex-direction: column; justify-content: center; gap: 5px; min-width: 0; }
+.blk.next { background: transparent; border-style: dashed; }
+.blk.core { border: 1.5px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; box-shadow: 0 0 60px -18px rgb(139 107 255 / .55); }
+.blk b { font: 600 20px/1.2 var(--display); letter-spacing: -.01em; }
+.blk span { font: 400 15.5px/1.4 var(--text); color: var(--fg-2); }
+/* wires between the tiers, with a pulse running along them */
+.tier.br::after, .tier.srv::after { content: ""; position: absolute; top: calc(50% + 15px); right: -50px; width: 40px; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, rgb(139 107 255 / .25), var(--violet) 40%, var(--blue) 60%, rgb(91 140 255 / .25)); background-size: 200% 100%; }
+.slide.active .tier.br::after, .slide.active .tier.srv::after { animation: wire 1.8s linear infinite; }
+@keyframes wire { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.tier.br::before, .tier.srv::before { content: ""; position: absolute; top: calc(50% + 15px); right: -51px; width: 10px; height: 10px; margin-top: -4px; border-top: 2px solid var(--blue); border-right: 2px solid var(--blue); transform: rotate(45deg); }
+.next-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; width: 1320px; text-align: left; }
+.next-row .blk { min-height: 96px; }
+.row-h { width: 1320px; text-align: left; font: 600 18px/1.2 var(--display); margin-bottom: -14px; }
+.legend { display: flex; gap: 26px; align-items: center; font: 400 16px/1 var(--text); color: var(--fg-2); }
+.legend i { display: inline-block; width: 30px; height: 18px; border-radius: 6px; border: 1.5px solid var(--line-2); background: var(--card); vertical-align: -4px; margin-right: 9px; }
+.legend i.dash { border-style: dashed; background: transparent; }
+
+/* ---------- s15 demo ---------- */
+.flow { display: flex; align-items: center; gap: 16px; font: 600 26px/1 var(--display); color: var(--fg); }
+.flow i { font-style: normal; color: var(--fg-3); font-weight: 400; }
+.btns { display: flex; align-items: center; gap: 34px; }
+.pill { display: inline-flex; align-items: center; height: 64px; padding: 0 34px; border-radius: 999px; background: linear-gradient(95deg, #7b55ff, #3e7bff); color: #fff; font: 600 24px/1 var(--display); text-decoration: none; box-shadow: 0 10px 40px -10px rgb(123 85 255 / .8); transition: transform .2s var(--ease), box-shadow .2s var(--ease); }
+.pill:hover { transform: translateY(-2px); box-shadow: 0 14px 50px -10px rgb(123 85 255 / .9); }
+.link { font: 500 24px/1 var(--display); color: #9db6ff; text-decoration: none; }
+.link:hover { text-decoration: underline; }
+.pill:focus-visible, .link:focus-visible, .ctl:focus-visible { outline: 3px solid #b7a6ff; outline-offset: 4px; }
+
+/* ---------- s16 pricing ---------- */
+.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; width: 1240px; }
+.plan { position: relative; padding: 34px 32px 32px; border-radius: 26px; background: var(--card); border: 1px solid var(--line); text-align: left; display: flex; flex-direction: column; gap: 8px; }
+.plan.featured { border: 1.5px solid transparent; background: linear-gradient(var(--card), var(--card)) padding-box, var(--grad) border-box; box-shadow: 0 0 100px -30px rgb(139 107 255 / .65); }
+.pname { font: 600 22px/1.2 var(--display); color: var(--fg-2); }
+.price { font: 700 84px/1.05 var(--display); letter-spacing: -.035em; }
+.per { font: 400 18px/1.3 var(--text); color: var(--fg-2); min-height: 24px; }
+.pdesc { margin-top: 12px; font: 400 20px/1.45 var(--text); color: var(--fg-2); }
+
+/* ---------- s17 roadmap ---------- */
+.road { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px; width: 1320px; text-align: left; }
+.road::before { content: ""; position: absolute; left: 10px; right: 0; top: 9px; height: 2px; background: linear-gradient(90deg, var(--violet), var(--blue) 60%, rgb(91 140 255 / 0)); }
+.ms { position: relative; display: flex; flex-direction: column; gap: 10px; }
+.ms .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 3px solid var(--violet); margin-bottom: 16px; }
+.ms.now .dot { background: var(--violet); box-shadow: 0 0 24px var(--violet); }
+.when { font: 600 18px/1.2 var(--display); }
+.ms h3 { font: 600 31px/1.15 var(--display); letter-spacing: -.02em; }
+.ms p { font: 400 19px/1.45 var(--text); color: var(--fg-2); }
+
+/* ---------- s18 one more thing ---------- */
+.omt { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; font: 600 66px/1 var(--display); letter-spacing: -.02em; color: var(--fg-2);
+  transition: opacity .8s var(--ease), filter .8s var(--ease), transform .9s var(--ease); }
+.slide.active .omt:not(.gone) { animation: rise 1.6s var(--ease) .5s both; }
+.omt.gone { opacity: 0; filter: blur(14px); transform: scale(.96); }
+.pp-wrap { display: flex; align-items: center; gap: 80px; text-align: left; }
+.pass { width: 470px; flex: none; padding: 26px 28px; border-radius: 28px; color: #fff; display: flex; flex-direction: column; gap: 16px; transform: rotate(-4deg);
+  background: linear-gradient(135deg, #6a3dff 0%, #3e7bff 62%, #8a5cff 100%); box-shadow: 0 50px 110px -30px rgb(91 60 255 / .75), inset 0 0 0 1px rgb(255 255 255 / .18); }
+.pass-top { display: flex; align-items: center; justify-content: space-between; font: 600 15px/1 var(--text); color: rgb(255 255 255 / .8); }
+.pass-top .logo-host { width: 92px; }
+.pass-name { font: 700 44px/1 var(--display); letter-spacing: -.02em; }
+.pass-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding-top: 12px; border-top: 1px solid rgb(255 255 255 / .22); }
+.pass-row b { font: 600 20px/1.2 var(--display); }
+.pass-row span { font: 700 20px/1.2 var(--display); }
+.pass-row small { grid-column: 1 / -1; font: 400 14px/1.3 var(--text); color: rgb(255 255 255 / .75); }
+.pass-foot { font: 400 13px/1.3 var(--text); color: rgb(255 255 255 / .7); }
+.pass-text { width: 640px; display: flex; flex-direction: column; gap: 18px; }
+
+/* ---------- rehearsal notes (N), hint ---------- */
+.notes-pane { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 30; max-height: 38vh; overflow: auto; background: #1c1c1e; border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; font: 400 18px/1.55 var(--text); color: var(--fg); }
+.notes-pane p { margin: 0 0 .6em; }
+/* full-screen button: appears only while the mouse moves; the cursor hides when it stops, like Keynote */
+.fs-btn { position: fixed; right: 16px; bottom: 16px; z-index: 29; display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: 999px; background: rgb(28 28 30 / .88); color: var(--fg); font: 500 14px/1 var(--text); cursor: pointer;
+  opacity: 0; pointer-events: none; transition: opacity .3s var(--ease); }
+.fs-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+body.pointer .fs-btn { opacity: 1; pointer-events: auto; }
+body.presenter .fs-btn { display: none; }
+body.idle, body.idle * { cursor: none !important; }
+.fs-btn:focus-visible { outline: 3px solid #b7a6ff; outline-offset: 3px; }
+.hint { position: fixed; right: 16px; top: 16px; z-index: 29; font: 500 12px/1.5 var(--mono); color: var(--fg-2); background: #1c1c1e; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; transition: opacity .6s; }
+
+/* ---------- presenter window (P) ---------- */
+body.presenter .viewport { right: 38%; bottom: 30%; }
+.pp { position: fixed; top: 0; right: 0; bottom: 0; width: 38%; padding: 24px; display: flex; flex-direction: column; gap: 18px; overflow: auto; background: #1c1c1e; border-left: 1px solid var(--line); }
+.pp-bottom { position: fixed; left: 0; bottom: 0; width: 62%; height: 30%; padding: 18px 24px; display: flex; gap: 40px; align-items: center; background: #111114; border-top: 1px solid var(--line); }
+.pp-clock { font: 700 72px/1 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.pp-clock.late { color: var(--lemon); }
+.pp-clock.over { color: #ff6b6b; }
+.pp-label { font: 600 12px/1 var(--text); letter-spacing: .12em; text-transform: uppercase; color: var(--fg-3); }
+.pp-notes { font: 400 21px/1.55 var(--text); }
+.pp-notes p { margin: 0 0 .7em; }
+.pp-next { font: 600 20px/1.3 var(--display); }
+.ctl { font: 600 15px/1 var(--text); color: var(--fg); background: #2c2c2e; border: 0; border-radius: 999px; padding: 11px 16px; cursor: pointer; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="lg-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b55ff"/><stop offset="1" stop-color="#4f86ff"/></linearGradient>
+    <linearGradient id="lg-w" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#9b7bff"/><stop offset="1" stop-color="#5b8cff"/></linearGradient>
+    <linearGradient id="ig" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="#a78bff"/><stop offset=".55" stop-color="#6f8cff"/><stop offset="1" stop-color="#d68bff"/></linearGradient>
+  </defs>
+</svg>
+
+<div class="viewport" id="viewport">
+  <div class="edge" aria-hidden="true"></div>
+  <div class="stage" id="stage">
+
+    <!-- ===================== TONY ===================== -->
+
+    <!-- 1 · title -->
+    <section class="slide title" data-title="Title" data-speaker="Tony" data-at="">
+      <div class="halo"></div>
+      <span class="logo-host mark-hero" data-logo="mark"></span>
+      <p class="title-team in">Team Flying Chinese</p>
+      <p class="title-sub grad in" style="--d:1.35s">Airwallex PS1 · Getting good</p>
+      <aside class="notes">
+        <p>[Holding slide while you walk on. The timer starts when you move to the next slide.]</p>
+      </aside>
+    </section>
+
+    <!-- 2 · hook: the lasagna -->
+    <section class="slide lasagna" data-title="Hook: the lasagna" data-speaker="Tony" data-at="0:00">
+      <div class="warm"></div>
+      <div class="dish" data-art="lasagna"></div>
+      <div class="bin b" data-f="1" data-art="bin"></div>
+      <div class="lower"><b>Tony</b><span>Team Flying Chinese</span></div>
+      <aside class="notes">
+        <p>You're invited to a dinner party. You bring a lasagna. Homemade, of course. Everyone loves it.</p>
+        <p>Someone leans over: "This is incredible. Can I get the recipe?" And you hear yourself say: "Oh… it's a family secret."</p>
+        <p>[click: the bin shows the supermarket box] [Wait two seconds for the laugh.]</p>
+        <p>[→ next slide as you say:] You've shipped something you didn't fully understand.</p>
+      </aside>
+    </section>
+
+    <!-- 3 · hook: the line -->
+    <section class="slide" data-title="Hook: the line" data-speaker="Tony" data-at="0:30">
+      <p class="quote"><span class="in" style="--d:.2s">“You’ve shipped something</span><span class="in" style="--d:.55s">you didn’t fully understand.”</span></p>
+      <p class="cap in" style="--d:1.1s">Said to us at the Airwallex briefing.</p>
+      <p class="sub b" data-f="1">Hands up if that’s you.</p>
+      <aside class="notes">
+        <p>You've shipped something you didn't fully understand.</p>
+        <p>[click] Hands up if that's you. [pause]</p>
+        <p>Airwallex said this at the briefing, and told us to hold on to that feeling, because it's the most important data in the room. So let's look at the data.</p>
+      </aside>
+    </section>
+
+    <!-- 3 · data -->
+    <section class="slide" data-title="Data: AI writes the code" data-speaker="Tony" data-at="0:50">
+      <p class="eyebrow grad in">AI is already doing the work</p>
+      <p class="stat grad in" style="--d:.25s"><span class="count" data-to="42">42</span>%</p>
+      <p class="sub in" style="--d:.5s">of the code developers commit is now AI-generated or assisted.</p>
+      <p class="src in" style="--d:.7s">Sonar, State of Code Developer Survey 2026 · 1,100+ developers, self-reported</p>
+      <aside class="notes">
+        <p>Developers now say 42% of the code they commit is written or assisted by AI. AI is already doing the work.</p>
+      </aside>
+    </section>
+
+    <!-- 4 · market -->
+    <section class="slide" data-title="Market background" data-speaker="Tony" data-at="1:05">
+      <p class="eyebrow grad in">The market</p>
+      <div class="duo">
+        <div class="in" style="--d:.2s">
+          <p class="stat-m grad"><span class="count" data-to="81">81</span>%</p>
+          <p class="cap">of Australian SMEs already use AI or automation in finance.</p>
+          <p class="src">Airwallex × YouGov, Sep 2025 · 505 senior decision makers</p>
+        </div>
+        <div class="in" style="--d:.45s">
+          <p class="stat-m grad"><span class="count" data-to="5320" data-sep>5,320</span></p>
+          <p class="cap">Australian software firms with 5 to 199 staff.</p>
+          <p class="src">ABS 8165.0, June 2025, ANZSIC 7000 · 1,422 with 20–199 staff, 3,898 with 5–19</p>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>And the businesses Airwallex serves are all in. Your own research with YouGov found 81% of Australian SMEs already use AI or automation in finance.</p>
+        <p>In software alone, Australia has about 5,300 firms with 5 to 199 staff. That's our market.</p>
+      </aside>
+    </section>
+
+    <!-- 5 · audience -->
+    <section class="slide" data-title="Target audience" data-speaker="Tony" data-at="1:25">
+      <h2 class="h2 in">Built for the junior who ships with AI.</h2>
+      <p class="sub in" style="--d:.3s">And for the people around them.</p>
+      <div class="trio">
+        <div class="b" data-f="1">
+          <span class="ico"><svg viewBox="0 0 24 24"><circle cx="10" cy="8" r="3.6"/><path d="M3.5 20c.6-3.6 3.2-5.8 6.5-5.8s5.9 2.2 6.5 5.8"/><path d="M19 3v4.5M16.75 5.25h4.5"/></svg></span>
+          <p class="role grad">Uses it</p>
+          <h3>Junior engineers</h3>
+          <p class="t">Ship with AI every day. 75% of the least-experienced developers say speed is AI’s key benefit.</p>
+          <p class="src">Info-Tech Research Group, 2026 · veterans: 55%</p>
+        </div>
+        <div class="b" data-f="2">
+          <span class="ico"><svg viewBox="0 0 24 24"><circle cx="7" cy="13" r="3.5"/><circle cx="17" cy="13" r="3.5"/><path d="M10.5 13h3M3.6 11.6 2 8.8M20.4 11.6 22 8.8"/></svg></span>
+          <p class="role grad">Reviews it</p>
+          <h3>Seniors</h3>
+          <p class="t">Usually one or two per team, reviewing everything, often with no separate QA or security team.</p>
+          <p class="src">Our assumption for this segment, to validate in the pilot</p>
+        </div>
+        <div class="b" data-f="3">
+          <span class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7M3 12.5h18"/></svg></span>
+          <p class="role grad">Buys it</p>
+          <h3>Engineering leads</h3>
+          <p class="t">Want the speed of AI without shipping code nobody understands.</p>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>Inside those firms, we build for three people.</p>
+        <p>[click] The junior engineer, who ships with AI every day. Three in four of the least-experienced developers say speed is what AI gives them.</p>
+        <p>[click] The one or two seniors who review everything.</p>
+        <p>[click] And the engineering lead, who wants that speed without the risk, and pays for Viva.</p>
+      </aside>
+    </section>
+
+    <!-- 6 · problem through the audience: Tony -->
+    <section class="slide split" data-title="Meet Tony" data-speaker="Tony" data-at="1:50">
+      <div class="split-l">
+        <p class="eyebrow grad in">A story from our demo</p>
+        <h2 class="h1 in" style="--d:.15s">Meet Tony.</h2>
+        <p class="sub in" style="--d:.35s">Graduate engineer, month three. AI wrote his pull request in minutes.</p>
+        <p class="big-line b" data-f="1">Customer 42 just read customer 17’s invoices.</p>
+        <p class="big-line grad b" data-f="2">Nobody asked Tony a single question.</p>
+      </div>
+      <div class="split-r">
+        <div class="win in" style="--d:.35s">
+          <div class="win-bar"><i></i><i></i><i></i><span>github.com/harbourpay/billing/pull/214</span></div>
+          <div class="pr-body">
+            <p class="pr-t">Let customers download their invoices <span>#214</span></p>
+            <p class="pr-m"><span class="merged" data-icon="merge"></span>tony merged 1 commit into <code>main</code></p>
+            <pre class="code"><span class="k">def</span> <span class="f">list_invoices</span>(
+    <span class="hl">customer_id: int</span>,   <span class="c"># from the request</span>
+    user = Depends(current_user)):
+  <span class="k">return</span> db.invoices(customer_id)</pre>
+            <div class="checks">
+              <div><span class="ok" data-icon="check"></span>unit tests<em>Successful</em></div>
+              <div><span class="ok" data-icon="check"></span>lint<em>Successful</em></div>
+              <div class="none"><span class="nochk"></span>does Tony understand it?<em>No check</em></div>
+            </div>
+          </div>
+        </div>
+        <div class="win term b" data-f="1">
+          <div class="win-bar"><i></i><i></i><i></i><span>Terminal · signed in as customer 42</span></div>
+          <pre class="term-body"><span class="p">$</span> curl /invoices?customer_id=<b>17</b>
+<span class="bad">200 OK</span>
+[{"id": "INV-1701", "customer": "Northwind Pty Ltd"},
+ {"id": "INV-1702", "customer": "Northwind Pty Ltd"},
+ {"id": "INV-1703", "customer": "Northwind Pty Ltd"}]</pre>
+        </div>
+      </div>
+      <p class="src foot-src">Illustrative story. Harbourpay, Tony and all data are fictional.</p>
+      <aside class="notes">
+        <p>Meet Tony. Same name as me, so imagine it's me, three months into my first job. My lead asks me to let customers download their invoices. AI writes it in minutes. Tests pass. Lint passes. It merges.</p>
+        <p>[click] But the code trusts the customer ID in the request. Customer 42 asks for customer 17, and gets Northwind's invoices.</p>
+        <p>[click] Nobody asked me a single question. Not because anyone was careless. Because nothing in the workflow asks.</p>
+      </aside>
+    </section>
+
+    <!-- 7 · problem -->
+    <section class="slide" data-title="The problem" data-speaker="Tony" data-at="2:30">
+      <p class="eyebrow grad in">The problem</p>
+      <h2 class="h2 in" style="--d:.15s">Companies require AI for speed.<br><span class="grad">Nothing checks whether the person shipping the code understands it.</span></h2>
+      <p class="sub b" data-f="1">So code no one understands reaches production. And juniors stop learning.</p>
+      <aside class="notes">
+        <p>That's the problem. Companies require AI for speed, but nothing checks whether the person shipping the code understands it.</p>
+        <p>[click] So code no one understands reaches production. And juniors stop learning.</p>
+      </aside>
+    </section>
+
+    <!-- 8 · why: three numbers -->
+    <section class="slide" data-title="Why it happens" data-speaker="Tony" data-at="2:45">
+      <p class="eyebrow grad in">Why it happens</p>
+      <div class="trio stats3">
+        <div class="b" data-f="1">
+          <p class="role">Understanding is never checked</p>
+          <p class="stat-s grad"><span class="count" data-to="16">16</span>%</p>
+          <h3>of seniors say juniors fully understand the AI code they submit.</h3>
+          <p class="src">BairesDev Dev Barometer, Q2 2026 · 1,569 developers</p>
+        </div>
+        <div class="b" data-f="2">
+          <p class="role">Seniors can’t review it all</p>
+          <p class="stat-s grad">+<span class="count" data-to="91">91</span>%</p>
+          <h3>PR review time on the teams that use AI most.</h3>
+          <p class="src">Faros AI, The AI Productivity Paradox, 2025</p>
+        </div>
+        <div class="b" data-f="3">
+          <p class="role">The cost shows up twice</p>
+          <p class="stat-s grad"><span class="count" data-to="80">80</span>%</p>
+          <h3>of executives traced an incident or defect to AI code in the past year.</h3>
+          <p class="cap">And juniors learn less: 50% vs 67% on a concept quiz.</p>
+          <p class="src">Sauce Labs 2026, 400 executives · Anthropic RCT, Jan 2026, n = 52</p>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>[click] Only 16% of seniors say juniors fully understand the AI code they submit.</p>
+        <p>[click] Review can't keep up: PR review time is up 91% on high-AI teams, with one or two seniors to do it.</p>
+        <p>[click] And it costs twice. 80% of executives traced an incident or defect to AI code last year. And juniors learn less: 50% on a concept quiz, against 67% for those who coded by hand.</p>
+        <p>If juniors never become seniors, the ladder loses its bottom rung. That's the question Airwallex asked us.</p>
+      </aside>
+    </section>
+
+    <!-- 9 · punch -->
+    <section class="slide" data-title="Code review checks the code" data-speaker="Tony" data-at="3:25">
+      <p class="punch in" style="--d:.15s">Code review checks the code.</p>
+      <p class="punch grad in" style="--d:.7s">Nobody checks the coder.</p>
+      <aside class="notes">
+        <p>Code review checks the code. [pause] Nobody checks the coder.</p>
+      </aside>
+    </section>
+
+    <!-- 10 · competitors -->
+    <section class="slide" data-title="Competitors" data-speaker="Tony" data-at="3:30">
+      <h2 class="h2 in">How others approach it.</h2>
+      <div class="cmp in" id="cmp" style="--d:.3s"></div>
+      <p class="src in" style="--d:.5s">From each vendor’s public website, 29 Sep 2026; we did not try the products. — means not offered or not stated. In today’s demo, code results come from fixed task data.</p>
+      <aside class="notes">
+        <p>People have tried. AI code review checks the code. PR quiz tools check the person, once, mostly with quick questions. Oral exams for schools ask open questions, but outside the pull request.</p>
+        <p>From what their websites say, none of them checks answers against running code, re-tests you on a new task, or gets lighter as you improve.</p>
+      </aside>
+    </section>
+
+    <!-- 11 · originality -->
+    <section class="slide" data-title="Originality" data-speaker="Tony" data-at="3:55">
+      <p class="h1 in" style="--d:.15s">Others ask, “Did you understand this PR?”</p>
+      <p class="h1 grad in" style="--d:.8s">We ask, “Are you getting better?”</p>
+      <aside class="notes">
+        <p>Others ask: did you understand this PR? [pause] We ask: are you getting better?</p>
+      </aside>
+    </section>
+
+    <!-- 12 · reveal -->
+    <section class="slide reveal" data-title="Introducing Viva" data-speaker="Tony" data-at="4:03" data-glow>
+      <div class="halo rise"></div>
+      <div class="rv">
+        <p class="cap in" style="--d:.3s">Introducing</p>
+        <span class="logo-host logo-xl" data-logo="draw"></span>
+        <p class="h3 grad in" style="--d:2.1s">Checks the coder, not the code.</p>
+      </div>
+      <div class="hero-shot b" data-f="1">
+        <div class="win merge">
+          <div class="win-bar"><i></i><i></i><i></i><span>github.com/harbourpay/billing/pull/214</span></div>
+          <div class="mb">
+            <div class="mb-head"><span class="st"><i></i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span><div><b>Some checks haven’t completed yet</b><small>1 pending and 2 successful checks</small></div></div>
+            <div class="mb-row"><span class="ok" data-icon="check"></span><b>unit tests</b><em>Successful</em></div>
+            <div class="mb-row"><span class="ok" data-icon="check"></span><b>lint</b><em>Successful</em></div>
+            <div class="mb-row viva"><span class="st"><i></i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span><b>viva / understanding</b><em>Tony explains PR #214 before it merges</em><span class="req">Required</span></div>
+            <div class="mb-foot"><span class="mbtn">Merge pull request</span>Merging is blocked</div>
+          </div>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>So we built Viva. [pause] Viva checks the coder, not the code.</p>
+        <p>[click] It's one more required check on the pull request. Before Tony's PR merges, Tony explains it. Johnny, show them how.</p>
+      </aside>
+    </section>
+
+    <!-- ===================== JOHNNY ===================== -->
+
+    <!-- 13 · how it works -->
+    <section class="slide" data-title="How Viva solves it" data-speaker="Johnny" data-at="4:20">
+      <p class="eyebrow grad in">How Viva solves it</p>
+      <h2 class="h2 in" style="--d:.15s">Four steps. Inside every pull request.</h2>
+      <div class="steps">
+        <div class="step b" data-f="1">
+          <span class="sico"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4.2-5"/><circle cx="12" cy="16" r="1.3"/></svg></span>
+          <span class="sn grad">1 · Triage</span>
+          <h3>Score every PR</h3>
+          <p>Risk × novelty × your proven level. Routine work passes untouched.</p>
+        </div>
+        <div class="step b" data-f="2">
+          <span class="sico"><svg viewBox="0 0 24 24"><path d="M5 4.5h14A2.5 2.5 0 0 1 21.5 7v8a2.5 2.5 0 0 1-2.5 2.5h-6.5L8 21v-3.5H5A2.5 2.5 0 0 1 2.5 15V7A2.5 2.5 0 0 1 5 4.5z"/><path d="M8 10v2M11 8.5v5M14 9.5v3M17 10.5v1"/></svg></span>
+          <span class="sn grad">2 · Three-minute viva</span>
+          <h3>Explain your change</h3>
+          <p>A short AI interview on risky or new work: how it works and why, in your own words. Graded on what you say, never face, voice or accent.</p>
+        </div>
+        <div class="step b" data-f="3">
+          <span class="sico"><svg viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><path d="M10 9.3v5.4l4.5-2.7z"/></svg></span>
+          <span class="sn grad">3 · Only real gaps</span>
+          <h3>Seniors see clips</h3>
+          <p>A first miss is feedback and new questions. Repeat misses, or very high risk, go to a senior as timestamped clips.</p>
+        </div>
+        <div class="step b" data-f="4">
+          <span class="sico"><svg viewBox="0 0 24 24"><path d="M12 2.8l2.4 1.8 3-.2.9 2.8 2.4 1.8-1 2.8 1 2.8-2.4 1.8-.9 2.8-3-.2L12 21.2l-2.4-1.8-3 .2-.9-2.8-2.4-1.8 1-2.8-1-2.8 2.4-1.8.9-2.8 3 .2z"/><path d="M8.5 12.2l2.3 2.3 4.7-4.8"/></svg></span>
+          <span class="sn grad">4 · Earn trust</span>
+          <h3>Each pass gets lighter</h3>
+          <p>Your level on the concept rises, so the next similar change gets a lighter check.</p>
+        </div>
+      </div>
+      <div class="lower"><b>Johnny</b><span>Team Flying Chinese</span></div>
+      <aside class="notes">
+        <p>Thanks, Tony. Four steps, inside every pull request.</p>
+        <p>[click] One: triage. Every PR is scored by risk, novelty and your proven level. A typo fix passes untouched.</p>
+        <p>[click] Two: a three-minute viva. Risky or new work gets a short AI interview: how it works and why, in your own words. We grade what you say, never your face, voice or accent.</p>
+        <p>[click] Three: only real gaps reach a senior. A first miss is feedback and fresh questions. A repeat miss, or very high risk, goes to a senior as timestamped clips.</p>
+        <p>[click] Four: every pass makes the next one lighter.</p>
+      </aside>
+    </section>
+
+    <!-- 14 · impact -->
+    <section class="slide impact" data-title="Impact" data-speaker="Johnny" data-at="5:00">
+      <div class="halo"></div>
+      <div class="glass in" style="--d:.2s">
+        <p class="eyebrow grad">The problem</p>
+        <p class="glass-t">Companies require AI for speed.<br><span class="grad">Nothing checks whether the person shipping the code understands it.</span></p>
+      </div>
+      <div class="flash" aria-hidden="true"></div>
+      <p class="impact-q">What’s the <span class="grad">impact</span>?</p>
+      <div class="grid2 impact-grid" data-f="1">
+        <div style="--j:0"><p class="for grad">For companies</p><p class="what">Catch code no one understands before it ships, not after it breaks.</p></div>
+        <div style="--j:1"><p class="for grad">For seniors</p><p class="what">Review only the changes that need them, with the exact moment to watch.</p></div>
+        <div style="--j:2"><p class="for grad">For juniors</p><p class="what">Grow through real work instead of separate courses, with a record they own.</p></div>
+        <div style="--j:3"><p class="for grad">For the industry</p><p class="what">Companies keep hiring juniors while still requiring AI.</p></div>
+      </div>
+      <aside class="notes">
+        <p>Remember the problem: companies require AI for speed, and nothing checks whether the person shipping the code understands it.</p>
+        <p>[click: the question breaks the glass] So what's the impact? Companies catch code no one understands before it ships. Seniors review only what needs them, with the exact moment to watch. Juniors grow through real work, with a record they own. And the industry keeps hiring juniors while still requiring AI.</p>
+        <p>These are design goals, and our pilot measures each one.</p>
+      </aside>
+    </section>
+
+    <!-- 15 · architecture -->
+    <section class="slide archi" data-title="Technical architecture" data-speaker="Johnny" data-at="5:25">
+      <p class="eyebrow grad in">Technical architecture</p>
+      <h2 class="h2 in" style="--d:.15s">How it’s built.</h2>
+      <div class="stack in" style="--d:.3s">
+        <div class="tier br">
+          <p class="tier-h grad">Browser</p>
+          <div class="blocks">
+            <div class="blk"><b>Viva workspace</b><span>HTML, CSS and plain JavaScript</span></div>
+            <div class="blk"><b>Voice and camera</b><span>MediaRecorder, saved in IndexedDB</span></div>
+            <div class="blk"><b>Reviewer view</b><span>Signed five-minute playback links, access log</span></div>
+          </div>
+        </div>
+        <div class="tier srv">
+          <p class="tier-h grad">Viva server · Python</p>
+          <div class="blocks">
+            <div class="blk core"><b>Viva engine</b><span>Runs the interview, calls Claude</span></div>
+            <div class="blk"><b>Check grader</b><span>Scores the three checks from fixed answers</span></div>
+            <div class="blk"><b>Learning loop API</b><span>FastAPI on Uvicorn</span></div>
+            <div class="blk"><b>Gap tracker</b><span>SQLite; a gap closes only on a new task</span></div>
+            <div class="blk next"><b>Triage</b><span>Risk × novelty × proven level, from the PR</span></div>
+            <div class="blk"><b>Tests</b><span>14 automated tests on GitHub Actions</span></div>
+          </div>
+        </div>
+        <div class="tier ai">
+          <p class="tier-h grad">AI</p>
+          <div class="blocks">
+            <div class="blk core"><b>Claude Sonnet 5.5</b><span>Asks one follow-up and marks against a fixed rubric</span></div>
+            <div class="blk"><b>What the model sees</b><span>A short snippet and your answer. Never the answer key.</span></div>
+            <div class="blk next"><b>Your own model</b><span>Amazon Bedrock in your AWS, or open-weight</span></div>
+          </div>
+        </div>
+      </div>
+      <p class="row-h grad in" style="--d:.45s">Next: into your workflow</p>
+      <div class="next-row in" style="--d:.5s">
+        <div class="blk next"><b>GitHub App</b><span>A required check with a status and a link</span></div>
+        <div class="blk next"><b>CI runner job</b><span>Diff only, secret scan, sandboxed run of the checks</span></div>
+        <div class="blk next"><b>Speech to text</b><span>faster-whisper, running locally</span></div>
+        <div class="blk next"><b>Egress policy</b><span>Code leaves only where each repo allows it</span></div>
+      </div>
+      <p class="legend in" style="--d:.6s"><span><i></i>Built in our prototype</span><span><i class="dash"></i>Next</span></p>
+      <aside class="notes">
+        <p>Here's how it's built. In the browser: the Viva workspace, voice and camera recording, and a reviewer view with signed, five-minute playback links.</p>
+        <p>On our Python server: the Viva engine runs the interview and calls Claude, a grader scores the checks from fixed answers, and a gap tracker in SQLite only closes a gap on a new task. Fourteen automated tests run on every push.</p>
+        <p>Claude Sonnet asks one follow-up and marks against a fixed rubric. It sees a short snippet and your answer, never the answer key.</p>
+        <p>Dashed boxes are next: the GitHub App, a job on your own CI runner, local speech-to-text, and a per-repo egress policy.</p>
+      </aside>
+    </section>
+
+    <!-- 16 · demo -->
+    <section class="slide" data-title="Demo" data-speaker="Johnny" data-at="5:55">
+      <p class="eyebrow grad in">Demo</p>
+      <h2 class="hero in" style="--d:.15s">Let’s see it.</h2>
+      <p class="sub in" style="--d:.35s">Tony takes his viva on PR #214.</p>
+      <p class="flow in" style="--d:.5s">Predict <i>›</i> Explain <i>›</i> Run it <i>›</i> Re-test</p>
+      <div class="btns in" style="--d:.65s">
+        <a class="pill" href="http://localhost:8791" target="_blank" rel="noopener">Open live demo</a>
+        <a class="link" href="http://localhost:8780" target="_blank" rel="noopener">Offline fallback ›</a>
+      </div>
+      <p class="src in" style="--d:.8s">Synthetic company and data. Scores are labelled Simulated.</p>
+      <aside class="notes">
+        <p>Let's see it. Tony takes his viva on PR #214. The company and data are synthetic, and scores are labelled Simulated.</p>
+        <p>[Switch to the demo. About 75 seconds. Come back with →.]</p>
+      </aside>
+    </section>
+
+    <!-- 17 · business model -->
+    <section class="slide" data-title="Business model" data-speaker="Johnny" data-at="7:10">
+      <p class="eyebrow grad in">Business model</p>
+      <h2 class="h2 in" style="--d:.15s">Pricing.</h2>
+      <div class="plans in" style="--d:.3s">
+        <div class="plan"><span class="pname">Starter</span><span class="price">Free</span><span class="per">&nbsp;</span><span class="pdesc">Up to 3 juniors. The full loop.</span></div>
+        <div class="plan featured"><span class="pname">Team</span><span class="price">A$20</span><span class="per">per junior, per month</span><span class="pdesc">Unlimited juniors, senior review, gap reports. Seniors are always free.</span></div>
+        <div class="plan"><span class="pname">Enterprise</span><span class="price">Custom</span><span class="per">&nbsp;</span><span class="pdesc">SSO, private deployment, custom concept packs.</span></div>
+      </div>
+      <p class="cap b" data-f="1">Break-even: at 10 juniors, Team pays for itself if it saves a senior 2 hours a month.</p>
+      <p class="src in" style="--d:.5s">Prices are a hypothesis to test in the pilot. Break-even assumes A$100 an hour for a senior.</p>
+      <aside class="notes">
+        <p>The business model. Starter is free for up to three juniors. Team is about twenty dollars per junior per month, and seniors are always free. Enterprise adds SSO, private deployment and custom concept packs.</p>
+        <p>[click] With ten juniors, Team pays for itself if it saves a senior two hours a month. These prices are a hypothesis the pilot will test.</p>
+      </aside>
+    </section>
+
+    <!-- 18 · roadmap -->
+    <section class="slide" data-title="What's next" data-speaker="Johnny" data-at="7:30">
+      <h2 class="h2 in">What’s next.</h2>
+      <div class="road">
+        <div class="ms now b" data-f="1"><span class="dot"></span><p class="when grad">Now</p><h3>Working prototype</h3><p>The full loop, with a live AI follow-up question.</p></div>
+        <div class="ms b" data-f="2"><span class="dot"></span><p class="when grad">Next 4–6 weeks</p><h3>Pilot with one team</h3><p>Senior minutes per PR, escalation rate, retake pass rate, incidents.</p></div>
+        <div class="ms b" data-f="3"><span class="dot"></span><p class="when grad">3 months</p><h3>Paid pilot</h3><p>Conversion, renewal and weekly use.</p></div>
+        <div class="ms b" data-f="4"><span class="dot"></span><p class="when grad">Then</p><h3>New concept packs</h3><p>Beyond code: compliance review and data analysis.</p></div>
+      </div>
+      <p class="cap in" style="--d:.4s">Go to market: one design partner, then one 5–10 developer team, then team by team.</p>
+      <aside class="notes">
+        <p>What's next. [click] Today, a working prototype. [click] Next, a four-to-six week pilot with one team. [click] Then a paid pilot, [click] and new concept packs beyond code, like compliance review and data analysis.</p>
+        <p>One design partner, then one team, then team by team.</p>
+      </aside>
+    </section>
+
+    <!-- 19 · one more thing -->
+    <section class="slide" data-title="One more thing" data-speaker="Johnny" data-at="7:45">
+      <p class="omt" data-out="1">One more thing.</p>
+      <div class="pp-wrap b" data-f="1">
+        <div class="pass">
+          <div class="pass-top"><span class="logo-host" data-logo="light"></span><span>Understanding Passport</span></div>
+          <p class="pass-name">Tony</p>
+          <div class="pass-row"><b>Access control</b><span>Level 2</span><small>Proved on PR #214, then on a new endpoint</small></div>
+          <div class="pass-row"><b>Currency precision</b><span>Level 1</span><small>First viva passed</small></div>
+          <p class="pass-foot">Illustrative. Shared only when Tony chooses to.</p>
+        </div>
+        <div class="pass-text">
+          <p class="eyebrow grad">On our roadmap</p>
+          <h2 class="h2">Understanding Passport</h2>
+          <p class="sub">Every concept you prove, in one record you own. Take it to your next employer, or keep it to yourself.</p>
+          <p class="cap">Same engine, new places: assignment defences at universities.</p>
+        </div>
+      </div>
+      <aside class="notes">
+        <p>One more thing. [pause]</p>
+        <p>[click] The Understanding Passport: every concept you prove, in one record you own. Take it to your next employer, or keep it to yourself. It's on our roadmap, and the same engine can run assignment defences at universities.</p>
+      </aside>
+    </section>
+
+    <!-- 20 · close -->
+    <section class="slide" data-title="Close" data-speaker="Johnny" data-at="8:05" data-glow-step="1">
+      <p class="h1 in" style="--d:.15s">Tony didn’t need less AI.</p>
+      <p class="h1 grad in" style="--d:.6s">He needed one question before merge.</p>
+      <div class="win merge in" data-s="1" style="--d:.9s; width:900px">
+        <div class="mb">
+          <div class="mb-head"><span class="st"><i></i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span><div><b><span class="when-wait">Some checks haven’t completed yet</span><span class="when-pass">All checks have passed</span></b><small><span class="when-wait">1 pending and 2 successful checks</span><span class="when-pass">3 successful checks</span></small></div></div>
+          <div class="mb-row viva"><span class="st"><i></i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span><b>viva / understanding</b><em><span class="when-wait">Waiting for Tony’s viva</span><span class="when-pass">Understanding shown · access control, level 2</span></em><span class="req">Required</span></div>
+          <div class="mb-foot"><span class="mbtn">Merge pull request</span><span class="when-wait">Merging is blocked</span><span class="when-pass">This branch has no conflicts with the base branch</span></div>
+        </div>
+      </div>
+      <p class="sub b" data-f="2"><span style="color:var(--fg)">Code review checks the code. Viva checks the coder.</span> Pilot it with one of your teams.</p>
+      <aside class="notes">
+        <p>Back to Tony. He didn't need less AI. He needed one question before merge.</p>
+        <p>[click] With Viva he gets it, misses once, learns why, and proves it on the next endpoint. The check turns green, and now it means something.</p>
+        <p>[click] Code review checks the code. Viva checks the coder. Pilot it with one of your teams, and we'll show you how the next person gets good. Thank you.</p>
+      </aside>
+    </section>
+
+    <!-- 21 · end -->
+    <section class="slide" data-title="Thank you" data-speaker="Tony and Johnny" data-at="8:30">
+      <div class="halo"></div>
+      <span class="logo-host logo-l" data-logo="draw"></span>
+      <p class="hero in" style="--d:1.3s">Thank you.</p>
+      <p class="cap in" style="--d:1.6s">Team Flying Chinese · Airwallex PS1 · Getting good</p>
+      <aside class="notes">
+        <p>[Q&amp;A backdrop. Leave this up while the judges ask questions.]</p>
+        <p>If asked: demo data is synthetic and scores are labelled Simulated; the GitHub check is the next build step; nothing is measured yet, the pilot measures it.</p>
+        <p>If asked about vivaproof.com, also called Viva: it is for schools and checks who wrote an assignment. We work inside the pull request at work, and build skill over time.</p>
+        <p>Numbers: 42% Sonar 2026, self-reported; 81% Airwallex × YouGov, Sep 2025, n = 505, finance functions; 5,320 = ABS June 2025, ANZSIC 7000, 5–199 staff; 75% Info-Tech 2026; 16% BairesDev Q2 2026, n = 1,569; +91% Faros AI 2025; 80% Sauce Labs 2026, 400 executives; 50% vs 67% Anthropic RCT, n = 52.</p>
+      </aside>
+    </section>
+  </div>
+</div>
+
+<div class="hint" id="hint">→ / Space next · ← back · F full screen · N notes · P presenter</div>
+<button class="fs-btn" id="fsBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><span id="fsLabel">Full screen</span></button>
+<div class="notes-pane" id="notesPane" hidden></div>
+
+<script>
+(function () {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const stage = $('#stage');
+  const slides = $$('.slide', stage);
+  const notesPane = $('#notesPane');
+  const isPresenter = location.hash === '#presenter';
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const pad = n => String(n).padStart(2, '0');
+  let cur = 0, step = 0;
+
+  // ---------- icons ----------
+  const ICON = {
+    check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>',
+    merge: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2.3"/><circle cx="6" cy="19" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M6 7.3v9.4M8.1 6.1c5 .7 7.6 2.9 7.8 5.6"/></svg>Merged',
+    tick: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>'
+  };
+  $$('[data-icon]').forEach(el => { el.insertAdjacentHTML('afterbegin', ICON[el.dataset.icon]); });
+
+  // ---------- the logo (demo-video/public/logo.svg) with a light wordmark for the dark stage ----------
+  const LOGO = (kind) => {
+    const ink = kind === 'light' ? '#ffffff' : '#f5f5f7';
+    const v = kind === 'light' ? '#ffffff' : 'url(#lg-w)';
+    const mark = `<g class="lg-mark"><g transform="translate(1 2.5) scale(1.05)">
+        <path d="M7 2.5h10a5 5 0 0 1 5 5v6.3a5 5 0 0 1-5 5h-6l-4.2 3.3c-.7.6-1.7-.1-1.4-1l.7-2.5A5 5 0 0 1 2 13.8V7.5a5 5 0 0 1 5-5z" fill="${kind === 'light' ? 'rgba(255,255,255,.22)' : 'url(#lg-g)'}"/>
+        <g class="lg-eyes"><g class="lg-blink"><circle cx="8.7" cy="8.3" r="2.3" fill="#fff"/><circle cx="15.3" cy="8.3" r="2.3" fill="#fff"/><circle cx="9" cy="8.6" r="1.15" fill="#0b0a10"/><circle cx="15.6" cy="8.6" r="1.15" fill="#0b0a10"/></g></g>
+        <path class="lg-chk" pathLength="1" d="M8.6 12.9l2.4 2.4 4.5-4.5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g></g>`;
+    if (kind === 'mark') return `<svg class="logo" viewBox="1.5 3.5 25 24.5" role="img" aria-label="Viva">${mark}</svg>`;
+    return `<svg class="logo" viewBox="0 0 104 30" role="img" aria-label="Viva">${mark}
+      <g transform="translate(34 2)">
+        <g fill="none" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round" stroke="${ink}">
+          <path class="lg-l" style="--k:0" pathLength="1" d="M3 10l6 12 6-12"/>
+          <path class="lg-l" style="--k:1" pathLength="1" d="M21 11v11"/>
+          <path class="lg-l" style="--k:2" pathLength="1" d="M27 15.5l5 6.5 10-15.5" stroke="${v}"/>
+          <circle class="lg-l" style="--k:3" pathLength="1" cx="51" cy="16" r="6"/>
+          <path class="lg-l" style="--k:4" pathLength="1" d="M57 10v12"/>
+        </g>
+        <circle class="lg-dot" cx="21" cy="4.4" r="2.7" fill="#ffc53d"/>
+      </g></svg>`;
+  };
+  $$('[data-logo]').forEach(el => {
+    const kind = el.dataset.logo;
+    el.innerHTML = LOGO(kind === 'draw' ? 'full' : kind);
+    if (kind === 'draw') el.firstElementChild.classList.add('draw');
+  });
+
+  // ---------- illustrations for the lasagna hook (drawn, seeded, so every run looks the same) ----------
+  const rng = seed => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const f1 = v => v.toFixed(1);
+  function lasagnaSVG() {
+    const r = rng(7), X0 = 200, X1 = 700, DX = 60, DY = -70;
+    const wave = (base, amp, k, ph) => { const pts = []; for (let x = X0; x <= X1 + .1; x += 20) pts.push([x, base + amp * Math.sin((x - X0) / (X1 - X0) * Math.PI * k + ph)]); return pts; };
+    const B = [[250, 0, 0, 0], [283, 4, 5, .4], [298, 3, 6, 1.3], [338, 4, 4, 2.1], [350, 3, 7, .2], [365, 3, 5, 1.9], [402, 4, 4, .8], [412, 3, 6, 2.6], [427, 3, 5, 1.1], [462, 0, 0, 0]]
+      .map(([b, a, k, ph]) => wave(b, a, k, ph));
+    const FILL = ['url(#lzCheeseF)', 'url(#lzPasta)', 'url(#lzSauce)', 'url(#lzBech)', 'url(#lzPasta)', 'url(#lzSauce)', 'url(#lzBech)', 'url(#lzPasta)', 'url(#lzSauce)'];
+    const SIDE = ['#c98a35', '#d9b86c', '#861f10', '#d6ccb4', '#d9b86c', '#861f10', '#d6ccb4', '#d9b86c', '#7a1c0e'];
+    const band = (top, bot) => 'M' + top.map(q => f1(q[0]) + ' ' + f1(q[1])).join(' L') + ' L' + bot.slice().reverse().map(q => f1(q[0]) + ' ' + f1(q[1])).join(' L') + ' Z';
+    let front = '', side = '', meat = '', spots = '', specks = '', drips = '';
+    for (let i = 0; i < 9; i++) {
+      front += `<path d="${band(B[i], B[i + 1])}" fill="${FILL[i]}"/>`;
+      const yt = B[i][B[i].length - 1][1], yb = B[i + 1][B[i + 1].length - 1][1];
+      side += `<path d="M${X1} ${f1(yt)} L${X1 + DX} ${f1(yt + DY)} L${X1 + DX} ${f1(yb + DY)} L${X1} ${f1(yb)} Z" fill="${SIDE[i]}"/>`;
+    }
+    side += `<path d="M${X1} 250 L${X1 + DX} ${250 + DY} L${X1 + DX} ${462 + DY} L${X1} 462 Z" fill="#000" opacity=".22"/>`;
+    [2, 5, 8].forEach(li => {
+      for (let i = 0; i < 26; i++) {
+        const x = X0 + 8 + r() * (X1 - X0 - 16), k = Math.min(B[li].length - 1, Math.round((x - X0) / 20));
+        const y = B[li][k][1] + 6 + r() * (B[li + 1][k][1] - B[li][k][1] - 12);
+        meat += `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(2.5 + r() * 4)}" ry="${f1(2 + r() * 3)}" fill="${r() > .35 ? '#5e150a' : '#e2683f'}" opacity="${(.55 + r() * .35).toFixed(2)}"/>`;
+      }
+    });
+    const at = (u, v) => [X0 + u * (X1 - X0) + v * DX, 250 + v * DY];
+    for (let i = 0; i < 26; i++) { const [x, y] = at(.06 + r() * .88, .1 + r() * .8); spots += `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(8 + r() * 20)}" ry="${f1(4 + r() * 8)}" fill="#9a4f18" opacity="${(.35 + r() * .4).toFixed(2)}"/>`; }
+    for (let i = 0; i < 40; i++) { const [x, y] = at(r(), r()); specks += `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(1 + r() * 1.8)}" fill="#fff4cf" opacity=".7"/>`; }
+    [260, 330, 415, 505, 590, 660].forEach((x, i) => { const len = 14 + (i * 7) % 20; drips += `<path d="M${x - 9} 280 Q${x - 8} ${280 + len} ${x} ${282 + len} Q${x + 8} ${280 + len} ${x + 9} 280 Z" fill="#e6a23e"/>`; });
+    const [bx, by] = at(.62, .55);
+    return `<svg class="lz" viewBox="0 0 900 600" role="img" aria-label="A plate of lasagna">
+      <defs>
+        <linearGradient id="lzCheeseT" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f9d27a"/><stop offset=".55" stop-color="#eaa944"/><stop offset="1" stop-color="#c9832f"/></linearGradient>
+        <linearGradient id="lzCheeseF" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0b24e"/><stop offset="1" stop-color="#d88f35"/></linearGradient>
+        <linearGradient id="lzPasta" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f8e2a3"/><stop offset="1" stop-color="#e9c46f"/></linearGradient>
+        <linearGradient id="lzSauce" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c8401f"/><stop offset="1" stop-color="#91240f"/></linearGradient>
+        <linearGradient id="lzBech" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fcf5e3"/><stop offset="1" stop-color="#e9dcc0"/></linearGradient>
+        <linearGradient id="lzShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>
+        <radialGradient id="lzPlate" cx=".5" cy=".38" r=".7"><stop offset="0" stop-color="#2e2e35"/><stop offset="1" stop-color="#0f0f12"/></radialGradient>
+        <linearGradient id="lzBasil" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#63b34a"/><stop offset="1" stop-color="#2c6b26"/></linearGradient>
+        <filter id="lzBlur" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="12"/></filter>
+        <filter id="lzSteam" x="-60%" y="-20%" width="220%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>
+      </defs>
+      <ellipse cx="480" cy="446" rx="400" ry="104" fill="url(#lzPlate)"/>
+      <ellipse cx="480" cy="440" rx="326" ry="78" fill="#1d1d23"/>
+      <path d="M96 424 C150 372 300 344 480 342 C620 342 740 360 820 392" fill="none" stroke="#fff" stroke-opacity=".13" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="470" cy="468" rx="300" ry="30" fill="#000" opacity=".6" filter="url(#lzBlur)"/>
+      <path d="M176 458 C142 468 150 494 206 492 C262 490 306 482 334 468 L334 456 Z" fill="#a52d18"/>
+      <path d="M190 470 C220 476 260 474 300 468" fill="none" stroke="#e0613a" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/>
+      <g>${side}${front}${meat}<path d="M${X0} 250 L${X1} 250 L${X1} 462 L${X0} 462 Z" fill="url(#lzShade)"/>${drips}
+        <path d="M${X0} 250 L${X1} 250 L${X1 + DX} ${250 + DY} L${X0 + DX} ${250 + DY} Z" fill="url(#lzCheeseT)"/>${spots}${specks}
+        <g transform="translate(${f1(bx)} ${f1(by)}) rotate(-18)"><path d="M0 0 C18 -16 52 -14 70 0 C52 14 18 16 0 0 Z" fill="url(#lzBasil)"/><path d="M4 0 L64 0" stroke="#9bd784" stroke-width="1.6" opacity=".6"/></g>
+        <g transform="translate(${f1(bx - 8)} ${f1(by + 6)}) rotate(38)"><path d="M0 0 C12 -11 36 -10 50 0 C36 10 12 11 0 0 Z" fill="url(#lzBasil)"/><path d="M3 0 L46 0" stroke="#9bd784" stroke-width="1.4" opacity=".6"/></g>
+      </g>
+      <g class="steam" fill="none" stroke="#fff" stroke-width="12" stroke-linecap="round" filter="url(#lzSteam)">
+        <path d="M390 170 C368 136 410 108 386 70 C366 40 396 20 382 0"/>
+        <path d="M490 158 C512 124 470 96 494 60 C514 30 486 12 498 -10"/>
+        <path d="M600 168 C580 134 620 108 598 72 C580 42 606 22 594 2"/>
+      </g>
+    </svg>`;
+  }
+  function binSVG() {
+    let bars = '', ridges = '';
+    for (let i = 0; i < 30; i++) bars += `<rect x="${118 + i * 3.6}" y="208" width="${[2, 1, 2.6, 1, 1.6][i % 5]}" height="28" fill="#1d1d1f"/>`;
+    for (let i = 1; i < 9; i++) ridges += `<path d="M${60 + i * 33.3} ${200 + 34 * Math.sqrt(1 - Math.pow((i * 33.3 - 150) / 150, 2))} L${78 + i * 29.3} 548" stroke="#000" stroke-opacity=".28" stroke-width="2"/>`;
+    return `<svg class="binart" viewBox="0 0 420 580" role="img" aria-label="A supermarket lasagna box sticking out of the bin">
+      <defs>
+        <linearGradient id="binMetal" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#26262b"/><stop offset=".3" stop-color="#5a5a64"/><stop offset=".55" stop-color="#34343a"/><stop offset="1" stop-color="#18181b"/></linearGradient>
+        <linearGradient id="binLid" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#74747e"/><stop offset="1" stop-color="#3a3a41"/></linearGradient>
+        <filter id="binBlur" x="-30%" y="-200%" width="160%" height="500%"><feGaussianBlur stdDeviation="10"/></filter>
+      </defs>
+      <ellipse cx="210" cy="556" rx="170" ry="16" fill="#000" opacity=".7" filter="url(#binBlur)"/>
+      <ellipse cx="210" cy="200" rx="150" ry="34" fill="#09090b"/>
+      <path d="M60 200 A150 34 0 0 1 360 200" fill="none" stroke="#5c5c66" stroke-width="5"/>
+      <g class="box"><g transform="rotate(-12 210 200)">
+        <path d="M300 34 L336 16 L336 238 L300 256 Z" fill="#cfc7b6"/>
+        <path d="M100 34 L136 16 L336 16 L300 34 Z" fill="#ebe4d6"/>
+        <rect x="100" y="34" width="200" height="222" fill="#f6f2e9"/>
+        <rect x="100" y="34" width="200" height="56" fill="#d4372b"/>
+        <text x="200" y="59" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="800" font-size="20" letter-spacing="2" fill="#fff">FAMILY SIZE</text>
+        <text x="200" y="83" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="800" font-size="22" fill="#fff">LASAGNA</text>
+        <rect x="116" y="100" width="168" height="74" rx="6" fill="#8f2412"/>
+        <rect x="116" y="100" width="168" height="16" rx="6" fill="#e9a944"/>
+        <rect x="116" y="124" width="168" height="8" fill="#f3d98e"/><rect x="116" y="146" width="168" height="8" fill="#f3d98e"/>
+        <text x="200" y="195" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="600" font-size="12.5" fill="#3d3a48">Frozen · ready in 5 min</text>
+        ${bars}
+        <g transform="translate(262 222) rotate(14)"><circle r="31" fill="#ffd23f"/><text y="-2" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="800" font-size="15" fill="#1d1d1f">A$6.99</text><text y="14" text-anchor="middle" font-family="-apple-system, Inter, Arial, sans-serif" font-weight="700" font-size="9" letter-spacing="1" fill="#1d1d1f">SPECIAL</text></g>
+      </g></g>
+      <path d="M60 200 A150 34 0 0 0 360 200 L342 540 Q340 552 326 552 L94 552 Q80 552 78 540 Z" fill="url(#binMetal)"/>
+      ${ridges}
+      <path d="M60 200 A150 34 0 0 0 360 200" fill="none" stroke="#8a8a94" stroke-width="5"/>
+      <rect x="180" y="540" width="60" height="16" rx="4" fill="#111114"/>
+      <g class="lid"><path d="M56 200 A154 38 0 0 1 364 200 A154 38 0 0 1 56 200 Z" fill="url(#binLid)"/><path d="M60 200 A150 34 0 0 0 360 200" fill="none" stroke="#2a2a30" stroke-width="3"/></g>
+    </svg>`;
+  }
+  const ART = { lasagna: lasagnaSVG, bin: binSVG };
+  $$('[data-art]').forEach(el => { el.innerHTML = ART[el.dataset.art](); });
+
+  // ---------- the comparison table (vendors' public websites, 29 Sep 2026; see the wiki's competitor research) ----------
+  const Y = 'y', N = 'n';
+  const CMP = {
+    cols: [['AI code review', 'CodeRabbit, Greptile'], ['PR quiz tools', 'SlopBlock, Gater, Reviewsaur'], ['AI oral exams', 'For schools and universities'], ['Viva', '']],
+    rows: [
+      ['Checks the person, not only the code', N, Y, Y, Y],
+      ['Runs inside the pull request', Y, Y, N, Y],
+      ['Open answers in your own words', N, 'Some', Y, Y],
+      ['Answers checked against running code', N, N, N, Y],
+      ['Re-tests the idea on a new task', N, N, N, Y],
+      ['Gets lighter as you prove it', N, 'Risk rules', N, Y]
+    ]
+  };
+  const cell = (v, us, last) => {
+    const cls = (us ? ' us' : '') + (last ? ' last' : '');
+    if (v === Y) return `<div class="c${cls}"><svg class="ck" viewBox="0 0 24 24" aria-label="Yes"><path d="M5 12.5l4.2 4.2L19 7"/></svg></div>`;
+    if (v === N) return `<div class="c dash${cls}" aria-label="Not offered or not stated">—</div>`;
+    return `<div class="c${cls}">${v}</div>`;
+  };
+  const cmp = $('#cmp');
+  if (cmp) {
+    let html = '<div class="us-col" aria-hidden="true"></div><div class="ch"></div>';
+    html += CMP.cols.map(([t, s], i) => `<div class="ch${i === 3 ? ' us' : ''}">${i === 3 ? `<span class="grad">${t}</span>` : t}${s ? `<small>${s}</small>` : ''}</div>`).join('');
+    CMP.rows.forEach((r, ri) => {
+      const last = ri === CMP.rows.length - 1;
+      html += `<div class="rh${last ? ' last' : ''}">${r[0]}</div>` + r.slice(1).map((v, i) => cell(v, i === 3, last)).join('');
+    });
+    cmp.innerHTML = html;
+  }
+
+  // ---------- numbers count up; figure spaces keep the width steady ----------
+  function countUp(el) {
+    const to = +el.dataset.to, sep = el.hasAttribute('data-sep');
+    const fmt = v => sep ? Math.round(v).toLocaleString('en-AU') : String(Math.round(v));
+    const width = fmt(to).length;
+    const show = v => { el.textContent = fmt(v).padStart(width, ' '); };
+    if (reduced) { el.textContent = fmt(to); return; }
+    const t0 = performance.now(), dur = 1500;
+    (function tick(t) {
+      const p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+      if (p < 1) { show(to * e); requestAnimationFrame(tick); } else el.textContent = fmt(to);
+    })(t0);
+  }
+
+  // ---------- deck state ----------
+  const maxStep = s => Math.max(0, ...$$('[data-f]', s).map(e => +e.dataset.f));
+  function fit() {
+    const box = stage.parentElement.getBoundingClientRect();
+    const k = Math.min(box.width / 1600, box.height / 900);
+    stage.style.transform = `translate(-50%, -50%) scale(${k})`;
+  }
+  function render(entered, forward) {
+    slides.forEach((s, i) => {
+      s.classList.toggle('active', i === cur);
+      s.classList.toggle('past', i < cur);
+      if (s.classList.contains('impact')) {
+        const hit = i < cur || (i === cur && step >= 1);
+        const was = s.classList.contains('hit') || s.classList.contains('hitting');
+        if (hit && !was) impactHit(s, i === cur && forward && !entered);
+        else if (!hit && was) impactReset(s);
+      }
+      $$('[data-f]', s).forEach(f => {
+        const on = i < cur || (i === cur && +f.dataset.f <= step);
+        const was = f.classList.contains('on');
+        f.classList.toggle('on', on);
+        if (i === cur && on && !was) $$('.count', f).forEach(countUp);
+      });
+      $$('[data-s]', s).forEach(el => el.classList.toggle('go', i < cur || (i === cur && +el.dataset.s <= step)));
+      $$('[data-out]', s).forEach(el => el.classList.toggle('gone', i === cur && step >= +el.dataset.out));
+    });
+    const s = slides[cur];
+    s.dataset.step = step;
+    if (entered) $$('.count', s).forEach(c => { if (!c.closest('[data-f]')) countUp(c); });
+    const glow = s.hasAttribute('data-glow') || (s.dataset.glowStep !== undefined && step >= +s.dataset.glowStep);
+    $('#viewport').classList.toggle('glowing', glow);
+    notesPane.innerHTML = notesHTML(s);
+    if (isPresenter) renderPresenter();
+    else { try { history.replaceState(null, '', '#s' + (cur + 1)); } catch (e) {} }
+  }
+  const notesHTML = s => { const n = $('.notes', s); return `<p><b>${s.dataset.speaker}</b>${s.dataset.at ? ' · ' + s.dataset.at : ''}</p>` + (n ? n.innerHTML : ''); };
+
+  // one entry point for every move: keys, clicks, swipes and the other window
+  function setState(i, st, remote) {
+    const prev = cur, prevStep = step;
+    cur = Math.max(0, Math.min(slides.length - 1, i));
+    step = Math.max(0, Math.min(maxStep(slides[cur]), st));
+    const entered = cur !== prev;
+    render(entered, entered ? cur > prev : step > prevStep);
+    if (!remote) broadcast();
+  }
+
+  // ---------- the impact slide: "What's the impact?" slams into the glass and it shatters ----------
+  function impactHit(s, animate) {
+    if (!animate || reduced || isPresenter) { s.classList.add('hit'); return; }
+    s.classList.add('hitting');
+    const glass = $('.glass', s);
+    const T = s._timers = [];
+    T.push(setTimeout(() => {
+      crack(s, glass);
+      stage.classList.remove('shake'); void stage.offsetWidth; stage.classList.add('shake');
+    }, 190));
+    T.push(setTimeout(() => {
+      shatter(s, glass); s.classList.add('hit');
+      $$('.cracks', s).forEach(c => c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: 'forwards' }));
+    }, 330));
+    T.push(setTimeout(() => { $$('.shards, .cracks', s).forEach(e => e.remove()); stage.classList.remove('shake'); }, 2700));
+  }
+  function impactReset(s) {
+    (s._timers || []).forEach(clearTimeout);
+    s._timers = [];
+    s.classList.remove('hit', 'hitting');
+    stage.classList.remove('shake');
+    $$('.shards, .cracks', s).forEach(e => e.remove());
+  }
+  // radial cracks from the middle and rings around it, like safety glass; outer nodes sit on the pane's edge
+  function glassGeometry(glass) {
+    const W = glass.offsetWidth, H = glass.offsetHeight, X = glass.offsetLeft, Y = glass.offsetTop;
+    const P = { x: W * .5, y: H * .5 }, K = 11, F = [0, .16, .4, .7, 1], rays = [];
+    for (let i = 0; i < K; i++) {
+      const a = (i + (Math.random() - .5) * .55) / K * Math.PI * 2, dx = Math.cos(a), dy = Math.sin(a);
+      const tx = dx > 1e-6 ? (W - P.x) / dx : dx < -1e-6 ? -P.x / dx : Infinity;
+      const ty = dy > 1e-6 ? (H - P.y) / dy : dy < -1e-6 ? -P.y / dy : Infinity;
+      const t = Math.min(tx, ty);
+      rays.push({ a, nodes: F.map((f, j) => { const k = j === 0 || j === F.length - 1 ? f : f + (Math.random() - .5) * .08; return { x: P.x + dx * t * k, y: P.y + dy * t * k }; }) });
+    }
+    rays.sort((m, n) => m.a - n.a);
+    return { W, H, X, Y, P, rays, R: F.length - 1 };
+  }
+  // the pane's corners that lie between two edge points, walking clockwise
+  function cornersBetween(a, b, W, H) {
+    const L = 2 * (W + H);
+    const per = q => {
+      const dT = Math.abs(q.y), dR = Math.abs(W - q.x), dB = Math.abs(H - q.y), dL = Math.abs(q.x), m = Math.min(dT, dR, dB, dL);
+      return m === dT ? q.x : m === dR ? W + q.y : m === dB ? W + H + (W - q.x) : 2 * W + H + (H - q.y);
+    };
+    const C = [[0, { x: 0, y: 0 }], [W, { x: W, y: 0 }], [W + H, { x: W, y: H }], [2 * W + H, { x: 0, y: H }]];
+    const sa = per(a); let sb = per(b); if (sb <= sa) sb += L;
+    const out = [];
+    C.forEach(([s0, c]) => [s0, s0 + L].forEach(v => { if (v > sa && v < sb) out.push({ v, c }); }));
+    return out.sort((m, n) => m.v - n.v).map(o => o.c);
+  }
+  function crack(s, glass) {
+    const g = s._geo = glassGeometry(glass), { W, H, X, Y, rays, R } = g;
+    const paths = rays.map(r => ({ d: 'M' + r.nodes.map(n => f1(n.x) + ' ' + f1(n.y)).join(' L'), j: 0 }));
+    for (let j = 1; j < R; j++) rays.forEach((r, i) => {
+      const n1 = r.nodes[j], n2 = rays[(i + 1) % rays.length].nodes[j];
+      paths.push({ d: `M${f1(n1.x)} ${f1(n1.y)} L${f1(n2.x)} ${f1(n2.y)}`, j });
+    });
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'cracks');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    Object.assign(svg.style, { left: X + 'px', top: Y + 'px', width: W + 'px', height: H + 'px' });
+    svg.innerHTML = paths.map(q => `<path pathLength="1" d="${q.d}" style="animation-delay:${q.j * 35}ms"/>`).join('');
+    s.appendChild(svg);
+  }
+  function shatter(s, glass) {
+    const g = s._geo || glassGeometry(glass), { W, H, X, Y, P, rays, R } = g, K = rays.length;
+    const box = document.createElement('div');
+    box.className = 'shards';
+    Object.assign(box.style, { left: X + 'px', top: Y + 'px', width: W + 'px', height: H + 'px' });
+    const inner = glass.innerHTML;
+    for (let i = 0; i < K; i++) {
+      const A = rays[i].nodes, Bn = rays[(i + 1) % K].nodes;
+      for (let j = 0; j < R; j++) {
+        let pts = [A[j], A[j + 1]];
+        if (j + 1 === R) pts = pts.concat(cornersBetween(A[R], Bn[R], W, H));
+        pts = pts.concat([Bn[j + 1], Bn[j]]);
+        const xs = pts.map(q => q.x), ys = pts.map(q => q.y);
+        const x0 = Math.max(0, Math.min(...xs)), y0 = Math.max(0, Math.min(...ys)), x1 = Math.min(W, Math.max(...xs)), y1 = Math.min(H, Math.max(...ys));
+        if (x1 - x0 < 2 || y1 - y0 < 2) continue;
+        const cx = xs.reduce((m, v) => m + v, 0) / xs.length, cy = ys.reduce((m, v) => m + v, 0) / ys.length;
+        const el = document.createElement('div');
+        el.className = 'shard';
+        Object.assign(el.style, {
+          left: x0 + 'px', top: y0 + 'px', width: (x1 - x0) + 'px', height: (y1 - y0) + 'px',
+          clipPath: `polygon(${pts.map(q => `${f1(q.x - x0)}px ${f1(q.y - y0)}px`).join(', ')})`,
+          transformOrigin: `${f1(cx - x0)}px ${f1(cy - y0)}px`
+        });
+        el.innerHTML = `<div class="glass glass-copy" style="left:${-x0}px;top:${-y0}px;width:${W}px;height:${H}px">${inner}</div>`;
+        box.appendChild(el);
+        const vx = cx - P.x, vy = cy - P.y, dist = Math.hypot(vx, vy) || 1, power = 1 - (j / R) * .45;
+        const dx = vx / dist * (240 + Math.random() * 520) * power;
+        const dy = vy / dist * (160 + Math.random() * 340) * power + 360 + Math.random() * 380;
+        const tz = 120 + Math.random() * 420, rx = (Math.random() - .5) * 170, ry = (Math.random() - .5) * 170, rz = (Math.random() - .5) * 230;
+        const tf = (kx, y, k) => `translate3d(${f1(dx * kx)}px, ${f1(y)}px, ${f1(tz * k)}px) rotateX(${f1(rx * k)}deg) rotateY(${f1(ry * k)}deg) rotateZ(${f1(rz * k)}deg)`;
+        el.animate([
+          { transform: tf(0, 0, 0), opacity: 1 },
+          { offset: .28, transform: tf(.42, dy * .1 - 26, .42), opacity: 1 },
+          { transform: tf(1, dy, 1), opacity: 0 }
+        ], { duration: 1150 + Math.random() * 700, delay: j * 24, easing: 'cubic-bezier(.2,.65,.35,1)', fill: 'both' });
+      }
+    }
+    s.appendChild(box);
+  }
+  function next() { if (step < maxStep(slides[cur])) setState(cur, step + 1); else if (cur < slides.length - 1) setState(cur + 1, 0); }
+  function back() { if (step > 0) setState(cur, step - 1); else if (cur > 0) setState(cur - 1, maxStep(slides[cur - 1])); }
+
+  // ---------- sync between the audience window and the presenter window ----------
+  let bc = null;
+  try { bc = new BroadcastChannel('viva-deck'); bc.onmessage = e => apply(e.data); } catch (e) {}
+  function apply(m) { if (m && (m.cur !== cur || m.step !== step)) setState(m.cur, m.step, true); }
+  function broadcast() {
+    const msg = { cur, step, t: Date.now() };
+    try { bc && bc.postMessage(msg); } catch (e) {}
+    try { localStorage.setItem('viva-deck-state', JSON.stringify(msg)); } catch (e) {}
+  }
+  addEventListener('storage', e => {
+    if (e.key !== 'viva-deck-state' || !e.newValue) return;
+    try { apply(JSON.parse(e.newValue)); } catch (err) {}
+  });
+
+  // ---------- presenter view: speaker, target time, notes, next slide ----------
+  let t0 = null;
+  const secs = at => { const m = /^(\d+):(\d{2})$/.exec(at || ''); return m ? +m[1] * 60 + +m[2] : null; };
+  function renderPresenter() {
+    const s = slides[cur], nx = slides[cur + 1], ms = maxStep(s);
+    if (cur >= 1 && t0 === null) t0 = Date.now();
+    $('#ppNext').textContent = nx ? `${nx.dataset.title} · ${nx.dataset.speaker}${nx.dataset.at ? ' · ' + nx.dataset.at : ''}` : 'End of deck';
+    $('#ppNow').textContent = `${pad(cur + 1)} / ${pad(slides.length)} · ${s.dataset.title}` + (ms ? ` · build ${step}/${ms}` : '');
+    $('#ppWho').textContent = `${s.dataset.speaker}${s.dataset.at ? ' · start by ' + s.dataset.at : ''}`;
+    const n = $('.notes', s);
+    $('#ppNotes').innerHTML = n ? n.innerHTML : '';
+    clock();
+  }
+  function clock() {
+    const el = $('#ppClock');
+    if (!el) return;
+    const sec = t0 ? Math.floor((Date.now() - t0) / 1000) : 0;
+    el.textContent = `${pad(Math.floor(sec / 60))}:${pad(sec % 60)}`;
+    const nextAt = slides[cur + 1] ? secs(slides[cur + 1].dataset.at) : null;
+    el.classList.toggle('over', sec >= 480);
+    el.classList.toggle('late', sec < 480 && nextAt !== null && sec > nextAt);
+  }
+  if (isPresenter) {
+    document.body.classList.add('presenter');
+    $('#hint').hidden = true;
+    const pp = document.createElement('div');
+    pp.className = 'pp';
+    pp.innerHTML = `<div><div class="pp-label">Elapsed · target 8:00 · starts on slide 2</div><div class="pp-clock" id="ppClock">00:00</div></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="ctl" id="ppT" type="button">Restart timer (T)</button><button class="ctl" id="ppPrev" type="button">← Back</button><button class="ctl" id="ppGo" type="button">Next →</button></div>
+      <div><div class="pp-label">Speaking</div><div class="pp-next" id="ppWho" style="margin-top:8px"></div></div>
+      <div><div class="pp-label">Now</div><div class="pp-next" id="ppNow" style="margin-top:8px"></div></div>
+      <div class="pp-notes" id="ppNotes"></div>`;
+    document.body.appendChild(pp);
+    const bottom = document.createElement('div');
+    bottom.className = 'pp-bottom';
+    bottom.innerHTML = `<div><div class="pp-label">Next slide</div><div class="pp-next" id="ppNext" style="font-size:28px;margin-top:10px"></div></div>`;
+    document.body.appendChild(bottom);
+    $('#ppT').onclick = () => { t0 = Date.now(); clock(); };
+    $('#ppPrev').onclick = back;
+    $('#ppGo').onclick = next;
+    setInterval(clock, 500);
+    try { const m = JSON.parse(localStorage.getItem('viva-deck-state') || 'null'); if (m) { cur = m.cur; step = m.step; } } catch (e) {}
+  } else {
+    const m = /^#s(\d+)$/.exec(location.hash);
+    if (m) cur = Math.max(0, Math.min(slides.length - 1, +m[1] - 1));
+    setTimeout(() => { $('#hint').style.opacity = '0'; }, 5000);
+  }
+
+  // ---------- input ----------
+  addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const k = e.key;
+    if ((k === 'Enter' || k === ' ') && e.target.closest && e.target.closest('a, button')) return;
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); next(); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); back(); }
+    else if (k === 'Home') setState(0, 0);
+    else if (k === 'End') setState(slides.length - 1, maxStep(slides[slides.length - 1]));
+    else if (k === 'f' || k === 'F') toggleFullscreen();
+    else if (k === 'n' || k === 'N') { if (!isPresenter) notesPane.hidden = !notesPane.hidden; }
+    else if (k === 'p' || k === 'P') { if (!isPresenter) { const w = window.open(location.href.split('#')[0] + '#presenter', 'viva-presenter', 'width=1400,height=860'); if (w) broadcast(); } }
+    else if (k === 't' || k === 'T') { if (isPresenter) { t0 = Date.now(); clock(); } }
+  });
+  $('#viewport').addEventListener('click', e => {
+    if (e.target.closest('a, button')) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    (e.clientX - r.left < r.width * .25) ? back() : next();
+  });
+  let tx = null;
+  addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', e => {
+    if (tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx; tx = null;
+    if (Math.abs(dx) > 40) (dx < 0 ? next() : back());
+  });
+
+  // ---------- full screen (F key or the button) and a cursor that hides when the mouse stops ----------
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+  function toggleFullscreen() {
+    const d = document, el = d.documentElement;
+    try {
+      if (fsElement()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+      else {
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        const r = req && req.call(el);
+        if (r && r.catch) r.catch(() => {});
+      }
+    } catch (err) {}
+  }
+  const fsBtn = $('#fsBtn');
+  fsBtn.addEventListener('click', () => { toggleFullscreen(); fsBtn.blur(); });
+  const syncFs = () => {
+    $('#fsLabel').textContent = fsElement() ? 'Exit full screen' : 'Full screen';
+    if (fsElement()) $('#hint').style.opacity = '0';
+  };
+  document.addEventListener('fullscreenchange', syncFs);
+  document.addEventListener('webkitfullscreenchange', syncFs);
+  let idleTimer = 0;
+  addEventListener('mousemove', () => {
+    document.body.classList.add('pointer');
+    document.body.classList.remove('idle');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      if (fsBtn.matches(':hover')) return;
+      document.body.classList.remove('pointer');
+      if (!isPresenter) document.body.classList.add('idle');
+    }, 2200);
+  }, { passive: true });
+
+  addEventListener('resize', fit);
+  fit();
+  render(true);
+})();
+</script>
