@@ -1,0 +1,123 @@
+/* Design tokens. Warm paper, one violet accent with blue as its partner, and four pastels that colour-code the four
+   steps of a check: interview (lilac), assessment (sky), senior review (lemon), check passes (mint).
+   GitHub's own status colours (--gh-*) appear only inside the GitHub check preview. */
+
+:root {
+  color-scheme: light;
+
+  --canvas: #faf9f6;
+  --surface: #ffffff;
+  --surface-2: #f5f3ef;
+  --sunken: #f3f1ec;
+  --ink: #17151f;
+  --ink-2: #3d3a48;
+  --muted: #6c6878;
+  --faint: #a19dab;
+  --line: #ebe8e2;
+  --line-strong: #dcd8cf;
+
+  --accent: #612fff;
+  --accent-hover: #6f42ff;
+  --accent-deep: #3a17b3;
+  --accent-ink: #5426e8;
+  --accent-soft: #efe9ff;
+  --accent-line: #dbcfff;
+  --blue: #3e7bff;
+  --blue-ink: #1d5be3;
+  --blue-soft: #e5eeff;
+  --blue-line: #c7d9ff;
+  --grad: linear-gradient(120deg, #612fff 0%, #3e7bff 100%);
+  --danger: #d6344f;
+  --danger-soft: #fdecef;
+
+  /* the four steps: a pastel ground, a strong fill for the characters, and an ink for text on the pastel */
+  --lilac: #eee8ff;  --lilac-strong: #612fff; --lilac-ink: #4a20d4;
+  --sky: #e2ecff;    --sky-strong: #3e7bff;   --sky-ink: #1a55d6;
+  --lemon: #fff1c2;  --lemon-strong: #ffc53d; --lemon-ink: #7a5000;
+  --mint: #dbf4e6;   --mint-strong: #22b36b;  --mint-ink: #0c6a40;
+  --pupil: #17151f;
+  --peng: #1f1d2b;
+
+  --gh-ok: #1a7f37;
+  --gh-wait: #bf8700;
+  --gh-fail: #cf222e;
+
+  --shadow-1: 0 1px 0 rgb(23 21 31 / .04);
+  --shadow-2: 0 2px 0 rgb(23 21 31 / .04), 0 10px 24px -12px rgb(23 21 31 / .14);
+  --shadow-pop: 0 0 0 1px rgb(23 21 31 / .05), 0 16px 36px -12px rgb(23 21 31 / .22), 0 3px 8px -3px rgb(23 21 31 / .08);
+  --focus: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI Variable Display', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+
+  /* shape: one scale, rounder than a tool, flatter than a toy */
+  --r-1: 8px;
+  --r-2: 12px;
+  --r-3: 20px;
+  --r-4: 28px;
+  --r-pill: 999px;
+
+  /* layout */
+  --gutter: clamp(16px, 3vw, 40px);
+  --maxw: 1200px;
+  --top-h: 60px;
+
+  /* motion: springy with a little overshoot. JS replaces --spring and --bounce with sampled springs. */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --ease-io: cubic-bezier(.65, 0, .35, 1);
+  --spring: cubic-bezier(.2, .8, .2, 1);
+  --bounce: cubic-bezier(.34, 1.56, .64, 1);
+  --t-fast: 120ms;
+  --t: 200ms;
+
+  --z-top: 40;
+  --z-drawer: 60;
+  --z-portal: 70;
+  --z-toast: 80;
+  --z-confetti: 90;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --canvas: #111016;
+  --surface: #1a1921;
+  --surface-2: #22202b;
+  --sunken: #15141b;
+  --ink: #f5f3fa;
+  --ink-2: #cdc9d8;
+  --muted: #a09bb0;
+  --faint: #6f6a7e;
+  --line: #2a2833;
+  --line-strong: #37343f;
+
+  --accent: #7b55ff;
+  --accent-hover: #8b69ff;
+  --accent-deep: #3f1fb0;
+  --accent-ink: #b09aff;
+  --accent-soft: #231b42;
+  --accent-line: #3d2e7c;
+  --blue: #5b8cff;
+  --blue-ink: #9bbaff;
+  --blue-soft: #14213d;
+  --blue-line: #223c74;
+  --grad: linear-gradient(120deg, #7b55ff 0%, #4f86ff 100%);
+  --danger: #ff6b86;
+  --danger-soft: #2c1219;
+
+  --lilac: #231c40;  --lilac-strong: #7b55ff; --lilac-ink: #c2b2ff;
+  --sky: #142340;    --sky-strong: #4f86ff;   --sky-ink: #a9c4ff;
+  --lemon: #332a0f;  --lemon-strong: #f2b92e; --lemon-ink: #ffd978;
+  --mint: #0f2b1f;   --mint-strong: #2fc27a;  --mint-ink: #86e3b3;
+  --pupil: #17151f;
+  --peng: #3b3752;
+
+  --gh-ok: #3fb950;
+  --gh-wait: #d29922;
+  --gh-fail: #f85149;
+
+  --shadow-1: 0 1px 0 rgb(0 0 0 / .3);
+  --shadow-2: 0 2px 0 rgb(0 0 0 / .3), 0 12px 28px -12px rgb(0 0 0 / .7);
+  --shadow-pop: 0 0 0 1px rgb(255 255 255 / .07), 0 18px 44px -14px rgb(0 0 0 / .8), 0 3px 10px -3px rgb(0 0 0 / .5);
+}
