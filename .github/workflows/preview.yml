@@ -1,0 +1,37 @@
+name: Deploy preview
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # main -> site root (keep pr-preview/ folders intact)
+      - name: Deploy main
+        if: github.event_name == 'push'
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: frontend
+          branch: gh-pages
+          clean-exclude: pr-preview/
+
+      # PR -> /pr-preview/pr-<N>/ and a sticky comment with the link
+      - name: Deploy PR preview
+        if: github.event_name == 'pull_request'
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: frontend
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
