@@ -46,9 +46,11 @@ jobs:
           message: |
             ## 🚀 Live demo preview
 
+            <img align="right" height="110" alt="QR code for preview link" src="https://qr.rossjrw.com/?color.dark=0d1117&url=${{ steps.preview.outputs.preview-url }}">
+
             ### 👉 [**Open the demo**](${{ steps.preview.outputs.preview-url }})
 
-            Try the latest changes from this PR in your browser.
+            Try the latest changes from this PR in your browser, or scan the QR code on your phone.
 
             <sub>Updated for `${{ github.event.pull_request.head.sha }}` · Pages may take 1–2 min to refresh · removed when the PR closes</sub>
 
