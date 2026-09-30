@@ -20,8 +20,8 @@ Port 8790 avoids the backend's 8765. After an update, hard refresh with Cmd+Shif
 | Page | What it does |
 |---|---|
 | `index.html` | **Check** (only the title, the four steps of a check and one big Start interview button, filling the screen), **Interview** (a pre-join camera screen that waits on the live picture and a sound bar until you press I'm ready, then the question beside the docked self-view and the question plan, Speak or Type; a penguin in a violet tie by the camera hauls each question in on a rope, tug-of-war style), **Results** (a check report: the flow, score and signals, marked answers, senior review, GitHub preview, access log, portfolio points) |
-| `portfolio.html` | Points from confirmed reviews, understanding score and trend, concept level, work table, who can see it, the scoring standard |
-| `review.html#token` | Senior reviewer: signed video playback beside a clickable transcript, the assessment, decision (genuine or follow-up) and note, access log |
+| `portfolio.html` | Points from reviewed checks, understanding score and trend, concept level, work table, who can see it, the scoring standard |
+| `review.html#token` | Senior reviewer: signed video playback beside a clickable transcript, the assessment, decision (pass with a one-line correction, or follow-up), access log |
 
 A GitHub link can carry the PR: `index.html?repo=org/repo&pr=128&title=...&author=...&branch=...&sha=...`. Missing fields fall back to the sample PR.
 
@@ -29,7 +29,8 @@ A GitHub link can carry the PR: `index.html?repo=org/repo&pr=128&title=...&autho
 
 - Two questions per attempt: how the core logic works, and why it was built that way. Code correctness is not judged and no code is shown.
 - The camera and microphone are on for the whole interview. Each answer, spoken or typed, is recorded as one clip for the senior reviewer.
-- One follow-up at most, aimed at the weakest of specific, reasoning and ownership.
+- One follow-up at most, aimed at the weaker of specific and reasoning.
+- The result is about understanding, never authorship: Understanding shown (70 or more), Gaps to close (45 to 69), Not shown yet. Nothing guesses who wrote the code or how much AI helped.
 - The score reads the words only. It never uses face, voice tone or expressions.
 
 ## Second attempt
@@ -40,7 +41,7 @@ A pass, or a failed second attempt, goes to a senior. A failed second attempt al
 
 ## Portfolio points (Viva Plan 4.3 and 4.4)
 
-A senior-confirmed review adds **Risk x Novelty x Gap** points, each factor 1 to 3, so one change is worth 1 to 27.
+A check the senior passes with a correction adds **Risk x Novelty x Gap** points, each factor 1 to 3, so one change is worth 1 to 27.
 
 | Factor | 1 | 2 | 3 |
 |---|---|---|---|
@@ -60,7 +61,7 @@ The portfolio is private to the person: a reviewer token cannot read it. It show
 | Real in the browser | Simulated (marked in the UI) |
 |---|---|
 | Camera and microphone capture, waveform, 180 s clip cap, recordings in IndexedDB, playback with seek | Transcription: stand-in text per question, editable, labelled **Simulated** |
-| Signed 5 minute links (HMAC, WebCrypto), expiry, renew, access log | Assessment: word patterns (numbers, names, reasons, alternatives, first-person decisions, generic phrasing) scored on the device, labelled **Simulated assessment** |
+| Signed 5 minute links (HMAC, WebCrypto), expiry, renew, access log | Assessment: word patterns (numbers, names, reasons, alternatives, generic phrasing) scored on the device, labelled **Simulated assessment** |
 | Question sets, retake rules, concept level, points, portfolio | Reviewer identity ("Demo reviewer role. Not SSO.") and the concept "Fees and rounding" with fixed Risk and Novelty |
 
 The header chip **Simulated backend** stays on until `js/sim.js` is replaced.
@@ -68,7 +69,7 @@ The header chip **Simulated backend** stays on until `js/sim.js` is replaced.
 ## Presenter drawer (`?presenter=1`)
 
 Button in the header. Reviewer link, camera required (untick only if the camera hardware fails), voice stand-in Specific or Generic, fill the open question, reset all local data, and six copyable answers for the attempt on screen.
-Demo: choose **Generic**, answer, fail, **Try again**, choose **Specific**, pass, open the reviewer link, confirm, watch the points arrive, open the portfolio.
+Demo: choose **Generic**, answer, fail, **Try again**, choose **Specific**, pass, open the reviewer link, pass it with a one-line correction, watch the points arrive, open the portfolio.
 
 ## Connect the real backend
 
@@ -86,7 +87,7 @@ Replace `js/sim.js` with a `Viva.api` that calls the server. Suggested routes (t
 | `leave()`, `remove()` | `POST /api/sessions/{sid}/leave` (delete media, keep answers), `DELETE /api/sessions/{sid}` |
 
 Rules the server must keep: a first failure does not create a reviewer token; a first failure in a Full band change (18 or more) should also go to a senior (the sample PR never reaches it);
-a confirmation adds points once and a later follow-up request removes them; deleting a session removes its points and its trend point.
+a pass with a correction adds points once and a later follow-up request removes them; a pass needs a non-empty correction; deleting a session removes its points and its trend point.
 Shapes are in `api.check()`, `view()` (with `finished`, the time the last attempt ended), `scoringView()`, `reviewView()` (with `requested`) and `api.portfolio()` in `js/sim.js`.
 When served by FastAPI under `/static/`, add `<base href="/static/">` to the HTML files.
 
@@ -112,10 +113,10 @@ When served by FastAPI under `/static/`, add `<base href="/static/">` to the HTM
 
 Light and a little silly, still minimal: it should feel like a friendly tool a payments company runs next to GitHub, not a compliance form.
 
-- The four steps of a check each have a colour and a character, and both follow the step everywhere: Interview is lilac (a talking speech bubble), Assessment is sky (a magnifying glass with one big eye), Senior review is lemon (round glasses and a moustache), Check passes is mint (an approval seal with confetti). The four answer signals and highlight colours reuse them: specific lilac, reasoning sky, ownership lemon, detail mint.
+- The four steps of a check each have a colour and a character, and both follow the step everywhere: Interview is lilac (a talking speech bubble), Assessment is sky (a magnifying glass with one big eye), Senior review is lemon (round glasses and a moustache), Check passes is mint (an approval seal with confetti). The three answer signals and highlight colours reuse them: specific lilac, reasoning sky, detail mint.
 - Logo: a violet speech bubble with a face whose smile is a check (explain it, get the check). The wordmark is drawn, not typed: rounded monoline "viva" where the second v is a check and the dot of the i is lemon. `assets/logo.svg` has both for slides.
 - The characters are plain SVG shapes drawn in `core.js` (`V.mascot`, `V.face`). Their eyes follow the pointer and blink now and then; the Viva mark in the header has the same eyes.
 - The check page keeps only the title, the four steps (tilted pastel cards) and a large Start interview button. Enter also starts it.
 - Colour: warm paper `#faf9f6`, white cards, violet `#612fff` for actions, blue `#3e7bff` as its partner, four pastels for the steps. GitHub's green, amber and red appear only inside the GitHub preview.
 - Shape: pill buttons that sit on a hard shadow and press down, one radius scale (8, 12, 20, 28 px), dashed dividers, soft pills for tags and badges. Type is system SF Pro, heavy and tight for headings, SF Mono only for repositories, commits and times.
-- Motion is springy and carries meaning: the step cards drop in and land on their tilt, a squiggle draws under "check", the start button grows into a violet portal to the interview, the camera flies to its dock, the question types in, the analysis magnifier scans, the flow fills step by step, the score ring draws and the digits roll, the marked phrases sweep in, and confetti fires when the senior confirms. All of it honours `prefers-reduced-motion`. Dark mode is complete.
+- Motion is springy and carries meaning: the step cards drop in and land on their tilt, a squiggle draws under "check", the start button grows into a violet portal to the interview, the camera flies to its dock, the question types in, the analysis magnifier scans, the flow fills step by step, the score ring draws and the digits roll, the marked phrases sweep in, and confetti fires when the senior passes the check. All of it honours `prefers-reduced-motion`. Dark mode is complete.

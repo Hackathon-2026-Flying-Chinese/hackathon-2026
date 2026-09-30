@@ -22,7 +22,7 @@
   const fail = (status, detail) => { throw new HttpError(status, detail); };
 
   // ---------- persistence ----------
-  const KEY = 'viva.sim.v3';
+  const KEY = 'viva.sim.v4'; // v4: understanding verdicts and senior corrections replace the authorship wording
   const fresh = () => ({ sessions: {}, tokens: {}, media: {}, secret: hex(rand(32)), settings: { cameraRequired: true, voice: 'specific' } });
   let mem = null; // in-memory fallback when localStorage is blocked
   const load = () => {
@@ -68,30 +68,29 @@
   }
 
   // ---------- assessment: content only, never face, voice tone or expression ----------
+  // It looks at understanding (how and why the change works), never at who wrote it or how much AI helped.
   const RE = {
     num: /\$?\b\d[\d,]*(?:\.\d+)?%?/g,
     id: /`[^`]+`|\b[a-z]+(?:_[a-z0-9]+)+\b|\b[a-z]+[A-Z][A-Za-z0-9]*\b|\b[\w-]+\.(?:py|js|ts|go|java|rb|rs|sql|json|ya?ml)\b/g,
     reason: /\b(because|so that|therefore|instead of|rather than|otherwise|that way|which means|trade-?offs?|the reason|to avoid|avoids?|in order to|since)\b/gi,
     alt: /\b(considered|alternatives?|another option|other option|could have|other approach|weighed|compared|tiers?|tiered|instead)\b/gi,
-    own: /\bI(?:'d|'ve|'ll|'m)?\s+(?:also\s+|then\s+|first\s+|just\s+)?(?:chose|choose|added|wrote|write|used|use|decided|decide|tested|test|considered|consider|checked|check|picked|pick|kept|keep|changed|change|split|moved|made|make|built|build|put|set|wanted|thought|avoided|handled|rounded)\b|\bmy (?:code|change|approach|function|test|tests|pr|decision)\b/gi,
     generic: /\b(best practices?|clean and robust|clean(?:er)? code|robust(?:ly)?|scalab(?:le|ility)|seamless(?:ly)?|leverag(?:e|es|ed|ing)|maintainab(?:le|ility)|in conclusion|overall|furthermore|as expected|properly|correctly|efficient(?:ly)?|(?:industry )?standard (?:and )?(?:scalable )?(?:solution|approach)|well-structured)\b/gi
   };
   const uniq = (text, re) => [...new Set((text.match(re) || []).map(m => m.replace(/^\$/, '').toLowerCase()))];
   const count = (text, re) => (text.match(re) || []).length;
-  const features = text => ({ words: words(text), nums: uniq(text, RE.num), ids: uniq(text, RE.id), reason: count(text, RE.reason), alt: count(text, RE.alt), own: count(text, RE.own), generic: uniq(text, RE.generic) });
+  const features = text => ({ words: words(text), nums: uniq(text, RE.num), ids: uniq(text, RE.id), reason: count(text, RE.reason), alt: count(text, RE.alt), generic: uniq(text, RE.generic) });
 
   const sat = x => 1 - Math.exp(-1.6 * x); // saturating: more evidence helps less and less, and never reaches 1
   function scoreTexts(texts) {
     const n = Math.max(1, texts.length), f = texts.map(features);
     const sum = k => f.reduce((a, x) => a + (Array.isArray(x[k]) ? x[k].length : x[k]), 0);
-    const nums = sum('nums'), ids = sum('ids'), reason = sum('reason'), alt = sum('alt'), own = sum('own'), generic = sum('generic'), w = sum('words');
+    const nums = sum('nums'), ids = sum('ids'), reason = sum('reason'), alt = sum('alt'), generic = sum('generic'), w = sum('words');
     const dims = {
       specific: clamp(Math.round(10 + 90 * sat((nums + 1.5 * ids) / (3 * n)) - 3 * generic)),
       reasoning: clamp(Math.round(10 + 90 * sat((reason + 0.6 * alt) / (2.5 * n)) - 2.5 * generic)),
-      ownership: clamp(Math.round(10 + 90 * sat(own / (1.5 * n)) - 3 * generic)),
       detail: clamp(Math.round(10 + 90 * sat(w / (45 * n)) - 1.5 * generic))
     };
-    const score = Math.round(0.3 * dims.specific + 0.3 * dims.reasoning + 0.2 * dims.ownership + 0.2 * dims.detail);
+    const score = Math.round(0.375 * dims.specific + 0.375 * dims.reasoning + 0.25 * dims.detail);
     return { dims, score };
   }
 
@@ -99,7 +98,7 @@
   function annotate(text) {
     const spans = [];
     const add = (re, kind) => { for (const m of text.matchAll(re)) spans.push({ start: m.index, end: m.index + m[0].length, kind }); };
-    add(RE.generic, 'generic'); add(RE.num, 'specific'); add(RE.id, 'specific'); add(RE.reason, 'reason'); add(RE.alt, 'reason'); add(RE.own, 'own');
+    add(RE.generic, 'generic'); add(RE.num, 'specific'); add(RE.id, 'specific'); add(RE.reason, 'reason'); add(RE.alt, 'reason');
     spans.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
     const out = [];
     let at = 0;
@@ -118,7 +117,6 @@
     const concrete = [...f.ids, ...f.nums].slice(0, 4), named = concrete.length >= 2, why = f.reason + f.alt >= 2;
     if (named || key !== 'rationale') notes.push(named ? { tone: 'good', text: `Concrete details: ${concrete.join(', ')}.` } : { tone: 'warn', text: 'No concrete inputs, values or names.' });
     if (why || key !== 'implementation') notes.push(why ? { tone: 'good', text: 'Explains why, and what was weighed.' } : { tone: 'warn', text: 'Says what the code does, not why.' });
-    notes.push(f.own >= 1 ? { tone: 'good', text: 'Speaks about a decision of your own.' } : { tone: 'warn', text: 'No personal decision mentioned.' });
     if (f.generic.length) notes.push({ tone: 'warn', text: `Generic phrasing: ${f.generic.slice(0, 3).map(g => `“${g}”`).join(', ')}.` });
     return notes;
   }
@@ -126,12 +124,11 @@
   const DIM = {
     specific: { label: 'Specific', good: 'Named concrete values, inputs and names.', mid: 'Some concrete detail. Add exact inputs and outputs.', low: 'Stayed abstract. Few concrete values, names or cases.' },
     reasoning: { label: 'Reasoning', good: 'Explained why, and what was weighed.', mid: 'Gave a reason, not the alternative you rejected.', low: 'Described what the code does, not why.' },
-    ownership: { label: 'Ownership', good: 'Spoke about decisions you made yourself.', mid: 'Some ownership. Say what you decided.', low: 'Little sign of personal decisions.' },
     detail: { label: 'Detail', good: 'Answers were complete.', mid: 'Answers were short in places.', low: 'Answers were very short.' }
   };
-  const HEAD = { genuine: 'This reads like your own work.', unclear: 'Parts of this stayed general.', weak: 'We could not confirm this is your own work.' };
+  const HEAD = { shown: 'Your answers show how and why it works.', gaps: 'Parts of this stayed general.', not_shown: 'Your answers did not show how it works yet.' };
   const tierOf = v => (v >= 70 ? 'good' : v >= 45 ? 'mid' : 'low');
-  const verdictOf = score => (score >= 70 ? 'genuine' : score >= 45 ? 'unclear' : 'weak');
+  const verdictOf = score => (score >= 70 ? 'shown' : score >= 45 ? 'gaps' : 'not_shown');
 
   function assess(s) {
     const answered = s.interview.turns.filter(t => t.answered);
@@ -159,7 +156,7 @@
   // Follow-up only when the two standard answers leave a weak signal (at most one, aimed at the weakest).
   function weakest(s) {
     const { dims } = scoreTexts(s.interview.turns.filter(t => t.answered).map(t => t.answer_text));
-    const [dim, v] = ['specific', 'reasoning', 'ownership'].map(k => [k, dims[k]]).sort((a, b) => a[1] - b[1])[0];
+    const [dim, v] = ['specific', 'reasoning'].map(k => [k, dims[k]]).sort((a, b) => a[1] - b[1])[0];
     return v < 55 ? dim : null;
   }
   function advance(s) {
@@ -194,7 +191,7 @@
   }
   const standIn = (s, key, profile) => setOf(s).answers[profile][key.startsWith('probe') ? 'probe' : key];
 
-  // ---------- scoring: what a confirmed review adds to the portfolio ----------
+  // ---------- scoring: what a reviewed check adds to the portfolio ----------
   // Points = Risk x Novelty x Gap (1 to 27). Gap follows the concept level, which a pass raises and a second failure lowers.
   const SC = D.scoring;
   const clampLevel = x => Math.max(0, Math.min(3, x));
@@ -207,10 +204,10 @@
     if (SC.r === 3 && band === 'skip') { band = 'light'; floor = 'Money flow is never skipped.'; } // the plan's hard rule for the highest risk
     return { r: SC.r, n: SC.n, g, s: n, band, floor, level };
   }
-  const canRetake = s => s.stage === 'results' && !!s.assessment && s.assessment.verdict !== 'genuine' && s.attempt < D.maxAttempts;
+  const canRetake = s => s.stage === 'results' && !!s.assessment && s.assessment.verdict !== 'shown' && s.attempt < D.maxAttempts;
   function scoringView(db, s) {
     const sc = s.scoring, rv = s.review;
-    const status = s.stage !== 'results' ? 'none' : !rv || rv.status === 'not_requested' ? 'retake' : rv.status === 'pending' ? 'pending' : rv.verdict === 'genuine' ? 'earned' : 'declined';
+    const status = s.stage !== 'results' ? 'none' : !rv || rv.status === 'not_requested' ? 'retake' : rv.status === 'pending' ? 'pending' : rv.verdict === 'correction' ? 'earned' : 'declined';
     const ev = s.level_events[s.level_events.length - 1] || null;
     return {
       ...sc, max: SC.max, status, points: status === 'earned' ? sc.s : 0,
@@ -341,7 +338,7 @@
         if (s.stage !== 'interview') fail(409, 'The interview is over.');
         if (!s.interview.done || s.interview.turns.some(t => !t.answered)) fail(409, 'Answer every question first.');
         s.assessment = assess(s);
-        const passed = s.assessment.verdict === 'genuine', last = s.attempt >= D.maxAttempts;
+        const passed = s.assessment.verdict === 'shown', last = s.attempt >= D.maxAttempts;
         if (s.attempt === 1) s.first_score = { score: s.assessment.score, at: now }; // only a first attempt counts toward the trend
         // A first failure is feedback and a second chance: nothing goes to a senior yet. A pass, or a failed retake, does.
         if (passed || last) {
@@ -483,8 +480,11 @@
         const rt = db.tokens[token] || fail(403, 'Only a senior reviewer can decide.');
         const s = db.sessions[rt.sid];
         if (s.stage !== 'results' || !s.review || s.review.status === 'not_requested') fail(409, 'This interview is not waiting for a review.');
-        if (!['genuine', 'followup'].includes(verdict)) fail(422, 'Choose a verdict.');
-        s.review = { status: 'decided', verdict, note: String(note).trim().slice(0, 500), at: nowS(), reviewer: token.slice(0, 6) };
+        // A senior either passes the check with a one-line correction on the concept, or asks for a follow-up.
+        if (!['correction', 'followup'].includes(verdict)) fail(422, 'Choose a decision.');
+        const text = String(note).trim().slice(0, 500);
+        if (verdict === 'correction' && !text) fail(422, 'Write the one-line correction.');
+        s.review = { status: 'decided', verdict, note: text, at: nowS(), reviewer: token.slice(0, 6) };
         return s.review;
       });
     },

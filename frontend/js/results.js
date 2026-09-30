@@ -1,6 +1,6 @@
 /* window.VivaResults: the results page, read as a check report. The flow of the check, a score for how well the answers
-   show that the person understands their own change (words only), the phrases it looked at, the senior review, the
-   GitHub check, and what a confirmed review adds to the portfolio. The flow, the GitHub preview and the scoring table
+   show that the person understands how and why the change works (words only, never who wrote it), the phrases it looked
+   at, the senior review and its correction, the GitHub check, and what a reviewed check adds to the portfolio. The flow, the GitHub preview and the scoring table
    are also used by the check page and the portfolio. */
 (() => {
   'use strict';
@@ -8,8 +8,8 @@
   const D = V.data;
   const { $, $$, esc, icon } = V;
 
-  const KINDS = ['specific', 'reason', 'own', 'generic'];
-  const VERDICT = { genuine: 'Likely your own work', unclear: 'Needs a closer look', weak: 'Could not confirm' };
+  const KINDS = ['specific', 'reason', 'generic'];
+  const VERDICT = { shown: 'Understanding shown', gaps: 'Gaps to close', not_shown: 'Not shown yet' };
   const MODE = { voice: 'Spoken', text: 'Typed' };
   const ACT = { sign: 'requested a signed link for', play: 'played', open_review: 'opened your review' };
   const POINTS = { pending: 'Pending review', retake: 'Not earned yet', earned: 'Added', declined: 'No points', none: 'Not earned yet' };
@@ -18,12 +18,12 @@
   const marks = segs => segs.map(s => (KINDS.includes(s.kind) ? `<mark data-kind="${s.kind}">${esc(s.text)}</mark>` : esc(s.text))).join('');
   const person = () => `<div class="person"><span class="av" data-tone="lemon" style="--s:34px">${esc(V.initials(D.reviewer.name))}</span><div><b>${esc(D.reviewer.name)}</b><span>${esc(D.reviewer.role)}</span></div></div>`;
   const bub = (tone, name) => `<span class="bub" data-tone="${tone}">${icon(name, 14)}</span>`;
-  const MOOD = { genuine: 'happy', unclear: 'unsure', weak: 'oops' };
+  const MOOD = { shown: 'happy', gaps: 'unsure', not_shown: 'oops' };
 
   // ---------- status of the whole check ----------
   function status(view) {
     const st = view.scoring.status;
-    if (st === 'earned') return { tone: 'mint', text: 'Confirmed' };
+    if (st === 'earned') return { tone: 'mint', text: 'Reviewed' };
     if (st === 'declined') return { tone: '', text: 'Follow-up requested' };
     if (st === 'retake') return { tone: '', text: 'Did not pass. Second attempt available' };
     return { tone: 'lemon', live: true, text: 'Waiting for senior review' };
@@ -38,24 +38,24 @@
       return [
         { state: 'current', name: 'Interview', text: 'Two questions, about 3 minutes. Speak or type.' },
         { state: 'todo', name: 'Assessment', text: 'Reads your words only.' },
-        { state: 'todo', name: 'Senior review', text: `${reviewer} confirms it is your own work.` },
+        { state: 'todo', name: 'Senior review', text: `${reviewer} adds a one-line correction.` },
         { state: 'todo', name: 'Check passes', text: `+${points} points go to your portfolio.` }
       ];
     }
     const a = view.assessment, sc = view.scoring, st = sc.status;
     const answered = view.interview.turns.filter(t => t.answered), follow = answered.some(t => t.source === 'follow-up');
     const secs = view.media.filter(m => m.attempt === view.attempt).reduce((s, m) => s + Number(m.duration || 0), 0);
-    const passed = a.verdict === 'genuine';
+    const passed = a.verdict === 'shown';
     return [
       { state: 'done', name: 'Interview', text: `${answered.length} answers${follow ? ', one follow-up' : ''}${secs ? `. ${V.fmtTime(secs)} recorded` : ''}.` },
-      { state: 'done', name: 'Assessment', text: `Score ${Number(a.score)}. ${passed ? 'Likely your own work.' : 'Did not pass.'}` },
+      { state: 'done', name: 'Assessment', text: `Score ${Number(a.score)}. ${passed ? 'Understanding shown.' : 'Did not pass.'}` },
       st === 'retake' ? { state: 'stop', name: 'Senior review', text: 'Not requested after a first attempt.' }
         : st === 'pending' ? { state: 'wait', name: 'Senior review', text: `Waiting for ${reviewer}.` }
-          : st === 'earned' ? { state: 'done', name: 'Senior review', text: `Confirmed by ${reviewer}.` }
+          : st === 'earned' ? { state: 'done', name: 'Senior review', text: `${reviewer} added a correction.` }
             : { state: 'stop', name: 'Senior review', text: `${reviewer} asked for a follow-up.` },
       st === 'earned' ? { state: 'done', name: 'Check passes', text: `+${Number(sc.s)} points added to your portfolio.` }
         : st === 'declined' ? { state: 'stop', name: 'Check passes', text: 'No points this time.' }
-          : { state: 'todo', name: 'Check passes', text: `+${Number(sc.s)} points when a senior confirms.` }
+          : { state: 'todo', name: 'Check passes', text: `+${Number(sc.s)} points after the senior review.` }
     ];
   }
   const MARK = { done: icon('check', 13), stop: icon('dash', 13), wait: icon('clock', 13) };
@@ -87,7 +87,7 @@
       home: { s: 'wait', live: true, note: 'Waiting for you' },
       retake: { s: 'wait', note: 'Second attempt available' },
       pending: { s: 'wait', live: true, note: `In review by ${reviewer}` },
-      earned: { s: 'ok', note: `Confirmed by ${reviewer}` },
+      earned: { s: 'ok', note: `Reviewed by ${reviewer}` },
       declined: { s: 'fail', note: 'Follow-up requested' }
     }[st] || { s: 'idle', note: 'Not started' };
     const sym = { ok: icon('check', 11), fail: icon('x', 11) };
@@ -107,11 +107,11 @@
   function reviewHtml(view) {
     const r = view.review || { status: 'pending' };
     if (r.status === 'decided') {
-      const ok = r.verdict === 'genuine';
-      return `<section class="card review" id="review-card" data-status="decided" data-verdict="${ok ? 'genuine' : 'followup'}">
-        <div class="card-h"><h2>${bub('lemon', 'user')}Senior review</h2><span class="badge"${ok ? ' data-tone="mint"' : ''}>${ok ? 'Confirmed' : 'Follow-up'}</span></div>
+      const ok = r.verdict === 'correction';
+      return `<section class="card review" id="review-card" data-status="decided" data-verdict="${ok ? 'correction' : 'followup'}">
+        <div class="card-h"><h2>${bub('lemon', 'user')}Senior review</h2><span class="badge"${ok ? ' data-tone="mint"' : ''}>${ok ? 'Correction added' : 'Follow-up'}</span></div>
         ${person()}
-        <p class="review-line">${ok ? 'Confirmed that this looks like your own work.' : 'Would like a short follow-up conversation about this change.'}</p>
+        <p class="review-line">${ok ? 'Passed the check and left one thing to remember next time you meet this concept.' : 'Would like a short follow-up conversation about this change.'}</p>
         ${r.note ? `<blockquote class="review-note">${esc(r.note)}</blockquote>` : ''}
         ${r.at ? `<p class="card-foot">Decided at ${V.fmtClock(Number(r.at))}</p>` : ''}
       </section>`;
@@ -169,8 +169,8 @@
   function pointsHtml(view) {
     const sc = view.scoring, st = sc.status, c = sc.concept, nx = sc.next, nxBand = sc.bands.find(b => b.key === nx.band), moved = c.after !== c.before;
     const note = {
-      pending: `A senior reviews your final attempt. When they confirm it is your own work, +${sc.s} points go to your portfolio.`,
-      retake: `Nothing is at stake until your final attempt. When a senior confirms it, +${sc.s} points go to your portfolio.`,
+      pending: `A senior reviews your final attempt. When they pass it with a correction, +${sc.s} points go to your portfolio.`,
+      retake: `Nothing is at stake until your final attempt. When a senior passes it, +${sc.s} points go to your portfolio.`,
       earned: `+${sc.s} points were added to your portfolio.`,
       declined: 'A senior asked for a follow-up conversation, so no points were added.'
     }[st] || '';
@@ -182,12 +182,12 @@
         <span class="pts-sum">
           <span class="pts-eq" role="img" aria-label="${sc.r} times ${sc.n} times ${sc.g} equals ${sc.s} points">
             ${factor('Risk', sc.r, sc.why.r, 'lilac', '×')}${factor('Novelty', sc.n, sc.why.n, 'sky', '×')}${factor('Gap', sc.g, sc.why.g, 'lemon', '=')}
-            <span class="pts-coin" data-status="${esc(st)}"><b class="num" data-pts>${Number(sc.s)}</b><em>points</em><span class="pts-stamp">${st === 'earned' ? 'Added' : st === 'declined' ? 'Not added' : 'If confirmed'}</span></span>
+            <span class="pts-coin" data-status="${esc(st)}"><b class="num" data-pts>${Number(sc.s)}</b><em>points</em><span class="pts-stamp">${st === 'earned' ? 'Added' : st === 'declined' ? 'Not added' : 'After review'}</span></span>
           </span>
           ${scaleHtml(sc.bands, sc.s, sc.band, sc.floor)}
         </span>
       </summary>
-      <p class="pts-lede">A confirmed review adds Risk × Novelty × Gap points. Each factor scores 1 to 3, so one change is worth 1 to ${Number(sc.max)}.</p>
+      <p class="pts-lede">A reviewed check adds Risk × Novelty × Gap points. Each factor scores 1 to 3, so one change is worth 1 to ${Number(sc.max)}.</p>
       ${rubricHtml(sc.rubric, { r: sc.r, n: sc.n, g: sc.g }, sc.why)}
       <p class="pts-note">${esc(note)}${small}</p>
       <dl class="pts-facts">
@@ -247,7 +247,8 @@
                 <p class="label">Understanding score</p>
                 <h2 class="score-head">${esc(a.headline)}</h2>
                 ${retake || second ? `<p class="muted">${lede}</p>` : ''}
-                <div class="score-tags"><span class="badge res-verdict" data-verdict="${esc(a.verdict)}"${a.verdict === 'genuine' ? ' data-tone="accent"' : a.verdict === 'unclear' ? ' data-tone="blue"' : ''}>${VERDICT[a.verdict] || ''}</span>${a.simulated ? '<span class="tag">Simulated assessment</span>' : ''}</div>
+                <p class="muted small score-scope">Viva checks understanding, not authorship. It never guesses who wrote the code or how much AI helped.</p>
+                <div class="score-tags"><span class="badge res-verdict" data-verdict="${esc(a.verdict)}"${a.verdict === 'shown' ? ' data-tone="accent"' : a.verdict === 'gaps' ? ' data-tone="blue"' : ''}>${VERDICT[a.verdict] || ''}</span>${a.simulated ? '<span class="tag">Simulated assessment</span>' : ''}</div>
               </div>
             </div>
             <ul class="dims">${dims}</ul>
@@ -255,7 +256,7 @@
 
           <details class="card answers fold" data-reveal>
             <summary class="card-h"><h2>${bub('lilac', 'chat')}Your answers</h2><span class="fold-sum"><span>${a.questions.length} answers, with the phrases the score looked at</span><span class="fold-i">${icon('chevron', 14)}</span></span></summary>
-            <ul class="legend"><li><mark data-kind="specific" class="on">Concrete detail</mark></li><li><mark data-kind="reason" class="on">Reasoning</mark></li><li><mark data-kind="own" class="on">Your decision</mark></li><li><mark data-kind="generic" class="on">Generic phrasing</mark></li></ul>
+            <ul class="legend"><li><mark data-kind="specific" class="on">Concrete detail</mark></li><li><mark data-kind="reason" class="on">Reasoning</mark></li><li><mark data-kind="generic" class="on">Generic phrasing</mark></li></ul>
             ${qs}
           </details>
 
@@ -308,7 +309,7 @@
       run.finished.then(() => { fg.style.strokeDashoffset = target; run.cancel(); }).catch(() => {});
       setTimeout(() => num.set(String(a.score), { duration: 1200, stagger: 80 }), 450);
     }
-    // the four signals roll and draw together, after the score
+    // the three signals roll and draw together, after the score
     $$('.dim', root).forEach((li, i) => {
       const el = $('.dim-val', li), v = String(Number(el.dataset.dim)), line = $('.dim-line i', li);
       const o = V.odometer(el, '0'.repeat(v.length));

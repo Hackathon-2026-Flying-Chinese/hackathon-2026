@@ -11,9 +11,9 @@
   try { token = decodeURIComponent(location.hash.slice(1)); } catch { token = ''; }
 
   let data = null, players = [];
-  const KINDS = ['specific', 'reason', 'own', 'generic'];
+  const KINDS = ['specific', 'reason', 'generic'];
   const MODE = { voice: 'Spoken', text: 'Typed' };
-  const VERDICT = { genuine: 'Likely their own work', unclear: 'Needs a closer look', weak: 'Could not confirm' };
+  const VERDICT = { shown: 'Understanding shown', gaps: 'Gaps to close', not_shown: 'Not shown yet' };
   const ACT = { sign: 'requested a signed link for', play: 'played', open_review: 'opened the review page' };
   const who = a => (a === 'learner' ? 'The author' : 'You');
   const bub = (tone, name) => `<span class="bub" data-tone="${tone}">${icon(name, 14)}</span>`;
@@ -157,12 +157,12 @@
   function decisionHtml() {
     const r = data.decision;
     if (!r || r.status !== 'decided') return '';
-    const ok = r.verdict === 'genuine';
-    return `<div class="saved" data-verdict="${ok ? 'genuine' : 'followup'}"><span class="saved-i">${icon(ok ? 'check' : 'chat', 14)}</span><div><b>${ok ? 'Confirmed as their own work' : 'Follow-up requested'}</b>${r.note ? `<p>${esc(r.note)}</p>` : ''}<span>Saved at ${V.fmtClock(Number(r.at))}. You can change it below.</span></div></div>`;
+    const ok = r.verdict === 'correction';
+    return `<div class="saved" data-verdict="${ok ? 'correction' : 'followup'}"><span class="saved-i">${icon(ok ? 'check' : 'chat', 14)}</span><div><b>${ok ? 'Passed, with a correction' : 'Follow-up requested'}</b>${r.note ? `<p>${esc(r.note)}</p>` : ''}<span>Saved at ${V.fmtClock(Number(r.at))}. You can change it below.</span></div></div>`;
   }
   const statusOf = () => {
     const r = data.decision;
-    if (r && r.status === 'decided') return r.verdict === 'genuine' ? { tone: 'mint', text: 'Confirmed' } : { tone: '', text: 'Follow-up requested' };
+    if (r && r.status === 'decided') return r.verdict === 'correction' ? { tone: 'mint', text: 'Correction added' } : { tone: '', text: 'Follow-up requested' };
     return { tone: 'lemon', live: true, text: 'Waiting for your decision' };
   };
   const logHtml = () => (data.access_log.length
@@ -196,7 +196,7 @@
               <div class="rv-scorenum"><b class="num">${Number(a.score)}</b><span>of 100</span></div>
               <div class="rv-scoremeta">
                 <p class="label">Understanding score</p>
-                <div class="score-tags"><span class="badge"${a.verdict === 'genuine' ? ' data-tone="accent"' : a.verdict === 'unclear' ? ' data-tone="blue"' : ''}>${VERDICT[a.verdict] || ''}</span>${a.simulated ? '<span class="tag">Simulated assessment</span>' : ''}</div>
+                <div class="score-tags"><span class="badge"${a.verdict === 'shown' ? ' data-tone="accent"' : a.verdict === 'gaps' ? ' data-tone="blue"' : ''}>${VERDICT[a.verdict] || ''}</span>${a.simulated ? '<span class="tag">Simulated assessment</span>' : ''}</div>
                 <p class="muted small">Words only. The score never uses the face, the voice tone or the expressions in the recording.</p>
                 ${data.previous.map(p => `<p class="muted small">Attempt ${Number(p.attempt)} scored ${Number(p.score)} and did not pass. This is the retake, with different questions.</p>`).join('')}
               </div>
@@ -213,10 +213,10 @@
             <div class="card-h"><h2>${bub('lemon', 'shield')}Your decision</h2></div>
             <div id="saved" aria-live="polite">${decisionHtml()}</div>
             <div class="rv-choices" role="radiogroup" aria-label="Decision">
-              <label class="ev"><input type="radio" name="verdict" value="genuine"><span class="ev-mark"></span><span class="ev-text"><b>Looks like their own work</b><em>The answers match the change.</em></span></label>
+              <label class="ev"><input type="radio" name="verdict" value="correction"><span class="ev-mark"></span><span class="ev-text"><b>Pass, with a one-line correction</b><em>The author sees it next time they meet this concept.</em></span></label>
               <label class="ev"><input type="radio" name="verdict" value="followup"><span class="ev-mark"></span><span class="ev-text"><b>Needs a follow-up conversation</b><em>Some answers stayed general.</em></span></label>
             </div>
-            <div class="field"><label for="note">Note for the author <span class="muted">(optional)</span></label><textarea class="textarea" id="note" rows="3" maxlength="500" aria-describedby="note-hint" placeholder="What to keep, or what to talk about"></textarea><span class="hint" id="note-hint">The author sees your decision and this note on their results page.</span></div>
+            <div class="field"><label for="note">One-line correction <span class="muted">(required to pass)</span></label><textarea class="textarea" id="note" rows="3" maxlength="500" aria-describedby="note-hint" placeholder="For example: round once, at the end. Rounding the fee on its own lets the cents drift."></textarea><span class="hint" id="note-hint">It goes to the author's gap record for this concept, not to their manager.</span></div>
             <p class="error-text" id="err" role="alert" hidden></p>
             <button class="btn btn-primary rv-save" id="save" type="button">Save decision</button>
             <p class="card-foot">Saving updates the viva / decision-check on GitHub.</p>
@@ -260,7 +260,7 @@
       V.enter($('#saved').firstElementChild, { y: 6, dur: 420 });
       const st = statusOf();
       $('#rv-status').outerHTML = `<span class="badge"${st.tone ? ` data-tone="${st.tone}"` : ''} id="rv-status">${esc(st.text)}</span>`;
-      if (verdict === 'genuine') V.confetti(btn);
+      if (verdict === 'correction') V.confetti(btn);
       V.toast('Decision saved. The author sees it on their results page.');
     } catch (e) { err.textContent = e.message; err.hidden = false; } finally { btn.disabled = false; }
   }

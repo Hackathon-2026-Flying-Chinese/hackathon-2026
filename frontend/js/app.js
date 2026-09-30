@@ -103,7 +103,7 @@
     const steps = [
       ['talk', 'Interview', 'Two questions, about 3 minutes. Speak or type.'],
       ['peek', 'Assessment', 'Reads your words only.'],
-      ['sage', 'Senior review', `${D.reviewer.name} confirms it is your own work.`],
+      ['sage', 'Senior review', `${D.reviewer.name} adds a one-line correction.`],
       ['yay', 'Check passes', `+${Number(sc.s)} points go to your portfolio.`]
     ];
     root.innerHTML = `
@@ -208,7 +208,7 @@
       if (logChanged) swapCard('#log-card', V.results.logHtml(v));
       if (v.scoring.status === 'earned' && was.scoring.status !== 'earned') {
         V.confetti($('#status-badge', root));
-        V.toast(`${D.reviewer.name} confirmed your work. +${v.scoring.points} points added to your portfolio.`, { action: { label: 'View portfolio', run: () => { location.href = `portfolio.html${presenter ? '?presenter=1' : ''}`; } } });
+        V.toast(`${D.reviewer.name} passed your check with a correction. +${v.scoring.points} points added to your portfolio.`, { action: { label: 'View portfolio', run: () => { location.href = `portfolio.html${presenter ? '?presenter=1' : ''}`; } } });
         V.pulse($('.avatar'));
       } else if (reviewChanged) V.toast(`${D.reviewer.name} left a decision.`);
     } catch { /* keep the current view if a poll fails */ }

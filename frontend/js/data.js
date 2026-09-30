@@ -32,8 +32,7 @@ Viva.data = {
       },
       probes: {
         specific: { label: 'Be concrete', text: 'Give one concrete input and say exactly what your code returns for it, and why.' },
-        reasoning: { label: 'The other way', text: 'What would have gone wrong if you had chosen the other approach?' },
-        ownership: { label: 'Your decision', text: 'Which part of this change did you decide yourself, and what did you decide?' }
+        reasoning: { label: 'The other way', text: 'What would have gone wrong if you had chosen the other approach?' }
       },
       answers: {
         specific: {
@@ -55,8 +54,7 @@ Viva.data = {
       },
       probes: {
         specific: { label: 'Be concrete', text: 'Name one amount where the minimum applies and one where the cap applies, and give the total for each.' },
-        reasoning: { label: 'If it changed', text: 'If the fee rule changed next month, what would you have to touch, and why?' },
-        ownership: { label: 'Your call', text: 'Tell us about one moment while writing this change when you had to make a call. What was the call?' }
+        reasoning: { label: 'If it changed', text: 'If the fee rule changed next month, what would you have to touch, and why?' }
       },
       answers: {
         specific: {
@@ -73,7 +71,7 @@ Viva.data = {
     }
   ],
 
-  // The scoring standard. A senior-confirmed review adds Risk x Novelty x Gap points to the portfolio (1 to 27).
+  // The scoring standard. A senior-reviewed check adds Risk x Novelty x Gap points to the portfolio (1 to 27).
   // Risk and Novelty are fixed for this pull request; Gap follows the person's level on the concept (see sim.js).
   scoring: {
     max: 27,
