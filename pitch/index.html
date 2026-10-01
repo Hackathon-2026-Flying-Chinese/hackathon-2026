@@ -747,9 +747,9 @@ h1, h2, h3, p { margin: 0; }
 .lap .sf-ui img { display: block; width: 100%; }
 .lap .sf.back { padding: 0 56px; gap: 40px; }
 .lap .sf.back .eyebrow { text-align: center; }
-.lap .sf.back .blk.big { min-height: 300px; padding: 32px 30px; justify-content: flex-start; gap: 16px; }
+.lap .sf.back .blk.big { min-height: 244px; padding: 28px 28px; justify-content: flex-start; gap: 14px; }
 .lap .sf.back .blk.big b { font-size: 42px; }
-.lap .sf.back .blk.big span { margin-top: auto; font-size: 23px; line-height: 1.4; color: #c4c4c9; }
+.lap .sf.back .blk.big span { margin-top: auto; font-size: 21px; line-height: 1.4; color: #c4c4c9; }
 .lap .sf.back .blk.hot { box-shadow: 0 0 90px -14px rgb(139 107 255 / .8); }
 .lap .sf.back .tier-h { font-size: 24px; }
 /* the whole screen, black background and all, swings open like a pair of doors hinged at its outer edges, onto the next slide */
@@ -770,9 +770,39 @@ h1, h2, h3, p { margin: 0; }
 .lap .wire::before { left: -2px; transform: rotate(-135deg); }
 .lap .wire::after { right: -2px; transform: rotate(45deg); }
 .lap-eyebrow { position: absolute !important; left: 0; right: 0; top: 104px; transition: opacity .6s var(--ease); }
-.archi[data-step="1"] .lap .screen { transform: scale(1) rotateY(180deg); }
-.archi[data-step="1"] .lap .lid, .archi[data-step="1"] .lap .deck { opacity: 0; transform: translateY(70px); }
-.archi[data-step="1"] .lap-eyebrow { opacity: 0; }
+.archi:is([data-step="1"], [data-step="2"]) .lap .screen { transform: scale(1) rotateY(180deg); }
+.archi:is([data-step="1"], [data-step="2"]) .lap .lid, .archi:is([data-step="1"], [data-step="2"]) .lap .deck { opacity: 0; transform: translateY(70px); }
+.archi:is([data-step="1"], [data-step="2"]) .lap-eyebrow { opacity: 0; }
+/* step 2: the rows of what comes next open out of the built core, above and below it; dashed = next.
+   They are keyed to their own .on class, so the door clone that opens onto the demo keeps them */
+.lap .sf.back { gap: 0; }
+.lap .sf.back > .eyebrow { margin-bottom: 26px; }
+.lap .nx { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 1s var(--ease), opacity .8s var(--ease) .15s, transform .9s var(--ease) .15s, filter .8s var(--ease) .15s; }
+.lap .nx.on { grid-template-rows: 1fr; }
+.lap .nx-in { min-height: 0; overflow: hidden; }
+.lap .nx.up .nx-in { padding-bottom: 24px; }
+.lap .nx.down .nx-in { padding-top: 24px; }
+.lap .nx-k { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font: 600 18px/1.2 var(--display); color: var(--fg-2); }
+.lap .nx-k::before { content: ""; width: 26px; height: 14px; border-radius: 5px; border: 1.5px dashed #a78bff; }
+.lap .nx-cards { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 48px; }
+.lap .nx .blk.next { position: relative; overflow: hidden; padding: 17px 22px; gap: 4px; border-radius: 16px; border: 1.5px dashed rgb(167 139 255 / .6); background: rgb(139 107 255 / .05); }
+.lap .nx .blk.next b { display: flex; align-items: center; gap: 11px; font: 600 24px/1.2 var(--display); letter-spacing: -.015em; }
+.lap .nx-ico { width: 26px; height: 26px; flex: none; fill: none; stroke: url(#ig); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lap .nx .blk.next span { font: 400 17px/1.4 var(--text); color: #b4b4ba; white-space: nowrap; }
+/* a light passes over each new module as it lands */
+.lap .nx .blk.next::after { content: ""; position: absolute; inset: 0; pointer-events: none; transform: translateX(-130%);
+  background: linear-gradient(100deg, transparent 28%, rgb(183 166 255 / .16) 44%, rgb(255 255 255 / .3) 50%, rgb(183 166 255 / .16) 56%, transparent 72%); }
+.slide.active .lap .nx.on .blk.next::after { animation: nxShine 1.2s var(--ease) both; animation-delay: calc(.55s + var(--i, 0) * .13s); }
+@keyframes nxShine { to { transform: translateX(130%); } }
+/* the core is what they plug into: a dashed line runs from each new row into the backend */
+.lap .cards .tier.mid::before, .lap .cards .tier.mid::after { content: ""; position: absolute; left: 50%; width: 2px; margin-left: -1px; opacity: 0; transition: opacity .6s var(--ease) .5s;
+  background: repeating-linear-gradient(180deg, #a78bff 0 6px, transparent 6px 12px); }
+.lap .cards .tier.mid::before { bottom: 100%; height: 24px; }
+.lap .cards .tier.mid::after { top: 100%; height: 58px; }
+.lap .sf.back:has(.nx.on) .tier.mid::before, .lap .sf.back:has(.nx.on) .tier.mid::after { opacity: 1; }
+.slide.active .lap .tier.mid::before { animation: plug .8s linear infinite; }
+.slide.active .lap .tier.mid::after { animation: plug .8s linear infinite reverse; }
+@keyframes plug { from { background-position: 0 0; } to { background-position: 0 12px; } }
 .stack4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; width: 1320px; text-align: left; margin-top: 30px; }
 .blk.big { min-height: 250px; padding: 28px 28px; gap: 12px; }
 .blk.big b { font-size: 38px; line-height: 1.12; letter-spacing: -.02em; }
@@ -820,14 +850,49 @@ h1, h2, h3, p { margin: 0; }
 .business-sources a { color: inherit; text-decoration-color: rgb(255 255 255 / .22); text-underline-offset: 3px; }
 .business-sources a:hover { color: var(--fg-2); }
 .business-sources a:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+.business .scenario-label { color: var(--lemon); font-size: 22px; }
+.business .scenario-note { margin-top: 24px; max-width: 500px; font: 400 25px/1.4 var(--text); color: var(--fg-2); }
+.business .scenario-disclosure { font-size: 18px; color: var(--fg-2); }
+/* the price sits on the subscription card, next to the value on the left */
+.business-offer p.business-price { margin-top: 16px; display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+.business-price b { font: 700 60px/1 var(--display); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.business-offer p.business-breakeven { margin-top: 12px; font: 400 21px/1.3 var(--text); color: var(--fg-2); }
+.business-pilot.b { grid-template-columns: 1fr 40px 1fr 40px 1fr; gap: 12px; padding: 22px 26px; }
+.business-pilot.b b { font-size: 25px; }
+.business-pilot.b span { font-size: 17px; }
+.business-pilot.b .business-arrow { width: 38px; }
+
+/* ---------- Q&A calculation: one headline value with the arithmetic underneath ---------- */
+.slide.qa { padding: 64px 140px 50px; gap: 0; justify-content: flex-start; }
+.qa-head .eyebrow { font-size: 24px; color: var(--lemon); margin-bottom: 12px; }
+.qa-head .h2 { font-size: 54px; }
+.qa-total { margin-top: 30px; }
+.qa-amount { font: 700 176px/.98 var(--display); letter-spacing: -.065em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.qa-amount small { font-size: 86px; letter-spacing: -.045em; margin-right: 8px; }
+.qa-value-label { margin-top: 16px; font: 500 29px/1.25 var(--display); }
+.qa-value-math { margin-top: 9px; font: 400 25px/1.3 var(--text); color: var(--fg-2); }
+.qa-calculations { display: grid; grid-template-columns: repeat(3, 1fr); gap: 42px; width: 1320px; margin-top: 40px; padding-top: 30px; border-top: 1px solid var(--line-2); }
+.qa-calculations p { font: 400 22px/1.3 var(--text); color: var(--fg-2); }
+.qa-calculations strong { display: block; margin: 10px 0; font: 600 45px/1.1 var(--display); letter-spacing: -.035em; white-space: nowrap; }
+.qa-calculations .qa-result { font: 500 27px/1.3 var(--display); color: var(--fg); }
+.qa-disclosure { margin-top: auto; padding-top: 24px; font: 400 19px/1.4 var(--text); color: var(--fg-2); }
 
 /* ---------- s17 roadmap ---------- */
 .road { position: relative; display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px; width: 1320px; text-align: left; }
 .road::before { content: ""; position: absolute; left: 10px; right: 0; top: 9px; height: 2px; background: linear-gradient(90deg, var(--violet), var(--blue) 60%, rgb(91 140 255 / 0)); }
+.road::after { content: ""; position: absolute; left: 10px; right: 0; top: 8px; height: 4px; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgb(139 107 255 / .4) 25%, #b9a4ff 65%, #fff 82%, #8db9ff 90%, transparent);
+  background-size: 220px 100%; background-repeat: no-repeat; background-position: -220px 0;
+  filter: drop-shadow(0 0 7px #8b6bff) drop-shadow(0 0 16px #5b8cff); }
+.slide.active .road::after { animation: roadFlow 4.2s linear infinite; }
+@keyframes roadFlow {
+  0% { background-position: -220px 0; opacity: 0; }
+  8%, 84% { opacity: 1; }
+  100% { background-position: calc(100% + 220px) 0; opacity: 0; }
+}
 .ms { position: relative; display: flex; flex-direction: column; gap: 10px; }
-.ms .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--bg); border: 3px solid var(--violet); margin-bottom: 16px; }
+.ms .dot { position: relative; z-index: 1; width: 20px; height: 20px; border-radius: 50%; background: var(--blue); border: 3px solid #b7a6ff; box-shadow: 0 0 18px rgb(139 107 255 / .55); margin-bottom: 16px; }
 .ms.now .dot { background: var(--violet); box-shadow: 0 0 24px var(--violet); }
-.when { transition-delay: .5s; } .ms.on > h3 { transition-delay: .6s; } .ms.on > p:not(.when) { transition-delay: .7s; }
 .when { font: 600 18px/1.2 var(--display); }
 .ms h3 { font: 600 27px/1.15 var(--display); letter-spacing: -.02em; }
 .ms p { font: 400 19px/1.45 var(--text); color: var(--fg-2); }
@@ -1294,22 +1359,43 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
           </div>
           <div class="sf back">
             <p class="eyebrow grad">How it’s built</p>
+            <!-- step 2: what comes next grows out of the built core, above and below it; dashed = next -->
+            <div class="nx up b" data-f="2">
+              <div class="nx-in">
+                <p class="nx-k"><span><span class="grad">Next</span> · into your workflow</span></p>
+                <div class="nx-cards">
+                  <div class="blk next" style="--i:0"><b><svg class="nx-ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="5" r="2.2"/><circle cx="6" cy="19" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="M6 7.2v9.6M18 16.8V10a3 3 0 0 0-3-3h-4M13 4.5 10.5 7l2.5 2.5"/></svg>GitHub App</b><span>A merge check on every PR</span></div>
+                  <div class="blk next" style="--i:1"><b><svg class="nx-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7.5 10l3 2.5-3 2.5M13 15.5h4"/></svg>CI runner job</b><span>Diff only, on your own runner</span></div>
+                  <div class="blk next" style="--i:2"><b><svg class="nx-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14A2.5 2.5 0 0 1 21.5 7v8a2.5 2.5 0 0 1-2.5 2.5h-6.5L8 21v-3.5H5A2.5 2.5 0 0 1 2.5 15V7A2.5 2.5 0 0 1 5 4.5z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>Slack App</b><span>Reminders and the review queue</span></div>
+                </div>
+              </div>
+            </div>
             <div class="cards">
-              <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Gaps, answers and corrections, one encryption key per tenant</span></div></div>
+              <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Every gap stays open until a new task closes it</span></div></div>
               <i class="wire" aria-hidden="true"></i>
-              <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn. Viva API, check grader, event log</span></div></div>
+              <div class="tier mid"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn. Viva API, check grader, event log</span></div></div>
               <i class="wire" aria-hidden="true"></i>
-              <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core hot"><b>Claude<br>Sonnet 5.5</b><span>One follow-up, a fixed rubric. Or Bedrock or open-weight in your cloud</span></div></div>
+              <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core hot"><b>Claude<br>Sonnet 5.5</b><span>One follow-up, a fixed rubric. Never sees the answer key</span></div></div>
+            </div>
+            <div class="nx down b" data-f="2">
+              <div class="nx-in">
+                <p class="nx-k"><span><span class="grad">Next</span> · your data, your rules</span></p>
+                <div class="nx-cards">
+                  <div class="blk next" style="--i:3"><b><svg class="nx-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18.5h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7.1 9.6 4.5 4.5 0 0 0 7 18.5z"/></svg>Your cloud or ours</b><span>One encryption key per tenant</span></div>
+                  <div class="blk next" style="--i:4"><b><svg class="nx-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>Speech to text</b><span>faster-whisper, self-hosted</span></div>
+                  <div class="blk next" style="--i:5"><b><svg class="nx-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9.5 9.5h5v5h-5zM9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/></svg>Your own model</b><span>Amazon Bedrock or open-weight</span></div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
       <aside class="notes">
         <p>The frontend is plain HTML, CSS and JavaScript.</p>
-        <p>[click: the screen lifts out of the laptop and turns over] Behind it, the backend is Python, FastAPI. SQLite tracks each gap until a new task closes it. And Claude Sonnet 5.5 asks one follow-up and marks against a fixed rubric.</p>
-        <p>It plugs into the tools teams already use: a GitHub App that adds a required check, a job on your own CI runner that takes only the diff, and a Slack App for reminders.</p>
+        <p>[click: the screen lifts out of the laptop and turns over] Behind it, the backend is Python, FastAPI. SQLite keeps each gap open until a new task closes it. And Claude Sonnet 5.5 asks one follow-up and marks against a fixed rubric.</p>
+        <p>[click: the next modules grow above and below the core] Next, it plugs into the tools teams already use: GitHub, your own CI runner and Slack. And your data stays yours: our cloud or yours, your own model.</p>
         <p>[click: the screen swings open like doors onto the demo]</p>
-        <p>[If asked what runs today: the demo is the workspace plus a small Python server calling Claude; the FastAPI and SQLite learning-loop backend is a separate prototype with 14 tests. GitHub, CI runner, Slack and Whisper are next.]</p>
+        <p>[If asked what runs today: solid boxes are built, dashed boxes are next. The demo is the workspace plus a small Python server calling Claude; the FastAPI and SQLite learning-loop backend is a separate prototype with 14 tests. GitHub App, CI runner job, Slack App, speech to text, per-tenant keys and customer-cloud models are next. The GitHub check does not block merging by default; a team can make it required for high-risk directories.]</p>
       </aside>
     </section>
 
@@ -1331,15 +1417,12 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </div>
       <div class="business-layout">
         <div class="business-evidence">
-          <p class="business-kicker in" style="--d:.25s">What teams pay for today</p>
+          <p class="business-kicker scenario-label in" style="--d:.25s">Illustrative pilot scenario</p>
           <div class="business-metrics">
             <div class="in" style="--d:.3s">
-              <p class="business-number grad">17%</p>
-              <p class="business-caption">less understanding<span class="business-detail">when AI does the work.</span></p>
-            </div>
-            <div class="in" style="--d:.45s">
-              <p class="business-number grad">+91%</p>
-              <p class="business-caption">PR review time on high-AI teams<span class="business-detail">Paid in senior hours, the scarcest time in a small team.</span></p>
+              <p class="business-number grad">4.5<small>hours / week</small></p>
+              <p class="business-caption">potential capacity per senior</p>
+              <p class="scenario-note">If review effort falls from 18 to 9 minutes across 30 junior PRs a week.</p>
             </div>
           </div>
         </div>
@@ -1351,28 +1434,26 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
                 <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 4.5a3 3 0 0 1 0 5.5M18 14a5 5 0 0 1 3 4.6V20"/></svg></span>
                 <h3>Team subscription</h3>
               </div>
-              <p>One team. <strong>Priced by team size.</strong></p>
+              <p class="business-price"><b class="grad">A$20</b> per junior a month. <strong>Seniors free.</strong></p>
+              <p class="business-breakeven">10 juniors: A$200 a month, the cost of 2 senior hours.</p>
             </div>
           </div>
           <div class="business-pilot b" data-f="2">
-            <div><b>Free pilot</b><span>Prove the value.</span></div>
+            <div><b>Free pilot</b><span>4–6 weeks. Measure growth and time.</span></div>
             <svg class="business-arrow" viewBox="0 0 44 24" aria-hidden="true"><path d="M2 12h37M31 4l8 8-8 8"/></svg>
-            <div><b class="grad">Paid team</b><span>Pay once it works.</span></div>
+            <div><b class="grad">Paid team</b><span>When value is proven.</span></div>
+            <svg class="business-arrow" viewBox="0 0 44 24" aria-hidden="true"><path d="M2 12h37M31 4l8 8-8 8"/></svg>
+            <div><b>Enterprise</b><span>Custom. Your cloud, your model.</span></div>
           </div>
         </div>
       </div>
-      <p class="business-value b" data-f="3">Viva turns <span style="color:var(--fg-2)">review cost</span> into <span class="grad">growth.</span></p>
-      <p class="business-sources in" style="--d:.55s">
-        <a href="https://www.anthropic.com/research/AI-assistance-coding-skills" target="_blank" rel="noopener">Anthropic RCT, 2026</a> · Quiz: 50% with AI vs. 67% without AI (n = 52).<br>
-        <a href="https://www.faros.ai/blog/ai-software-engineering" target="_blank" rel="noopener">Faros AI, The AI Productivity Paradox, 2025</a> · 10,000+ developers, 1,255 teams.
-      </p>
+      <p class="business-value b" data-f="3">Our goal: <span class="grad">better judgment</span> with less repeat coaching.</p>
+      <p class="business-sources scenario-disclosure in" style="--d:.55s">Scenario and prices are assumptions to test in the pilot, not measured savings. A$100 per senior hour. Full calculation follows Thank you.</p>
       <aside class="notes">
-        <p>1. Developers who let AI do the work understood 17% less of their own code.</p>
-        <p>2. And seniors pay for it: on high-AI teams, PR review time is up 91%. In a small team, that's the scarcest time there is. Viva gives it back: seniors only see the changes that need them, with the exact moment to watch, and our pilot measures senior minutes per PR.</p>
-        <p>3. [click: team subscription] So companies subscribe for their whole team, priced by team size.</p>
-        <p>4. [click: pilot → paid team] Every customer starts with a free pilot, then pays once it works.</p>
-        <p>5. [click: value] Viva turns review cost into growth.</p>
-        <p>[Evidence note, not spoken: the RCT compared quiz averages of 50% and 67%. It does not establish a long-term hiring effect. The 91% is Faros telemetry on high-AI teams, not a saving from Viva; the saving Viva claims is senior review time, and the pilot measures it. Subscription pricing and pilot conversion are proposed business terms to validate.]</p>
+        <p>Our goal is better junior judgment with less repeat coaching. In one illustrative scenario, halving review effort would free four and a half senior hours a week.</p>
+        <p>[click: team subscription] Teams pay twenty dollars per junior a month, and seniors are free. Ten juniors cost two senior hours a month. [click: path] Every team starts with a free pilot that measures learning and net time saved, and pays once value is proven. Larger customers run it in their own cloud. [click: goal] The calculation is in our Q&amp;A appendix.</p>
+        <p>[If asked: 30 junior PRs a week and an 18-minute baseline are scenario assumptions. Nine minutes is the scenario target. These are not interview findings or measured Viva results. Keep ordinary code review in place and count extra Viva work in the pilot.]</p>
+        <p>[If asked why per junior: Viva coaches juniors, so the price grows with the people it trains. Seniors are the scarce time we save, so they never pay. Why no free tier: most target firms have 5 to 19 staff and only a few juniors, so a free tier would cover most of the market; the free pilot is time-limited instead. Price check: A$20 is about US$14, between Reviewsaur (US$11 a seat a month, billed annually) and AI code review such as CodeRabbit (US$24 to 72 per developer a month), checked 30 Sep. A$20 is the team's launch hypothesis, and the pilot tests it.]</p>
       </aside>
     </section>
 
@@ -1380,15 +1461,15 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     <section class="slide" data-title="What's next" data-speaker="Johnny" data-at="6:20">
       <h2 class="h2 in">What’s next.</h2>
       <div class="road">
-        <div class="ms now b" data-f="1"><span class="dot"></span><p class="when grad">Now</p><h3>Working prototype</h3><p>The full loop, with a live AI follow-up question.</p></div>
-        <div class="ms b" data-f="2"><span class="dot"></span><p class="when grad">Next 2–4 weeks</p><h3>Keep building</h3><p>Refine the loop and harden it for real teams.</p></div>
-        <div class="ms b" data-f="3"><span class="dot"></span><p class="when grad">Then 4–6 weeks</p><h3>Pilot with one team</h3><p>Senior minutes per PR, escalation rate, retake pass rate, incidents.</p></div>
-        <div class="ms b" data-f="4"><span class="dot"></span><p class="when grad">Then 3 months</p><h3>Paid pilot</h3><p>Conversion, renewal and weekly use.</p></div>
-        <div class="ms b" data-f="5"><span class="dot"></span><p class="when grad">Later</p><h3>New concept packs</h3><p>Beyond code: compliance review and data analysis.</p></div>
+        <div class="ms now"><span class="dot"></span><p class="when grad">Now</p><h3>Working prototype</h3><p>The full loop, with a live AI follow-up question.</p></div>
+        <div class="ms"><span class="dot"></span><p class="when grad">Next 2–4 weeks</p><h3>Keep building</h3><p>Refine the loop and harden it for real teams.</p></div>
+        <div class="ms"><span class="dot"></span><p class="when grad">Then 4–6 weeks</p><h3>Pilot with one team</h3><p>Senior minutes per PR, escalation rate, retake pass rate, incidents.</p></div>
+        <div class="ms"><span class="dot"></span><p class="when grad">Then 3 months</p><h3>Paid pilot</h3><p>Conversion, renewal and weekly use.</p></div>
+        <div class="ms"><span class="dot"></span><p class="when grad">Later</p><h3>New concept packs</h3><p>Beyond code: compliance review and data analysis.</p></div>
       </div>
       <p class="cap in" style="--d:.4s">Go to market: one design partner, then one 5–10 developer team, then team by team.</p>
       <aside class="notes">
-        <p>[click] Today, a working prototype. [click] Next, a few more weeks of building. [click] Then a four-to-six week pilot with one team. [click] Then a paid pilot, [click] and later, new concept packs beyond code.</p>
+        <p>[All five milestones appear together. The light moves along the timeline automatically.] Today, a working prototype. Next, a few more weeks of building. Then a four-to-six week pilot with one team, followed by a paid pilot and, later, new concept packs beyond code.</p>
         <p>One design partner, then one team, then team by team.</p>
       </aside>
     </section>
@@ -1396,7 +1477,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     <!-- 20 · close -->
     <section class="slide" data-title="Close" data-speaker="Johnny" data-at="6:35" data-glow-step="1">
       <p class="h1 in" style="--d:.15s">Tony didn’t need less AI.</p>
-      <p class="h1 grad in" style="--d:.6s">He needed one question before merge.</p>
+      <p class="h1 grad in" style="--d:.6s">He needed self-reflection before merge.</p>
       <div class="win merge in" data-s="1" style="--d:.9s; width:900px">
         <div class="mb">
           <div class="mb-head"><span class="st"><i></i><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span><div><b><span class="when-wait">Some checks haven’t completed yet</span><span class="when-pass">All checks have passed</span></b><small><span class="when-wait">1 pending and 2 successful checks</span><span class="when-pass">3 successful checks</span></small></div></div>
@@ -1406,7 +1487,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </div>
       <p class="sub b" data-f="2"><span style="color:var(--fg)">Code review checks the code. Viva checks the coder.</span> Pilot it with one of your teams.</p>
       <aside class="notes">
-        <p>Back to Tony. He didn't need less AI. He needed one question before merge.</p>
+        <p>Back to Tony. He didn't need less AI. He needed self-reflection before merge.</p>
         <p>[click] With Viva he gets it, misses once, learns why, and proves it on the next endpoint. The check turns green, and now it means something.</p>
         <p>[click] Code review checks the code. Viva checks the coder. Pilot it with one of your teams. Thank you.</p>
       </aside>
@@ -1419,7 +1500,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <p class="hero in" style="--d:1.3s">Thank you.</p>
       <p class="cap in" style="--d:1.6s">Flying Chinese · Airwallex PS1 · Getting good</p>
       <aside class="notes">
-        <p>[Q&amp;A backdrop. Leave this up while the judges ask questions.]</p>
+        <p>[End of the seven-minute pitch. Leave this up for Q&amp;A. Press right once for the business calculation. Press left to return.]</p>
         <p>If asked: demo data is synthetic and scores are labelled Simulated; the GitHub check is the next build step; nothing is measured yet, the pilot measures it.</p>
         <p>If asked why people should understand code when AI keeps getting better: someone has to be accountable for what ships, and future seniors come from juniors who can judge code. 80% of executives traced an incident to AI code; only 16% of seniors say juniors fully understand it.</p>
         <p>If asked whether explaining is the same as understanding: we ask how it works and why it was built that way, then one follow-up aimed at the weakest part, so a recited summary is meant to break on the follow-up. Harder judgement questions, like spotting the risk in a change, are the next build. Nothing is measured yet; the pilot measures it.</p>
@@ -1430,6 +1511,46 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         <p>If asked about competitors: HackerRank and CodeSignal detect and flag AI use in assessments; ChatGPT Study Mode guides with questions instead of answers; Claude Code's learning mode asks you to write key lines yourself; SlopBlock skips quizzes only for low-risk PRs. None of them ban AI at work, and we don't either.</p>
       </aside>
     </section>
+
+    <!-- Q&A only: outside the seven-minute main pitch -->
+    <section class="slide qa" data-title="Q&amp;A: business calculation" data-speaker="Johnny" data-at="" data-appendix>
+      <div class="qa-head">
+        <p class="eyebrow">Illustrative scenario</p>
+        <h2 class="h2">The value of 9 minutes</h2>
+      </div>
+      <div class="qa-total">
+        <p class="qa-amount grad"><small>A$</small>21,600</p>
+        <p class="qa-value-label">Potential annual capacity value per senior</p>
+        <p class="qa-value-math">216 hours/year × A$100/hour</p>
+        <p class="qa-value-math">If those 30 PRs come from 10 juniors, Viva costs <span style="color:var(--fg)">A$2,400 a year</span> (10 × A$20 × 12): the cost of 24 senior hours.</p>
+      </div>
+      <div class="qa-calculations">
+        <div>
+          <p>Baseline / target, min per PR</p>
+          <strong>18 <span style="color:var(--fg-3)">→</span> 9</strong>
+          <p class="qa-result">50% target reduction</p>
+        </div>
+        <div>
+          <p>30 junior PRs/week</p>
+          <strong>30 × 9 ÷ 60</strong>
+          <p class="qa-result">4.5 hours/week</p>
+        </div>
+        <div>
+          <p>48 working weeks/year</p>
+          <strong>4.5 × 48</strong>
+          <p class="qa-result">216 hours/year</p>
+        </div>
+      </div>
+      <p class="qa-disclosure">Assumptions, not measured results. Gross value before extra junior time, setup and subscription.</p>
+      <aside class="notes">
+        <p>This is a scenario calculation, not a study result. We have not verified the 30 PRs, 18-minute baseline, nine-minute target, 48 working weeks or A$100 hourly cost with a customer. Do not call them interview-based estimates without actual interview records.</p>
+        <p>The price line assumes the 30 PRs come from 10 juniors, three each a week. A$2,400 a year at A$100 an hour is 24 senior hours, so the team breaks even at two senior hours a month, about 11% of the scenario's 216 hours.</p>
+        <p>The formula for annual gross capacity value is PRs per week times the reduction in active senior minutes per PR, divided by 60, times working weeks and hourly senior cost. The 50% is an assumed target. The arithmetic gives 4.5 hours a week and 216 hours a year.</p>
+        <p>The nine-minute target must include reading the Viva summary, viewing evidence, answering escalations, correcting grading errors and related follow-up. Waiting for a reviewer is a separate elapsed-time measure and cannot be multiplied by an hourly salary.</p>
+        <p>Industry evidence establishes context, not the scenario inputs: Faros reports 91% higher PR review time on high-AI teams (https://www.faros.ai/blog/ai-software-engineering). Its telemetry is not a measurement of Viva savings or a direct count of senior active minutes.</p>
+      </aside>
+    </section>
+
   </div>
 </div>
 
@@ -1694,7 +1815,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     cur = Math.max(0, Math.min(slides.length - 1, i));
     step = Math.max(0, Math.min(maxStep(slides[cur]), st));
     const entered = cur !== prev;
-    if (entered && cur === prev + 1 && prevStep === 1 && step === 0 && !remote) openScreen(slides[prev]);
+    if (entered && cur === prev + 1 && prevStep === maxStep(slides[prev]) && step === 0 && !remote) openScreen(slides[prev]);
     const hop = entered && cur === prev + 1 && !reduced && !isPresenter && FLY.find(([a, b]) => slides[prev].classList.contains(a) && slides[cur].classList.contains(b));
     if (entered) slides[cur].classList.toggle('fly', !!hop);
     render(entered, entered ? cur > prev : step > prevStep);
@@ -1916,7 +2037,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     $('#ppPrev').onclick = back;
     $('#ppGo').onclick = next;
     setInterval(clock, 500);
-    try { const m = JSON.parse(localStorage.getItem('viva-deck-state') || 'null'); if (m) { cur = m.cur; step = m.step; } } catch (e) {}
+    try { const m = JSON.parse(localStorage.getItem('viva-deck-state') || 'null'); if (m) { cur = Math.max(0, Math.min(slides.length - 1, m.cur)); step = Math.max(0, Math.min(maxStep(slides[cur]), m.step)); } } catch (e) {}
   } else {
     const m = /^#s(\d+)$/.exec(location.hash);
     if (m) cur = Math.max(0, Math.min(slides.length - 1, +m[1] - 1));
