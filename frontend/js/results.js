@@ -96,7 +96,7 @@
     const row = (s, name, note, extra = '') => `<li${extra}><i class="gh-i" data-s="${s.s || s}"${s.live ? ' data-live' : ''}>${sym[s.s || s] || ''}</i><b>${esc(name)}${extra ? '<em>Required</em>' : ''}</b><span>${esc(note)}</span></li>`;
     const done = st === 'earned';
     return `<section class="card" id="gh-card">
-      <div class="card-h"><h2>${bub('plain', 'commit')}Checks on <span class="mono">${esc(sha || (view && view.pr.sha) || D.pr.sha)}</span></h2><span class="tag">GitHub preview</span></div>
+      <div class="card-h"><h2>${bub('plain', 'commit')}Checks on <span class="mono">${esc(sha || (view && view.pr.sha) || '')}</span></h2><span class="tag">GitHub preview</span></div>
       <ul class="gh">
         ${D.ci.map(c => row('ok', c.name, c.note)).join('')}
         ${row(viva, 'viva / decision-check', viva.note, ' data-viva')}
@@ -143,7 +143,7 @@
   }
 
   // ---------- the three code checks, the run and the viva (also on the reviewer page) ----------
-  const retakeNote = view => D.sets[Math.min(view.attempt, D.sets.length) - 1].task.retake;
+  const retakeNote = view => view.task.retake;
   const tick = ok => `<span class="ck" data-ok="${ok}">${icon(ok ? 'check' : 'x', 13)}</span>`;
   const CONF = { low: 'guessing', medium: 'fairly sure', high: 'certain' };
   const testName = t => (/^test_/.test(t) ? `<span class="mono">${esc(t)}</span>` : esc(t));
@@ -152,10 +152,10 @@
         <div class="dim-top"><b>${esc(c.label)}</b>${tick(c.ok)}</div>
         <p>You said: ${esc(c.chosen_text)}.${c.ok ? '' : ` Right: ${esc(c.correct_text)}.`}</p>
       </li>`).join('');
-    const pass = a.met >= D.vivaPass;
+    const pass = a.met >= a.viva_pass;
     return `<ul class="dims">${cards}<li class="dim" data-ok="${pass}">
         <div class="dim-top"><b>Viva</b><span class="dim-frac num">${Number(a.met)}<em>/${Number(a.rubric_size)}</em></span></div>
-        <p>${a.viva.source === 'ai' ? 'AI-assessed against a fixed rubric.' : 'Simulated: matched to the rubric on this device.'} ${Number(D.vivaPass)} needed.</p>
+        <p>${a.viva.source === 'ai' ? 'AI-assessed against a fixed rubric.' : 'Simulated: matched to the rubric’s patterns, without the model.'} ${Number(a.viva_pass)} needed.</p>
       </li></ul>`;
   }
   function revealHtml(a) {

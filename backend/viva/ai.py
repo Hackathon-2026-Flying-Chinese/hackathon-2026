@@ -1,41 +1,34 @@
-#!/usr/bin/env python3
-"""Viva demo server: serves this folder and runs the viva with Claude.
+"""The two model calls of the viva: at most one follow-up question, and the rubric assessment.
 
-  GET  /api/viva/status    whether the model is available, and which one
-  POST /api/viva/followup  decide on at most one follow-up question, and write it
-  POST /api/viva/grade     assess the viva answers against the concept's fixed rubric
-
-The model only asks and assesses the viva. What the code does, whether it meets the rule and which test backs it
-come from the task data, never from the model. Every point the model credits must quote the engineer's own words;
-a quote that is not in the answers earns nothing. Without credentials, or when a call fails, the routes answer 503
-and the front end falls back to its simulated viva, labelled as such.
-
-Run:
-  pip install -r requirements.txt
-  ANTHROPIC_API_KEY=... python3 server.py [port]      (port 8790 by default; VIVA_MODEL picks the model)
+The model only asks and assesses the viva. What the code does, whether it meets the rule and which test backs it come
+from the task data, never from the model. Every point the model credits must quote the engineer's own words; a quote
+that is not in the answers earns nothing. Without credentials, or when a call fails, both calls return None and the
+engine falls back to its template follow-up and its simulated viva, labelled as such.
 """
 import json
+import logging
 import os
 import re
-import sys
 import time
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 try:
     import anthropic
-except ImportError:  # static files still work; the viva falls back to the simulator
+except ImportError:  # the engine still runs, with the simulated viva
     anthropic = None
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+log = logging.getLogger("viva.ai")
+
 MODEL = os.environ.get("VIVA_MODEL", "claude-sonnet-5-5")
 HAS_KEY = bool(os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN"))
 client = anthropic.Anthropic(timeout=30, max_retries=1) if anthropic and HAS_KEY else None
-MAX_BODY = 64 * 1024
 
 
 class ModelUnavailable(Exception):
     pass
+
+
+def status():
+    return {"live": client is not None, "model": MODEL if client else None}
 
 
 FOLLOWUP_SCHEMA = {
@@ -111,7 +104,7 @@ def ask_model(system, user, schema, effort):
         raise ModelUnavailable("no credentials")
     params = dict(
         model=MODEL,
-        max_tokens=4000,
+        max_tokens=16000,  # thinking is on by default and counts toward this
         system=system,
         messages=[{"role": "user", "content": user}],
         output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
@@ -120,10 +113,10 @@ def ask_model(system, user, schema, effort):
     try:
         try:
             response = client.beta.messages.create(
-                **params, betas=["server-side-fallback-2026-07-01"], extra_body={"fallbacks": "default"}
+                **params, betas=["server-side-fallback-2026-07-01"], fallbacks="default"
             )
         except anthropic.BadRequestError as e:
-            print(f"[viva] fallback not accepted ({e.message}); retrying without it", file=sys.stderr)
+            log.warning("fallback not accepted (%s); retrying without it", e.message)
             response = client.messages.create(**params)
     except anthropic.RateLimitError as e:
         raise ModelUnavailable(f"rate limited: {e.message}")
@@ -138,7 +131,7 @@ def ask_model(system, user, schema, effort):
     text = next((b.text for b in response.content if b.type == "text"), None)
     if text is None:
         raise ModelUnavailable("no text in the response")
-    print(f"[viva] {response.model} answered in {time.monotonic() - started:.1f}s", file=sys.stderr)
+    log.info("%s answered in %.1fs", response.model, time.monotonic() - started)
     return json.loads(text), response.model
 
 
@@ -153,10 +146,11 @@ def task_block(body):
     return f'<code file="{body.get("file", "")}">\n{body["code"]}\n</code>\n<rule>{body["rule"]}</rule>'
 
 
-norm = lambda s: re.sub(r"\s+", " ", s).strip().lower()
+def norm(s):
+    return re.sub(r"\s+", " ", s).strip().lower()
 
 
-def followup(body):
+def _followup(body):
     turns = body["turns"]
     user = f"{task_block(body)}\n<viva>\n{turns_block(turns)}\n</viva>"
     out, model = ask_model(FOLLOWUP_SYSTEM, user, FOLLOWUP_SCHEMA, "low")
@@ -174,12 +168,12 @@ def followup(body):
         else None
     )
     if reason:
-        print(f"[viva] follow-up filtered: {reason}: {q}", file=sys.stderr)
+        log.info("follow-up filtered: %s: %s", reason, q)
         return {"needs_follow_up": True, "question": None, "filter_reason": reason, "model": model}
     return {"needs_follow_up": True, "question": q, "target": out["target"], "model": model}
 
 
-def grade(body):
+def _grade(body):
     rubric, turns = body["rubric"], body["turns"]
     points = "\n".join(f'<point id="{p["id"]}">{p["text"]}</point>' for p in rubric)
     user = (
@@ -198,50 +192,19 @@ def grade(body):
     return {"points": result, "injection_attempt": bool(out["injection_attempt"]), "model": model}
 
 
-ROUTES = {"/api/viva/followup": followup, "/api/viva/grade": grade}
+def _safe(fn, body):
+    try:
+        return fn(body)
+    except ModelUnavailable as e:
+        log.warning("model unavailable: %s", e)
+    except (KeyError, TypeError, ValueError) as e:  # a malformed answer from the model reads as unavailable
+        log.warning("model answer not usable: %s", e)
+    return None
 
 
-class Handler(SimpleHTTPRequestHandler):
-    def send_json(self, status, data):
-        raw = json.dumps(data).encode()
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Cache-Control", "no-store")
-        self.send_header("Content-Length", str(len(raw)))
-        self.end_headers()
-        self.wfile.write(raw)
-
-    def do_GET(self):
-        if self.path.split("?")[0] == "/api/viva/status":
-            self.send_json(200, {"live": client is not None, "model": MODEL if client else None})
-            return
-        super().do_GET()
-
-    def do_POST(self):
-        route = ROUTES.get(self.path.split("?")[0])
-        if route is None:
-            self.send_json(404, {"error": "not found"})
-            return
-        size = int(self.headers.get("Content-Length") or 0)
-        if size > MAX_BODY:
-            self.send_json(413, {"error": "too large"})
-            return
-        try:
-            body = json.loads(self.rfile.read(size) or b"{}")
-            self.send_json(200, route(body))
-        except ModelUnavailable as e:
-            print(f"[viva] model unavailable: {e}", file=sys.stderr)
-            self.send_json(503, {"error": str(e)})
-        except (KeyError, TypeError, ValueError) as e:
-            self.send_json(400, {"error": f"bad request: {e}"})
+def followup(body):
+    return _safe(_followup, body)
 
 
-if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get("PORT", "8790"))
-    if client is None:
-        why = "the anthropic package is not installed" if anthropic is None else "ANTHROPIC_API_KEY is not set"
-        print(f"[viva] {why}: the viva runs simulated", file=sys.stderr)
-    else:
-        print(f"[viva] live viva with {MODEL}", file=sys.stderr)
-    print(f"[viva] http://127.0.0.1:{port}/?presenter=1", file=sys.stderr)
-    ThreadingHTTPServer(("127.0.0.1", port), partial(Handler, directory=HERE)).serve_forever()
+def grade(body):
+    return _safe(_grade, body)

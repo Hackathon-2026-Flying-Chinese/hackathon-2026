@@ -379,6 +379,16 @@
       document.documentElement.style.setProperty('--bounce', SPRING.bounce.easing);
     }
     eyes();
+    // the chip and the footers say where the data lives, once the page knows whether a server answered
+    if (V.api) V.api.status().then(st => {
+      if (st.backend !== 'server') return;
+      const chip = $('#sim-chip');
+      if (chip) {
+        chip.innerHTML = st.live ? 'Live<span class="more"> viva</span>' : 'Server<span class="more">, viva simulated</span>';
+        chip.title = st.live ? `The Viva server runs the checks; ${st.model} asks the follow-up and reads the viva.` : 'The Viva server runs the checks. No model is connected, so the viva is matched to the rubric’s patterns.';
+      }
+      $$('[data-server]').forEach(el => { el.textContent = el.dataset.server; });
+    }).catch(() => {});
     const tt = $('#theme-toggle');
     if (tt) {
       const paint = () => { const dark = document.documentElement.dataset.theme === 'dark'; tt.innerHTML = icon(dark ? 'sun' : 'moon', 16); tt.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme'); };

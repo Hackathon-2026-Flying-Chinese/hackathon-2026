@@ -1,9 +1,21 @@
-/* Simulated backend, kept in the browser (localStorage + IndexedDB) so the demo runs offline. The method names and view shapes
-   are what the UI reads. To use a real server, replace this file with a fetch-based Viva.api that has the same methods. */
+/* Simulated backend, kept in the browser (localStorage + IndexedDB) so the demo runs offline, for example on a static host.
+   Same rules, methods and view shapes as the real server (backend/viva/engine.py); js/api.js picks the server when one
+   answers. The simulator never calls a model: its follow-up is the template and its viva is matched to the rubric's
+   patterns, labelled Simulated. It reads the tasks, answer key included, from data/tasks.json, so it is a demo only. */
 (() => {
   'use strict';
   const V = (window.Viva = window.Viva || {});
-  const D = V.data;
+  // The tasks, the scoring standard and the interview limits, from data/tasks.json (loaded before the first call)
+  let D = null, SC = null, loading = null;
+  const ready = () => {
+    if (D) return Promise.resolve();
+    if (!loading) {
+      loading = fetch('data/tasks.json').then(r => { if (!r.ok) throw new Error('The demo tasks could not be loaded.'); return r.json(); })
+        .then(t => { D = { ...t, ...t.limits }; SC = t.scoring; })
+        .finally(() => { loading = null; });
+    }
+    return loading;
+  };
 
   // ---------- helpers ----------
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -95,8 +107,7 @@
 
   // ---------- assessment ----------
   // The three checks are decided by the task data: what the code really returns, the rule, the test that covers it.
-  // The viva is assessed against the task's fixed rubric: by the model when it is available (every credited point quotes
-  // the answer, checked on the server), otherwise on this device from the rubric's patterns, labelled Simulated.
+  // The viva is matched to the task's fixed rubric on this device, labelled Simulated (the server asks the model).
   // Content only: never face, voice tone or expression, and never who wrote the code or how much AI helped.
   const ITEMS = ['behaviour', 'requirement', 'evidence'];
   const CONF = ['low', 'medium', 'high'];
@@ -119,15 +130,6 @@
       })
     };
   }
-  function modelViva(set, ai) {
-    return {
-      source: 'ai', model: ai.model || null, flagged: !!ai.injection_attempt,
-      points: set.rubric.map(p => {
-        const g = ai.points.find(x => x.id === p.id) || {}, met = !!g.met && !!g.quote;
-        return { id: p.id, text: p.text, met, quote: met ? g.quote : '', turn: met ? Number(g.turn) : 0 };
-      })
-    };
-  }
   // The answer split into plain runs and the runs the viva assessment quoted, so the pages can mark them.
   function quoteMarks(text, quotes) {
     const low = text.toLowerCase(), spans = [];
@@ -144,30 +146,24 @@
     if (at < text.length) out.push({ text: text.slice(at), kind: null });
     return out;
   }
-  function assess(s, ai) {
+  function assess(s) {
     const set = setOf(s), task = set.task, answered = s.interview.turns.filter(t => t.answered);
     const checks = ITEMS.map(key => {
       const it = task.items[key], chosen = s.predict.answers[key];
       return { key, label: CHECK[key], question: it.q, chosen, chosen_text: optText(it, chosen), correct_text: optText(it, it.correct), ok: chosen === it.correct };
     });
-    const viva = ai && Array.isArray(ai.points) ? modelViva(set, ai) : simulatedViva(set, answered);
+    const viva = simulatedViva(set, answered);
     const right = checks.filter(c => c.ok).length, met = viva.points.filter(p => p.met).length;
     const verdict = right === ITEMS.length && met >= D.vivaPass ? 'shown' : right + met >= 3 ? 'gaps' : 'not_shown';
     return {
       simulated: viva.source !== 'ai', score: Math.round((right / ITEMS.length) * 100), verdict, headline: HEAD[verdict],
-      checks, right, confidence: s.predict.confidence, fn: task.fn, rule: task.rule, reveal: task.reveal, viva, met, rubric_size: set.rubric.length,
+      checks, right, confidence: s.predict.confidence, fn: task.fn, rule: task.rule, reveal: task.reveal, viva, met, rubric_size: set.rubric.length, viva_pass: D.vivaPass,
       questions: answered.map(t => ({
         turn: t.turn, label: t.label, question: t.question, source: t.source, by: t.by || null, mode: t.mode, answer: t.answer_text,
         segments: quoteMarks(t.answer_text, viva.points.filter(p => p.met && p.turn === t.turn).map(p => p.quote))
       }))
     };
   }
-  // What the model is sent: the code, the rule and the viva. The follow-up never gets the answer key; the assessment gets
-  // the facts of the run, so it can tell a right explanation from a wrong one.
-  const vivaTurns = s => s.interview.turns.filter(t => t.answered).map(t => ({ turn: t.turn, question: t.question, answer: t.answer_text }));
-  const followupBody = s => { const t = taskOf(s); return { file: t.file, code: t.code, rule: t.rule, turns: vivaTurns(s), leak_terms: t.leak }; };
-  const gradeBody = s => { const set = setOf(s), t = set.task; return { file: t.file, code: t.code, rule: t.rule, facts: t.facts, rubric: set.rubric.map(p => ({ id: p.id, text: p.text })), turns: vivaTurns(s) }; };
-
   // ---------- interview ----------
   function cleanPr(input = {}) {
     const d = D.pr, str = (v, max) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
@@ -194,12 +190,8 @@
     turns.push(t);
     return t;
   }
-  // At most one follow-up: the model's question when it asks one that passed the server's checks; the template when the
-  // model is not available or its question was filtered out; none when the model finds the answers need no follow-up.
-  const PROBE_LABEL = { concrete: 'Be concrete', reasoning: 'Why this way', consequence: 'What could go wrong' };
-  function followUp(s, ai) {
-    if (ai && ai.needs_follow_up === false) return null;
-    if (ai && ai.question) return { ...makeTurn(s, 'probe:specific', D.standardTurns + 1, 'follow-up'), key: 'probe:ai', label: PROBE_LABEL[ai.target] || 'Follow-up', question: ai.question, by: 'ai' };
+  // At most one follow-up, from the template, aimed at the weaker signal (the server asks the model instead)
+  function followUp(s) {
     const dim = weakest(s);
     return dim ? makeTurn(s, 'probe:' + dim, D.standardTurns + 1, 'follow-up') : null;
   }
@@ -226,7 +218,6 @@
 
   // ---------- scoring: what a reviewed check adds to the portfolio ----------
   // Points = Risk x Novelty x Gap (1 to 27). Gap follows the concept level, which a pass raises and a second failure lowers.
-  const SC = D.scoring;
   const clampLevel = x => Math.max(0, Math.min(3, x));
   const bandOf = n => SC.bands.find(b => n >= b.from && n <= b.to).key;
   const levelEvents = db => Object.values(db.sessions).flatMap(s => s.level_events.map(e => ({ ...e, title: s.pr.title }))).sort((a, b) => a.at - b.at);
@@ -260,12 +251,22 @@
   });
   const turnView = t => ({ turn: t.turn, key: t.key, label: t.label, question: t.question, source: t.source, by: t.by || null, answered: t.answered, answer_text: t.answer_text, mode: t.mode, media_id: t.media_id });
 
+  // The question side of the task: what the person reads before the viva. No answers, facts or rubric.
+  function taskView(s) {
+    const set = setOf(s), t = set.task, items = {};
+    ITEMS.forEach(k => { items[k] = { q: t.items[k].q, options: t.items[k].options }; });
+    const questions = {};
+    Object.entries(set.questions).forEach(([k, q]) => { questions[k] = { label: q.label }; });
+    return { fn: t.fn, file: t.file, code: t.code, rule: t.rule, tests: t.tests, retake: t.retake, items, questions };
+  }
   function view(db, s, now, opts = {}) {
     return {
       id: s.id, stage: s.stage, version: s.version, created: s.created, finished: s.stage === 'results' ? s.finished || null : null, pr: s.pr,
       attempt: s.attempt, max_attempts: D.maxAttempts, can_retake: canRetake(s),
       previous: s.attempts.map(a => ({ attempt: a.attempt, score: a.assessment.score, verdict: a.assessment.verdict })),
       camera_required: db.settings.cameraRequired !== false,
+      limits: { minAnswerChars: D.minAnswerChars, clipSeconds: D.clipSeconds, vivaPass: D.vivaPass },
+      task: taskView(s),
       predict: s.predict ? { answers: { ...s.predict.answers }, confidence: s.predict.confidence } : null,
       interview: { standard: D.standardTurns, max_turns: D.maxTurns, done: s.interview.done, turns: s.interview.turns.map(turnView) },
       assessment: s.stage === 'results' ? s.assessment : null,
@@ -309,27 +310,32 @@
   }
 
   // ---------- API ----------
+  const LINK_TTL = 300;
   const api = {
+    // Same shape as the server's /api/health. The simulator is always a demo, and never has a model.
+    async status() { return { service: 'viva', backend: 'simulator', live: false, model: null, demo: true }; },
+
     // What the GitHub check links to: the pull request and why it needs a check (Risk x Novelty x Gap at the current level).
     async check({ pr } = {}) {
-      await sleep(80);
+      await ready(); await sleep(80);
       const db = load(), sc = pointsFor(levelOf(db));
       return { pr: cleanPr(pr), scoring: { ...sc, max: SC.max, why: { r: SC.why.r, n: SC.why.n, g: `${SC.concept.name} is at level ${sc.level} of 3.` }, rubric: SC.rows, bands: SC.bands, concept: { name: SC.concept.name, level: sc.level } } };
     },
 
     async start({ pr } = {}) {
-      await sleep(120);
+      await ready(); await sleep(120);
       return tx(db => { const now = nowS(), s = newState(cleanPr(pr), now, pointsFor(levelOf(db))); db.sessions[s.id] = s; return view(db, s, now); });
     },
 
     async session(sid, { presenter = false } = {}) {
+      await ready();
       return tx(db => view(db, getSession(db, sid), nowS(), { presenter }));
     },
 
     // Lock the three checks before the viva: what the code returns, whether it meets the rule, which test backs it.
     // Nothing about the right answers comes back until the results.
     async predict(sid, { version, answers = {}, confidence = null }, { presenter = false } = {}) {
-      await sleep(200);
+      await ready(); await sleep(200);
       return tx(db => {
         const s = getSession(db, sid), now = nowS(), task = taskOf(s);
         checkVersion(s, version);
@@ -348,7 +354,7 @@
 
     // First question, or the open one after a reload.
     async interviewNext(sid, { version }, { presenter = false } = {}) {
-      await sleep(350);
+      await ready(); await sleep(350);
       return tx(db => {
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
@@ -364,8 +370,8 @@
     },
 
     async interviewAnswer(sid, { version, turn, text = '', media_id = null, mode = 'text' }, { presenter = false } = {}) {
-      await sleep(500);
-      const recorded = tx(db => {
+      await ready(); await sleep(500);
+      return tx(db => {
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
         const cur = openTurn(s, turn);
@@ -382,34 +388,21 @@
         }
         const n = s.interview.turns.length;
         if (n < D.standardTurns) { const next = advance(s); return { done: false, ...turnView(next), view: view(db, s, now, { presenter }) }; }
-        if (n > D.standardTurns) { s.interview.done = true; return { done: true, view: view(db, s, now, { presenter }) }; }
-        return null; // after the second answer: decide on the follow-up below
-      });
-      if (recorded) return recorded;
-      const snap = load().sessions[sid];
-      const ai = V.ai ? await V.ai.followup(followupBody(snap)) : null;
-      return tx(db => {
-        const s = getSession(db, sid), now = nowS();
-        if (s.stage !== 'interview' || s.interview.done || s.interview.turns.length !== D.standardTurns) fail(409, 'This interview has already changed. Reload to continue; nothing was overwritten.');
-        const next = followUp(s, ai);
+        // after the second answer: at most one follow-up; after the follow-up: done
+        const next = n === D.standardTurns ? followUp(s) : null;
         if (next) s.interview.turns.push(next); else s.interview.done = true;
         return { done: !next, ...(next ? turnView(next) : {}), view: view(db, s, now, { presenter }) };
       });
     },
 
     async interviewFinish(sid, { version }, { presenter = false } = {}) {
-      await sleep(150);
-      const snap = getSession(load(), sid);
-      checkVersion(snap, version);
-      if (snap.stage !== 'interview') fail(409, 'The interview is over.');
-      if (!snap.interview.done || snap.interview.turns.some(t => !t.answered)) fail(409, 'Answer every question first.');
-      const ai = V.ai ? await V.ai.grade(gradeBody(snap)) : null;
+      await ready(); await sleep(150);
       return tx(db => {
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
         if (s.stage !== 'interview') fail(409, 'The interview is over.');
         if (!s.interview.done || s.interview.turns.some(t => !t.answered)) fail(409, 'Answer every question first.');
-        s.assessment = assess(s, ai);
+        s.assessment = assess(s);
         const passed = s.assessment.verdict === 'shown', last = s.attempt >= D.maxAttempts;
         if (s.attempt === 1) s.first_score = { score: s.assessment.score, at: now }; // only a first attempt counts toward the trend
         // A first failure is feedback and a second chance: nothing goes to a senior yet. A pass, or a failed retake, does.
@@ -430,7 +423,7 @@
 
     // Second chance after a failed first attempt: the same change, a different set of questions.
     async retake(sid, { version }, { presenter = false } = {}) {
-      await sleep(150);
+      await ready(); await sleep(150);
       return tx(db => {
         const s = getSession(db, sid), now = nowS();
         checkVersion(s, version);
@@ -471,6 +464,7 @@
 
     // ----- media -----
     async mediaUpload(sid, { blob, turn, kind = 'video', duration, mode = 'text' }) {
+      await ready();
       if (duration > D.clipSeconds + 1) fail(413, `A single recording can be at most ${D.clipSeconds} seconds.`);
       const check = db => { const s = getSession(db, sid); return { s, cur: openTurn(s, turn) }; };
       check(load());
@@ -505,7 +499,7 @@
     },
 
     async mediaLink(mediaId, { token = null, sid = null }) {
-      const exp = Math.floor(nowS() + api.sim.linkTtl);
+      const exp = Math.floor(nowS() + LINK_TTL);
       const { secret, actor } = tx(db => {
         const meta = db.media[mediaId] || fail(404, 'Recording not found');
         const rt = token ? db.tokens[token] : null;
@@ -536,7 +530,7 @@
     // ----- reviewer -----
     // silent: refresh the page data without logging another "opened the review page" entry.
     async review(token, { silent = false } = {}) {
-      await sleep(silent ? 0 : 150);
+      await ready(); await sleep(silent ? 0 : 150);
       return tx(db => {
         const rt = db.tokens[token] || fail(403, 'This link does not open a review.');
         const s = db.sessions[rt.sid] || fail(404, 'This review is no longer available.');
@@ -563,7 +557,7 @@
 
     // ----- portfolio (private to the person; a reviewer token cannot read it) -----
     async portfolio() {
-      await sleep(120);
+      await ready(); await sleep(120);
       return tx(db => {
         const all = Object.values(db.sessions).sort((a, b) => a.created - b.created);
         const entries = all.filter(s => s.stage === 'results' && s.assessment).reverse().map(s => {
@@ -585,22 +579,28 @@
       });
     },
 
-    // ----- presenter controls (not part of the real API) -----
-    sim: {
-      linkTtl: 300,
-      cameraRequired: () => load().settings.cameraRequired !== false,
-      setCameraRequired(on) { tx(db => { db.settings.cameraRequired = !!on; }); },
-      voice: () => load().settings.voice,
-      setVoice(profile) { tx(db => { db.settings.voice = profile === 'generic' ? 'generic' : 'specific'; }); },
-      async reset() {
-        const ids = Object.keys(load().media);
-        mem = null;
-        try { localStorage.removeItem(KEY); } catch { /* storage blocked */ }
-        await Promise.allSettled(ids.map(blobDel));
-      }
+    // ----- presenter controls (demo only) -----
+    async demo() {
+      await ready();
+      const st = load().settings;
+      return { predictions: D.predictions, answers: D.sets.map(x => x.answers), camera_required: st.cameraRequired !== false, voice: st.voice };
+    },
+    async demoSettings({ camera_required, voice } = {}) {
+      tx(db => {
+        if (camera_required !== undefined) db.settings.cameraRequired = !!camera_required;
+        if (voice !== undefined) db.settings.voice = voice === 'generic' ? 'generic' : 'specific';
+      });
+      const st = load().settings;
+      return { camera_required: st.cameraRequired !== false, voice: st.voice };
+    },
+    async demoReset() {
+      const ids = Object.keys(load().media);
+      mem = null;
+      try { localStorage.removeItem(KEY); } catch { /* storage blocked */ }
+      await Promise.allSettled(ids.map(blobDel));
+      return { reset: true };
     }
   };
 
-  V.api = api;
-  V.simInternals = { scoreTexts, features, simulatedViva, quoteMarks, assess, segmentsFor, weakest, pointsFor, bandOf };
+  V.simApi = api;
 })();

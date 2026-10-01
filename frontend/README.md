@@ -1,24 +1,24 @@
-# Viva front-end (demo)
+# Viva front-end
 
-Dependency-free HTML, CSS and JavaScript. No build step, no CDN, works offline. It runs against a built-in simulated
-backend, so the whole demo works today and the real server can replace the simulator later. The one live part is the
-viva: `server.py` serves the same files and asks Claude for the follow-up question and the rubric assessment. Without a
-key it answers 503 and the viva runs simulated, labelled as such.
+Dependency-free HTML, CSS and JavaScript. No build step, no CDN. The pages run against the Viva server in `../backend`
+(FastAPI and SQLite), which keeps the answer key, runs the assessment, stores the recordings and asks Claude for the
+follow-up question and the rubric assessment. On a host with no server (a plain file server, the GitHub Pages
+preview) `js/api.js` falls back to the simulator in `js/sim.js`, which runs the same rules in the browser, offline.
 
 Flow: the GitHub check on a pull request links to the **Check** page, which starts the **Interview**; the interview ends in the **Results**, and the avatar at the top right opens the **Portfolio**. Every page sits inside a company workspace (a made-up payments company, Harbourpay) with a breadcrumb and a Check, Interview, Results rail.
 
 ## Run
 
 ```bash
-cd frontend
-pip install -r requirements.txt          # the anthropic package, for the live viva
-ANTHROPIC_API_KEY=... python3 server.py  # port 8790; VIVA_MODEL picks the model (default claude-sonnet-5-5)
+cd backend
+VIVA_DEMO=1 ANTHROPIC_API_KEY=... uv run uvicorn viva.app:app --port 8792
 ```
 
-Open `http://127.0.0.1:8790/?presenter=1` in Chrome. Microphone, camera and the two-window reviewer flow need an http origin.
-Port 8790 avoids the backend's 8765. After an update, hard refresh with Cmd+Shift+R.
-`python3 -m http.server 8790` still works: everything runs, and the viva is simulated.
-The key stays on the server: the browser only calls `api/viva/*` on the same origin. The GitHub Pages preview has no server, so it always runs simulated.
+Open `http://127.0.0.1:8792/?presenter=1` in Chrome. Microphone, camera and the two-window reviewer flow need an http origin.
+Without `ANTHROPIC_API_KEY` everything runs and the viva is simulated, labelled so. `VIVA_DEMO=1` turns on the presenter
+drawer, stand-in transcripts and the reviewer link on the learner page; leave it off for real use.
+`python3 -m http.server 8790` in this folder still works: the pages then use the simulator in the browser.
+The key stays on the server. The header chip says which backend answered: **Simulated backend**, **Server, viva simulated** or **Live viva**.
 
 ## Pages
 
@@ -38,7 +38,8 @@ is right. Same concept, different code, so the retake is transfer and not the sa
 
 1. **Predict, then lock.** The person reads the code and its tests and answers three checks: what it returns for a request
    as another customer (with how sure they are), whether it meets the rule, and which test backs the answer. The right
-   answers live in `js/data.js`, never in a model, and none of them reaches the page before the results.
+   answers live in `data/tasks.json`, never in a model. The server never serves that file and puts only the question
+   side of the task in the session view, so none of the answers reaches the page before the results.
 2. **Viva.** Two questions, how it works and why, spoken or typed, then at most one follow-up. With the model, Claude
    decides whether a follow-up is needed and writes it; the server drops a question that asks two things, runs long, or
    names an answer the person has not said themselves, and then the template follow-up is used. The model is never sent
@@ -54,7 +55,7 @@ is right. Same concept, different code, so the retake is transfer and not the sa
 ## Second attempt
 
 A first attempt that does not pass is feedback, not a verdict: nothing goes to a senior and the concept level stays.
-**Take the new task** starts attempt 2 on the same PR with the second task (`sets[1]` in `js/data.js`): new code on the same idea, new predictions, new questions.
+**Take the new task** starts attempt 2 on the same PR with the second task (`sets[1]` in `data/tasks.json`): new code on the same idea, new predictions, new questions.
 A pass, or a failed second attempt, goes to a senior. A failed second attempt also lowers the concept level by one.
 
 ## Portfolio points (Viva Plan 4.3 and 4.4)
@@ -76,49 +77,52 @@ The portfolio is private to the person: a reviewer token cannot read it. Confide
 
 ## What is simulated
 
-| Real in the browser | Simulated (marked in the UI) |
+| Real with the server | Still simulated (marked in the UI) |
 |---|---|
-| Camera and microphone capture, waveform, 180 s clip cap, recordings in IndexedDB, playback with seek | Transcription: stand-in text per question, editable, labelled **Simulated** |
-| Signed 5 minute links (HMAC, WebCrypto), expiry, renew, access log | Running the code: the result shown in "What really happened" is fixed task data, labelled **Simulated run** |
-| Predictions, retake rules, concept level, points, portfolio | The viva without a key: rubric patterns matched on the device, labelled **Simulated** |
-| With `server.py` and a key: the follow-up question and the rubric assessment, by Claude | Reviewer identity ("Demo reviewer role. Not SSO.") and the concept "Access control: whose data" with fixed Risk and Novelty |
+| Camera and microphone capture, waveform, 180 s clip cap, recordings stored on the server, playback with seek | Transcription: stand-in text per question in demo mode, editable, labelled **Simulated**; outside demo mode the person types what they said, labelled **Not transcribed** |
+| Signed 5 minute links (HMAC on the server), expiry, renew, access log | Running the code: the result shown in "What really happened" is fixed task data, labelled **Simulated run** |
+| Predictions, assessment, retake rules, concept level, points, portfolio, in SQLite | The viva without a key: rubric patterns matched on the server, labelled **Simulated** |
+| With a key: the follow-up question and the rubric assessment, by Claude | Reviewer identity (a link token, "Not SSO") and one learner per server; the concept "Access control: whose data" with fixed Risk and Novelty |
 
-The header chip **Simulated backend** stays on until `js/sim.js` is replaced.
+Without a server, `js/sim.js` keeps all of this in the browser (localStorage and IndexedDB) and the viva is always simulated.
 
 ## Presenter drawer (`?presenter=1`)
 
-Button in the header. Reviewer link, camera required (untick only if the camera hardware fails), voice stand-in Specific or Generic, fill the three checks (Wrong or Right; also under the checks themselves), fill the open question, reset all local data, and six copyable answers for the attempt on screen.
+Button in the header, with the simulator or with a server in demo mode (`VIVA_DEMO=1`). Reviewer link, camera required (untick only if the camera hardware fails), voice stand-in Specific or Generic, fill the three checks (Wrong or Right; also under the checks themselves), fill the open question, reset all demo data, and six copyable answers for the attempt on screen.
 Demo: choose **Generic**, fill the checks **Wrong**, answer, fail, **Take the new task**, choose **Specific**, fill the checks **Right**, pass, open the reviewer link, pass it with a one-line correction, watch the points arrive, open the portfolio.
 
-## Connect the real backend
+## Server routes
 
-Replace `js/sim.js` with a `Viva.api` that calls the server. Suggested routes (the backend does not have them yet, so change them freely):
+`js/http.js` maps each `Viva.api` method to a route in `backend/viva/app.py`; `backend/viva/engine.py` keeps the rules
+and the view shapes, and `js/sim.js` mirrors them for the offline demo.
 
 | `Viva.api` | Route |
 |---|---|
-| `check({pr})` | `GET /api/checks/{repo}/{pr}` (the pull request and its Risk x Novelty x Gap at the current concept level, before any session) |
+| `status()` | `GET /api/health` (whether the model is connected, and demo mode) |
+| `check({pr})` | `POST /api/check` (the pull request and its Risk x Novelty x Gap at the current concept level, before any session) |
 | `start({pr})`, `session(sid)` | `POST /api/sessions`, `GET /api/sessions/{sid}` |
 | `predict()` | `POST /api/sessions/{sid}/predict` (the three checks and the confidence; locked once, before the first question) |
-| `interviewNext()`, `interviewAnswer()`, `interviewFinish()` | `POST /api/sessions/{sid}/interview/next`, `/answer`, `/finish` |
+| `interviewNext()`, `interviewAnswer()`, `interviewFinish()` | `POST /api/sessions/{sid}/next`, `/answer`, `/finish` |
 | `retake(sid, {version})` | `POST /api/sessions/{sid}/retake` (only after a failed first attempt; the second task, predictions reset) |
-| `mediaUpload()`, `mediaDiscard()`, `mediaLink()`, `mediaFetch()` | `POST /api/sessions/{sid}/media`, `DELETE /api/media/{id}`, `POST /api/media/{id}/link`, `GET /api/media/{id}?exp=&sig=` |
-| `review(token)`, `decide(token, {verdict, note})` | `GET /api/review/{token}`, `POST /api/review/{token}/decision` (the role comes from the token, never the body) |
-| `portfolio()` | `GET /api/me/portfolio` (learner only) |
+| `mediaUpload()`, `mediaDiscard()`, `mediaLink()`, `mediaFetch()` | `POST /api/sessions/{sid}/media`, `DELETE /api/sessions/{sid}/media/{id}`, `POST /api/media/{id}/link`, `GET /api/media/{id}?exp=&a=&sig=` |
+| `review(token)`, `decide(token, {verdict, note})` | `GET /api/reviews/{token}`, `POST /api/reviews/{token}/decision` (the role comes from the token, never the body) |
+| `portfolio()` | `GET /api/portfolio` |
 | `leave()`, `remove()` | `POST /api/sessions/{sid}/leave` (delete media, keep answers), `DELETE /api/sessions/{sid}` |
+| `demo()`, `demoSettings()`, `demoReset()` | `GET /api/demo`, `POST /api/demo/settings`, `POST /api/demo/reset` (demo mode only) |
 
-Rules the server must keep: a first failure does not create a reviewer token; a first failure in a Full band change (18 or more) should also go to a senior (the sample PR never reaches it);
-a pass with a correction adds points once and a later follow-up request removes them; a pass needs a non-empty correction; deleting a session removes its points and its trend point.
-Shapes are in `api.check()`, `view()` (with `finished`, the time the last attempt ended), `scoringView()`, `reviewView()` (with `requested`) and `api.portfolio()` in `js/sim.js`.
-When served by FastAPI under `/static/`, add `<base href="/static/">` to the HTML files.
+Not built yet: sign-in (the session id and the reviewer token are the only keys, and one server holds one learner's
+portfolio), speech-to-text, running the code for real, and tasks generated from a real pull request. A first failure
+in a Full band change (18 or more) should also go to a senior (the sample PR never reaches it).
 
 ## Files
 
 | File | Job |
 |---|---|
 | `index.html`, `portfolio.html`, `review.html` | Learner app, portfolio, senior reviewer page |
-| `js/data.js` | The company, the person, the assigned senior (a demo identity), the sample PR and its CI checks, two question sets with stand-in answers, the scoring standard, the synthetic trend |
-| `js/sim.js` | Simulated backend: sessions, predictions, attempts, assessment, points, levels, media, reviewer |
-| `js/ai.js`, `server.py` | The live viva: the follow-up question and the rubric assessment through Claude, with the checks described under Interview |
+| `js/data.js` | What every page may know: the company, the person, the assigned senior (a demo identity), the CI checks, the synthetic trend |
+| `data/tasks.json` | The sample PR, its two tasks with the answer key, the rubric and stand-in answers, the scoring standard, the interview limits. Read by the server (never served) and by the simulator |
+| `js/api.js`, `js/http.js` | Picks the server when `api/health` answers, else the simulator; the fetch client for the server |
+| `js/sim.js` | Simulated backend for hosts with no server: sessions, predictions, attempts, assessment, points, levels, media, reviewer |
 | `js/core.js` | DOM helpers, icons, spring and enter motion, word reveal, odometer, theme, toast, dialog |
 | `js/app.js` | Check page, header and rail, stage routing, results polling, presenter drawer |
 | `js/interview.js`, `js/media.js` | Interview screen and the camera |

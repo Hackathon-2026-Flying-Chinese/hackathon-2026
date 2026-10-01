@@ -9,6 +9,7 @@
   const root = $('#app');
 
   let state = null, home = null, ivCtl = null, poll = 0, busy = false;
+  let demo = null; // presenter only: stand-in answers and predictions, and the demo settings (from api.demo)
 
   // ---------- helpers ----------
   const arrow = `<span class="arrow">${icon('arrow', 14)}</span>`;
@@ -38,7 +39,7 @@
   // ---------- header: breadcrumb and the three-step rail ----------
   const RAIL = ['Check', 'Interview', 'Results'];
   function paintHeader() {
-    const pr = state ? state.pr : home ? home.pr : D.pr, repo = String(pr.repo).split('/').pop();
+    const pr = state ? state.pr : home.pr, repo = String(pr.repo).split('/').pop();
     $('#crumb').innerHTML = `<span>${esc(repo)}</span><span class="sep" aria-hidden="true">/</span><b>#${Number(pr.number)}</b>`;
     const el = $('#rail'), idx = !state ? 0 : state.stage === 'results' ? 2 : 1;
     if (!el.dataset.ready) {
@@ -145,7 +146,7 @@
     document.title = 'Interview | Viva';
     root.innerHTML = '<section id="iv"></section>';
     ivCtl = V.interview.mount($('#iv', root), {
-      api, sid: state.id, view: state, presenter, fail,
+      api, sid: state.id, view: state, presenter, demo, fail,
       onView: v => { state = v; },
       onFinish: v => accept(v),
       onLeave: () => action(leave)
@@ -232,8 +233,8 @@
 
   // ---------- presenter drawer (?presenter=1) ----------
   // The retake asks different questions, so the stand-in answers follow the attempt on screen.
-  const attemptNo = () => Math.min((state && state.attempt) || 1, D.sets.length);
-  const answers = () => D.sets[attemptNo() - 1].answers;
+  const attemptNo = () => Math.min((state && state.attempt) || 1, demo.answers.length);
+  const answers = () => demo.answers[attemptNo() - 1];
   function script() {
     const A = answers();
     return [
@@ -261,27 +262,29 @@
         <h3>Windows</h3>
         <div class="pres-row"><span>Reviewer view</span>${link ? `<a class="btn btn-secondary btn-sm" href="${esc(link)}" target="_blank" rel="noopener">Open ${icon('external', 13)}</a>` : '<span class="muted small">Appears when a senior review is requested</span>'}</div>
         <h3>Interview</h3>
-        <div class="pres-row"><label class="check"><input type="checkbox" id="pm-cam" ${api.sim.cameraRequired() ? 'checked' : ''}><span>Camera required</span></label></div>
+        <div class="pres-row"><label class="check"><input type="checkbox" id="pm-cam" ${demo.camera_required ? 'checked' : ''}><span>Camera required</span></label></div>
         <p class="muted pres-help">Untick only if the camera hardware fails. The interview then runs on text. Applies to the next interview.</p>
         <div class="pres-row"><span>Voice answers become</span>
-          <div class="seg pres-seg" data-seg role="radiogroup" aria-label="Voice answers become"><label><input type="radio" name="pm-voice" value="specific" ${api.sim.voice() === 'specific' ? 'checked' : ''}><span>Specific</span></label><label><input type="radio" name="pm-voice" value="generic" ${api.sim.voice() === 'generic' ? 'checked' : ''}><span>Generic</span></label><i class="seg-thumb"></i></div></div>
+          <div class="seg pres-seg" data-seg role="radiogroup" aria-label="Voice answers become"><label><input type="radio" name="pm-voice" value="specific" ${demo.voice === 'specific' ? 'checked' : ''}><span>Specific</span></label><label><input type="radio" name="pm-voice" value="generic" ${demo.voice === 'generic' ? 'checked' : ''}><span>Generic</span></label><i class="seg-thumb"></i></div></div>
         <div class="pres-row"><span>Fill the three checks</span><span class="pres-btns"><button class="btn btn-secondary btn-sm" id="pm-pred-wrong" type="button">Wrong</button><button class="btn btn-secondary btn-sm" id="pm-pred-right" type="button">Right</button></span></div>
         <div class="pres-row"><span>Fill the open question</span><span class="pres-btns"><button class="btn btn-secondary btn-sm" id="pm-fill-specific" type="button">Specific</button><button class="btn btn-secondary btn-sm" id="pm-fill-generic" type="button">Generic</button></span></div>
-        <div class="pres-row"><span>Clear all local demo data</span><button class="btn btn-danger btn-sm" id="pm-reset" type="button">Reset</button></div>
+        <div class="pres-row"><span>Clear all demo data</span><button class="btn btn-danger btn-sm" id="pm-reset" type="button">Reset</button></div>
         <h3>Script, attempt ${attemptNo()}</h3>
         ${lines.map(([t, x], i) => `<div class="pres-snip"><b>${esc(t)}</b><button class="btn-icon" data-copy="${i}" type="button" aria-label="Copy: ${esc(t)}">${icon('copy', 14)}</button><p>${esc(x)}</p></div>`).join('')}`;
       V.seg(panel);
-      $('#pm-cam', panel).onchange = e => { api.sim.setCameraRequired(e.target.checked); V.toast(e.target.checked ? 'The camera is required.' : 'The camera is optional for the next interview.'); };
-      $$('input[name=pm-voice]', panel).forEach(r => { r.onchange = () => { api.sim.setVoice(r.value); V.toast(`Spoken answers will read as ${r.value}.`); }; });
+      const set = (body, msg) => api.demoSettings(body).then(st => { Object.assign(demo, st); V.toast(msg); }).catch(fail);
+      $('#pm-cam', panel).onchange = e => set({ camera_required: e.target.checked }, e.target.checked ? 'The camera is required.' : 'The camera is optional for the next interview.');
+      $$('input[name=pm-voice]', panel).forEach(r => { r.onchange = () => set({ voice: r.value }, `Spoken answers will read as ${r.value}.`); });
       $('#pm-pred-wrong', panel).onclick = () => fillPredictions('wrong');
       $('#pm-pred-right', panel).onclick = () => fillPredictions('right');
       $('#pm-fill-specific', panel).onclick = () => fillOpenQuestion('specific');
       $('#pm-fill-generic', panel).onclick = () => fillOpenQuestion('generic');
       $('#pm-reset', panel).onclick = async () => {
-        if (!await V.confirmDialog({ title: 'Clear all local demo data?', body: 'This removes every session and recording stored by the simulator on this device.', confirm: 'Clear everything', danger: true })) return;
-        await api.sim.reset();
+        if (!await V.confirmDialog({ title: 'Clear all demo data?', body: 'This removes every session and recording of this demo.', confirm: 'Clear everything', danger: true })) return;
+        await api.demoReset();
+        Object.assign(demo, await api.demo());
         await goHome();
-        V.toast('Local demo data cleared.');
+        V.toast('Demo data cleared.');
       };
       $$('[data-copy]', panel).forEach(b => { b.onclick = () => V.copy(lines[+b.dataset.copy][1]).then(ok => V.toast(ok ? 'Copied.' : 'Copy failed.')); });
     };
@@ -297,7 +300,10 @@
   // ---------- boot ----------
   async function boot() {
     V.boot();
-    if (presenter) mountPresenter();
+    if (presenter) {
+      // a server outside demo mode has no presenter controls
+      try { demo = await api.demo(); mountPresenter(); } catch { V.toast('Presenter controls need the demo mode (VIVA_DEMO=1).', { kind: 'error' }); }
+    }
     const saved = hashId() || (() => { try { return localStorage.getItem('viva-session'); } catch { return null; } })();
     if (saved) {
       try { state = await api.session(saved, opts()); persist(state.id); } catch (e) {

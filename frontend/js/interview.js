@@ -14,8 +14,8 @@
   const CONF = [['low', 'Guessing'], ['medium', 'Fairly sure'], ['high', 'Certain']];
 
   // The three checks, read before the viva. The right answers stay on the server until the results.
-  function predictHtml(view, presenter) {
-    const t = D.sets[Math.min(view.attempt, D.sets.length) - 1].task, it = t.items;
+  function predictHtml(view, ctx) {
+    const t = view.task, it = t.items;
     const opts = (key, list) => `<div class="pd-opts" data-n="${list.length}">${list.map(o => `<label class="ev"><input type="radio" name="pd-${key}" value="${esc(o.id)}"><span class="ev-mark"></span><span class="ev-text"><b${/^test_/.test(o.text) ? ' class="mono"' : ''}>${esc(o.text)}</b></span></label>`).join('')}</div>`;
     return `<header class="pd-head">
         <p class="ph-eyebrow">${icon('file', 15)}<span class="mono">${esc(t.file)}</span><span class="sep" aria-hidden="true">/</span><span class="mono">${esc(t.fn)}</span><span class="sep" aria-hidden="true">/</span>Pull request #${Number(view.pr.number)}</p>
@@ -38,7 +38,7 @@
           <p class="error-text" id="pd-err" role="alert" hidden></p>
           <div class="pd-foot">
             <button class="btn btn-primary btn-lg" type="button" id="pd-lock" disabled>Lock answers and start the viva ${arrow}</button>
-            ${presenter ? '<span class="pd-fill"><button class="btn-text" type="button" data-fill="wrong">Fill wrong</button><button class="btn-text" type="button" data-fill="right">Fill right</button></span>' : ''}
+            ${ctx.presenter && ctx.demo ? '<span class="pd-fill"><button class="btn-text" type="button" data-fill="wrong">Fill wrong</button><button class="btn-text" type="button" data-fill="right">Fill right</button></span>' : ''}
           </div>
         </div>
       </div>`;
@@ -77,7 +77,7 @@
           </div>
         </div>
 
-        <div class="iv-predict" hidden>${predictHtml(view, ctx.presenter)}</div>
+        <div class="iv-predict" hidden>${predictHtml(view, ctx)}</div>
 
         <div class="iv-main" hidden>
           <div class="iv-col">
@@ -90,7 +90,7 @@
               <h1 class="iv-q" aria-live="polite" aria-atomic="true"></h1>
               <i class="iv-hook" aria-hidden="true"></i>
             </div>
-            <p class="iv-ground">${icon('lock', 14)}About <span class="mono">${esc(D.sets[Math.min(view.attempt, D.sets.length) - 1].task.fn)}</span> in pull request #${Number(pr.number)}. Your predictions are locked. Answer in your own words.</p>
+            <p class="iv-ground">${icon('lock', 14)}About <span class="mono">${esc(view.task.fn)}</span> in pull request #${Number(pr.number)}. Your predictions are locked. Answer in your own words.</p>
 
             <div class="iv-answer card" hidden>
               <div class="iv-answer-h">
@@ -104,7 +104,7 @@
               <div class="iv-pane iv-type" hidden>
                 <label class="sr-only" for="iv-text">Your answer</label>
                 <textarea class="textarea" id="iv-text" rows="6" aria-describedby="iv-type-hint" placeholder="Answer in your own words"></textarea>
-                <span class="hint" id="iv-type-hint">At least ${D.minAnswerChars} characters.</span>
+                <span class="hint" id="iv-type-hint">At least ${Number(view.limits.minAnswerChars)} characters.</span>
               </div>
               <div class="iv-pane iv-review" hidden>
                 <div class="iv-review-head"><label class="form-label" for="iv-tx">Transcript</label><span class="tag">Simulated</span></div>
@@ -144,7 +144,7 @@
     </figure>`;
 
   function mount(host, ctx) {
-    const { api, sid, presenter } = ctx;
+    const { api, sid, presenter } = ctx, L = ctx.view.limits;
     let view = ctx.view, cam = null, cur = null, mode = 'speak', upload = null, busy = false, destroyed = false, stopWave = null, clock = 0;
 
     host.className = 'iv';
@@ -184,7 +184,7 @@
       const btn = $('#cam-on', host);
       $('#cam-err', host).hidden = true;
       btn.disabled = true;
-      cam = cam || V.media.camera({ maxSeconds: D.clipSeconds, onCap: () => { $('.iv-cap', host).hidden = false; paintClock(); } });
+      cam = cam || V.media.camera({ maxSeconds: L.clipSeconds, onCap: () => { $('.iv-cap', host).hidden = false; paintClock(); } });
       try {
         const stream = await cam.start();
         video.srcObject = stream;
@@ -256,7 +256,7 @@
       $('.iv-src', main).hidden = turn.source !== 'follow-up';
       $('.iv-src', main).textContent = turn.by === 'ai' ? 'AI follow-up' : 'Follow-up';
       // the plan: the two standard questions of this attempt, then the follow-up (asked only when an answer stays weak)
-      const qs = D.sets[Math.min(view.attempt, D.sets.length) - 1].questions, turns = view.interview.turns;
+      const qs = view.task.questions, turns = view.interview.turns;
       const probe = turns.find(t => t.source === 'follow-up');
       const plan = [{ n: '1', label: qs.implementation.label }, { n: '2', label: qs.rationale.label }, { n: '+', label: probe ? probe.label : 'Follow-up', note: probe ? '' : 'Only if needed' }];
       $('.agenda-list', host).innerHTML = plan.map((p, i) => {
@@ -281,7 +281,7 @@
     }
     const current = () => (mode === 'speak' ? (upload ? tx.value : '') : text.value);
     function refresh() {
-      submit.disabled = busy || current().trim().length < D.minAnswerChars;
+      submit.disabled = busy || current().trim().length < L.minAnswerChars;
       done.disabled = busy;
       // while speaking, "Done speaking" is the only action, so the submit bar stays out of its way
       $('.iv-foot', host).hidden = mode === 'speak' && !upload;
@@ -292,7 +292,7 @@
       t.addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter' && !submit.disabled) submit.click(); });
     });
 
-    const send = (clip, how) => api.mediaUpload(sid, { blob: clip.blob, turn: cur.turn, kind: clip.kind, duration: Math.min(clip.duration, D.clipSeconds), mode: how });
+    const send = (clip, how) => api.mediaUpload(sid, { blob: clip.blob, turn: cur.turn, kind: clip.kind, duration: Math.min(clip.duration, L.clipSeconds), mode: how });
 
     done.addEventListener('click', async () => {
       if (busy || !cam) return;
@@ -303,6 +303,9 @@
         if (!clip) throw new Error('Nothing was recorded. Try again.');
         upload = await send(clip, 'voice');
         tx.value = upload.transcript || '';
+        // until speech-to-text is connected, a server outside the demo returns no transcript: the person types it
+        $('.iv-review-head .tag', host).textContent = upload.transcriber ? 'Simulated' : 'Not transcribed';
+        $('#iv-tx-hint', host).textContent = upload.transcriber ? 'Simulated transcript: edit it so it matches what you said. The real build transcribes speech on the server.' : 'Speech-to-text is not connected yet. Type what you said; the recording is kept for the reviewer.';
         setMode('speak');
         V.enter(panes.review, { y: 6, dur: 420 });
       } catch (e) {
@@ -321,7 +324,7 @@
     submit.addEventListener('click', async () => {
       if (busy) return;
       const body = current().trim();
-      if (body.length < D.minAnswerChars) { say(`Say a little more (at least ${D.minAnswerChars} characters).`); return; }
+      if (body.length < L.minAnswerChars) { say(`Say a little more (at least ${L.minAnswerChars} characters).`); return; }
       busy = true; refresh(); say('');
       let sent = upload ? upload.media_id : null, fresh = null;
       try {
@@ -447,8 +450,8 @@
       } finally { busy = false; paintLock(); }
     });
     function fillPredict(kind) {
-      if (pd.hidden) return false;
-      const p = D.predictions[Math.min(view.attempt, D.predictions.length) - 1][kind];
+      if (pd.hidden || !ctx.demo) return false;
+      const p = ctx.demo.predictions[Math.min(view.attempt, ctx.demo.predictions.length) - 1][kind];
       [['behaviour', p.behaviour], ['requirement', p.requirement], ['evidence', p.evidence], ['conf', p.confidence]].forEach(([n, v]) => {
         const r = $(`input[name=pd-${n}][value="${v}"]`, pd);
         if (r) { r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -552,7 +555,7 @@
       if (granted) startCamera();
     })();
 
-    if (V.ai) V.ai.status().then(st => { if (!st.live) $('.an-hint', host).textContent = 'Simulated: the model is not connected, so the viva is matched to the rubric on this device.'; });
+    api.status().then(st => { if (!st.live) $('.an-hint', host).textContent = `Simulated: the model is not connected, so the viva is matched to the rubric${st.backend === 'server' ? '’s patterns' : ' on this device'}.`; }).catch(() => {});
 
     return {
       fillPredict,
