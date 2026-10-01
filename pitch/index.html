@@ -831,6 +831,10 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- business model: the cost of stalled growth, then the path to a team subscription ---------- */
 .slide.business { gap: 0; }
+.slide.business .business-head { margin-bottom: 24px; }
+.slide.business .business-value { margin-top: 26px; }
+.slide.business .business-offer { padding-block: 24px; }
+.slide.business .business-offer p.business-price { margin-top: 10px; }
 .business-head { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 34px; }
 .business-layout { display: grid; grid-template-columns: 560px 1fr; gap: 84px; width: 1320px; text-align: left; }
 .business-kicker { font: 600 19px/1.2 var(--display); color: var(--fg-2); margin-bottom: 20px; }
@@ -858,6 +862,15 @@ h1, h2, h3, p { margin: 0; }
 .business .scenario-label { color: var(--lemon); font-size: 22px; }
 .business .scenario-note { margin-top: 24px; max-width: 500px; font: 400 25px/1.4 var(--text); color: var(--fg-2); }
 .business .scenario-disclosure { font-size: 18px; color: var(--fg-2); }
+/* who uses, reviews and buys it, on the price card; the first market sits under the scenario */
+.business-roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.business-roles > div { display: flex; flex-direction: column; gap: 3px; padding: 11px 14px; border-radius: 14px; background: rgb(255 255 255 / .04); box-shadow: inset 0 0 0 1px var(--line); }
+.business-roles span { font: 600 14px/1.2 var(--display); }
+.business-roles b { font: 600 19px/1.2 var(--display); }
+.business-roles small { font: 400 15px/1.3 var(--text); color: var(--fg-2); }
+.business-market { margin-top: 28px; max-width: 560px; font: 400 21px/1.4 var(--text); color: var(--fg-2); }
+.business-market b { font-weight: 600; color: var(--fg); }
+.business-market small { display: block; margin-top: 6px; font: 400 13px/1.4 var(--text); color: var(--fg-3); white-space: nowrap; }
 /* the price sits on the subscription card, next to the value on the left */
 .business-offer p.business-price { margin-top: 16px; display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
 .business-price b { font: 700 60px/1 var(--display); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
@@ -1404,18 +1417,24 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
               <p class="business-number grad">4.5<small>hours / week</small></p>
               <p class="business-caption">potential capacity per senior</p>
               <p class="scenario-note">If review effort falls from 18 to 9 minutes across 30 junior tasks a week.</p>
+              <p class="business-market">First market: <b>5,320</b> Australian software firms<br>with 5 to 199 staff.<small>ABS 8165.0, June 2025, ANZSIC 7000 · 1,422 with 20–199 staff, 3,898 with 5–19</small></p>
             </div>
           </div>
         </div>
         <div class="business-model">
           <div class="b" data-f="1">
-            <p class="business-kicker">How Viva earns · B2B · <span style="color:var(--fg)">Team leads buy it, juniors use it</span></p>
+            <p class="business-kicker">How Viva earns · B2B</p>
             <div class="business-offer">
               <div class="business-offer-top">
                 <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 12 0v2M17 4.5a3 3 0 0 1 0 5.5M18 14a5 5 0 0 1 3 4.6V20"/></svg></span>
                 <h3>Team subscription</h3>
               </div>
-              <p class="business-price"><b class="grad">A$20</b> per junior a month. <strong>Seniors free.</strong></p>
+              <p class="business-price"><b class="grad">A$20</b> per junior a month.</p>
+              <div class="business-roles">
+                <div><span class="grad">Uses it</span><b>Junior staff</b><small>A$20 a month</small></div>
+                <div><span class="grad">Reviews it</span><b>Seniors</b><small>Free</small></div>
+                <div><span class="grad">Buys it</span><b>Team lead</b><small>One team budget</small></div>
+              </div>
               <p class="business-breakeven">10 juniors: A$200 a month, the cost of 2 senior hours.</p>
             </div>
           </div>
@@ -1432,7 +1451,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <p class="business-sources scenario-disclosure in" style="--d:.55s">Scenario and prices are assumptions to test in the pilot, not measured savings. A$100 per senior hour. Full calculation follows Thank you.</p>
       <aside class="notes">
         <p>Our goal is the problem statement itself: juniors still get good when AI does the beginner work. In one illustrative scenario, halving review effort would free four and a half senior hours a week.</p>
-        <p>[click: team subscription] Team leads buy it and juniors use it. Teams pay twenty dollars per junior a month, and seniors are free. Ten juniors cost two senior hours a month. [click: path] Every team starts with a free pilot that measures learning and net time saved, and pays once value is proven. Larger customers run it in their own cloud. [click: goal] The calculation is in our Q&amp;A appendix.</p>
+        <p>[click: team subscription] Team leads buy it, juniors use it, and seniors review for free. Our first market is about 5,300 Australian software firms with 5 to 199 staff. Teams pay twenty dollars per junior a month, and seniors are free. Ten juniors cost two senior hours a month. [click: path] Every team starts with a free pilot that measures learning and net time saved, and pays once value is proven. Larger customers run it in their own cloud. [click: goal] The calculation is in our Q&amp;A appendix.</p>
         <p>[If asked: 30 junior tasks a week and an 18-minute baseline are scenario assumptions. Nine minutes is the scenario target. These are not interview findings or measured Viva results. Keep ordinary code review in place and count extra Viva work in the pilot.]</p>
         <p>[If asked why per junior: Viva coaches juniors, so the price grows with the people it trains. Seniors are the scarce time we save, so they never pay. Why no free tier: most target firms have 5 to 19 staff and only a few juniors, so a free tier would cover most of the market; the free pilot is time-limited instead. Price check: A$20 is about US$14, between Reviewsaur (US$11 a seat a month, billed annually) and AI code review such as CodeRabbit (US$24 to 72 per developer a month), checked 30 Sep. A$20 is the team's launch hypothesis, and the pilot tests it.]</p>
       </aside>
