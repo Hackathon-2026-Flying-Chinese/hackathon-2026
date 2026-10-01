@@ -888,7 +888,7 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
       </div>
       <aside class="notes">
-        <p>SMEs got AI's speed: 81% of Australian SMEs have adopted AI or automation, in Airwallex's own research with YouGov. AI writes it, and juniors ship it. In a controlled study they learned less: 50% on a concept quiz against 67%. A few seniors carry the checking, with review time up 91%. And 80% of executives traced an incident to AI code.</p>
+        <p>SMEs got AI's speed: 81% of Australian SMEs have adopted AI or automation in their finance functions, in Airwallex's own research with YouGov. AI writes it, and juniors ship it. In a controlled study they learned less: 50% on a concept quiz against 67%. A few seniors carry the checking, with review time up 91%. And 80% of executives traced an incident to AI code.</p>
         <p>So juniors stop growing. And a small company that can't grow its juniors can't grow its next seniors.</p>
       </aside>
     </section>
@@ -1083,11 +1083,11 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
           <div class="sf back">
             <p class="eyebrow grad">How it’s built</p>
             <div class="cards">
-              <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Tracks each gap until a new task closes it</span></div></div>
+              <div class="tier"><p class="tier-h grad">Database</p><div class="blk big core"><b>SQLite</b><span>Gaps, answers and corrections, one encryption key per tenant</span></div></div>
               <i class="wire" aria-hidden="true"></i>
-              <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn</span></div></div>
+              <div class="tier"><p class="tier-h grad">Backend</p><div class="blk big core"><b>Python</b><span>FastAPI on Uvicorn. Viva API, check grader, event log</span></div></div>
               <i class="wire" aria-hidden="true"></i>
-              <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core hot"><b>Claude<br>Sonnet 5.5</b><span>Asks one follow-up and marks against a fixed rubric</span></div></div>
+              <div class="tier"><p class="tier-h grad">AI model</p><div class="blk big core hot"><b>Claude<br>Sonnet 5.5</b><span>One follow-up, a fixed rubric. Or Bedrock or open-weight in your cloud</span></div></div>
             </div>
           </div>
         </div>
@@ -1095,7 +1095,9 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <aside class="notes">
         <p>The frontend is plain HTML, CSS and JavaScript.</p>
         <p>[click: the screen lifts out of the laptop and turns over] Behind it, the backend is Python, FastAPI. SQLite tracks each gap until a new task closes it. And Claude Sonnet 5.5 asks one follow-up and marks against a fixed rubric.</p>
+        <p>It plugs into the tools teams already use: a GitHub App that adds a required check, a job on your own CI runner that takes only the diff, and a Slack App for reminders.</p>
         <p>[click: the screen swings open like doors onto the demo]</p>
+        <p>[If asked what runs today: the demo is the workspace plus a small Python server calling Claude; the FastAPI and SQLite learning-loop backend is a separate prototype with 14 tests. GitHub, CI runner, Slack and Whisper are next.]</p>
       </aside>
     </section>
 
@@ -1117,15 +1119,15 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       </div>
       <div class="business-layout">
         <div class="business-evidence">
-          <p class="business-kicker in" style="--d:.25s">The cost of not growing juniors</p>
+          <p class="business-kicker in" style="--d:.25s">What teams pay for today</p>
           <div class="business-metrics">
             <div class="in" style="--d:.3s">
               <p class="business-number grad">17%</p>
               <p class="business-caption">less understanding<span class="business-detail">when AI does the work.</span></p>
             </div>
             <div class="in" style="--d:.45s">
-              <p class="business-number grad"><span class="approx">≈</span>A$67k</p>
-              <p class="business-caption">a year to buy a senior instead of growing one<span class="business-detail">The senior–junior salary gap in Australia.</span></p>
+              <p class="business-number grad">+91%</p>
+              <p class="business-caption">PR review time on high-AI teams<span class="business-detail">Paid in senior hours, the scarcest time in a small team.</span></p>
             </div>
           </div>
         </div>
@@ -1150,15 +1152,15 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <p class="business-value b" data-f="3">Viva turns <span style="color:var(--fg-2)">review cost</span> into <span class="grad">growth.</span></p>
       <p class="business-sources in" style="--d:.55s">
         <a href="https://www.anthropic.com/research/AI-assistance-coding-skills" target="_blank" rel="noopener">Anthropic RCT, 2026</a> · Quiz: 50% with AI vs. 67% without AI (n = 52).<br>
-        Salary snapshot supplied for this pitch: <a href="https://au.indeed.com/career/senior-software-engineer/salaries" target="_blank" rel="noopener">Indeed AU senior A$150,494</a> − <a href="https://au.indeed.com/career/junior-software-engineer/salaries" target="_blank" rel="noopener">junior A$83,876</a> ≈ A$67k/year. Salary gap, not measured Viva savings.
+        <a href="https://www.faros.ai/blog/ai-software-engineering" target="_blank" rel="noopener">Faros AI, The AI Productivity Paradox, 2025</a> · 10,000+ developers, 1,255 teams.
       </p>
       <aside class="notes">
         <p>1. Developers who let AI do the work understood 17% less of their own code.</p>
-        <p>2. If juniors don't grow, you buy seniors instead, about sixty-seven thousand dollars more a year per hire. That is the cost of not growing juniors, not a saving we claim.</p>
+        <p>2. And seniors pay for it: on high-AI teams, PR review time is up 91%. In a small team, that's the scarcest time there is. Viva gives it back: seniors only see the changes that need them, with the exact moment to watch, and our pilot measures senior minutes per PR.</p>
         <p>3. [click: team subscription] So companies subscribe for their whole team, priced by team size.</p>
         <p>4. [click: pilot → paid team] Every customer starts with a free pilot, then pays once it works.</p>
         <p>5. [click: value] Viva turns review cost into growth.</p>
-        <p>[Evidence note, not spoken: the RCT compared quiz averages of 50% and 67%. It does not establish a long-term hiring effect. The A$66,618 salary difference uses the Indeed values in the supplied pitch reference, not current salary data or a measured saving from Viva. Subscription pricing and pilot conversion are proposed business terms to validate.]</p>
+        <p>[Evidence note, not spoken: the RCT compared quiz averages of 50% and 67%. It does not establish a long-term hiring effect. The 91% is Faros telemetry on high-AI teams, not a saving from Viva; the saving Viva claims is senior review time, and the pilot measures it. Subscription pricing and pilot conversion are proposed business terms to validate.]</p>
       </aside>
     </section>
 
@@ -1652,15 +1654,15 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     const sec = t0 ? Math.floor((Date.now() - t0) / 1000) : 0;
     el.textContent = `${pad(Math.floor(sec / 60))}:${pad(sec % 60)}`;
     const nextAt = slides[cur + 1] ? secs(slides[cur + 1].dataset.at) : null;
-    el.classList.toggle('over', sec >= 480);
-    el.classList.toggle('late', sec < 480 && nextAt !== null && sec > nextAt);
+    el.classList.toggle('over', sec >= 420);
+    el.classList.toggle('late', sec < 420 && (sec >= 390 || (nextAt !== null && sec > nextAt)));
   }
   if (isPresenter) {
     document.body.classList.add('presenter');
     $('#hint').hidden = true;
     const pp = document.createElement('div');
     pp.className = 'pp';
-    pp.innerHTML = `<div><div class="pp-label">Elapsed · target 8:00 · starts on slide 2</div><div class="pp-clock" id="ppClock">00:00</div></div>
+    pp.innerHTML = `<div><div class="pp-label">Elapsed · target 7:00 · amber from 6:30 · starts on slide 2</div><div class="pp-clock" id="ppClock">00:00</div></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="ctl" id="ppT" type="button">Restart timer (T)</button><button class="ctl" id="ppPrev" type="button">← Back</button><button class="ctl" id="ppGo" type="button">Next →</button></div>
       <div><div class="pp-label">Speaking</div><div class="pp-next" id="ppWho" style="margin-top:8px"></div></div>
       <div><div class="pp-label">Now</div><div class="pp-next" id="ppNow" style="margin-top:8px"></div></div>
