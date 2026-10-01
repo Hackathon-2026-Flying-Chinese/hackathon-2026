@@ -166,12 +166,12 @@ h1, h2, h3, p { margin: 0; }
 .ap-route { stroke-dasharray: 1; }
 .slide.active .ap-route { animation: draw 1.1s var(--ease) .4s both; }
 .ap-ping, .ap-tping { transform-box: fill-box; transform-origin: center; opacity: 0; }
-.slide.active.autopilot .ap-ping { animation: ping 2s ease-out 5.2s infinite; }
-@keyframes ping { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(4); } }
+.slide.active.autopilot .ap-ping { animation: apPing 2s ease-out 5.2s infinite; }
+@keyframes apPing { from { opacity: .9; transform: scale(1); } to { opacity: 0; transform: scale(4); } }
 /* a marker pops at each corner as the car takes it */
 .ap-turn { transform-box: fill-box; transform-origin: center; transform: scale(0); }
 .slide.active.autopilot .ap-turn { animation: pop .55s cubic-bezier(.34, 1.56, .64, 1) var(--t) both; }
-.slide.active.autopilot .ap-tping { animation: ping 1.1s ease-out var(--t) both; }
+.slide.active.autopilot .ap-tping { animation: apPing 1.1s ease-out var(--t) both; }
 @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
 
 /* the car: CSS faces standing on the map plane; offset-path turns it with the road (keyframes are built from the route in the script) */
@@ -506,8 +506,8 @@ h1, h2, h3, p { margin: 0; }
 .aud-t span { --j: 0; display: block; padding: .04em .08em .16em; margin: -.04em -.08em -.16em;
   background: linear-gradient(100deg, #f5f5f7 0%, #f5f5f7 32%, #c9b8ff 42%, #6f8cff 50%, #ff8f7a 58%, #f5f5f7 68%, #f5f5f7 100%); background-size: 320% 100%; background-position: 100% 0;
   -webkit-background-clip: text; background-clip: text; color: transparent; }
-.aud-cover.on .aud-t span { animation: rise .9s var(--ease) calc(.25s + var(--j) * .2s) both, sweep 3.2s cubic-bezier(.45, 0, .25, 1) calc(1s + var(--j) * .25s) infinite; }
-@keyframes sweep { 0% { background-position: 100% 0; } 55%, 100% { background-position: 0% 0; } }
+.aud-cover.on .aud-t span { animation: rise .9s var(--ease) calc(.25s + var(--j) * .2s) both, textSweep 3.2s cubic-bezier(.45, 0, .25, 1) calc(1s + var(--j) * .25s) infinite; }
+@keyframes textSweep { 0% { background-position: 100% 0; } 55%, 100% { background-position: 0% 0; } }
 .aud-cover.on .eyebrow { animation: rise .8s var(--ease) .1s both; }
 .aud-cover.on .sub { animation: rise .8s var(--ease) .8s both; }
 
