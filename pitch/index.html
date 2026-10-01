@@ -240,26 +240,26 @@ h1, h2, h3, p { margin: 0; }
 .vg-num { font: 700 64px/1 var(--display); fill: #f5f5f7; letter-spacing: -.03em; }
 .vg-unit { font: 500 20px/1 var(--text); fill: #a1a1a6; }
 .vg-sign { font: 800 28px/1 var(--display); fill: #111; }
-/* the second scene loops every 5s: drive in, a person steps out from the parked cars, swerve right past them, back into the lane */
+/* the second scene loops every 5s: the car drives through at a steady speed and eases round a person who steps out from the parked cars */
 .vg-me, .vg-ped { animation-duration: 5s; animation-iteration-count: infinite; }
-.slide.active .vg-me { animation-name: vgMe; }
-@keyframes vgMe { 0% { translate: 0 420px; } 22% { translate: 0 300px; } 32% { translate: 50px 228px; } 42% { translate: 108px 150px; } 54% { translate: 108px 64px; } 64% { translate: 48px 0; } 74% { translate: 0 -64px; } 100% { translate: 0 -260px; } }
-/* a hard turn right as the person appears, straight past them, then back into the lane */
-.slide.active .vg-rot { animation: vgRot 5s infinite; }
-@keyframes vgRot { 0%, 22% { rotate: 0deg; } 30% { rotate: 30deg; } 42% { rotate: 0deg; } 56% { rotate: -22deg; } 70%, 100% { rotate: 0deg; } }
+.slide.active .vg-me { animation-name: vgMe; animation-timing-function: linear; }
+@keyframes vgMe { from { translate: 0 420px; } to { translate: 0 -260px; } }
+/* a small, smooth S to the right as the person appears (sampled sine, so speed and steering never jerk) */
+.slide.active .vg-rot { animation: vgRot 5s linear infinite; }
+@keyframes vgRot { 0% { translate: 0.0px 0; rotate: 0.0deg; } 2% { translate: 0.0px 0; rotate: 0.0deg; } 4% { translate: 0.0px 0; rotate: 0.0deg; } 6% { translate: 0.0px 0; rotate: 0.0deg; } 8% { translate: 0.0px 0; rotate: 0.0deg; } 10% { translate: 0.0px 0; rotate: 0.0deg; } 12% { translate: 0.0px 0; rotate: 0.0deg; } 14% { translate: 0.0px 0; rotate: 0.0deg; } 16% { translate: 0.0px 0; rotate: 0.0deg; } 18% { translate: 0.0px 0; rotate: 0.0deg; } 20% { translate: 0.0px 0; rotate: 0.0deg; } 22% { translate: 0.4px 0; rotate: 1.9deg; } 24% { translate: 2.2px 0; rotate: 4.2deg; } 26% { translate: 5.3px 0; rotate: 6.3deg; } 28% { translate: 9.5px 0; rotate: 7.8deg; } 30% { translate: 14.4px 0; rotate: 8.7deg; } 32% { translate: 19.7px 0; rotate: 9.0deg; } 34% { translate: 24.9px 0; rotate: 8.6deg; } 36% { translate: 29.6px 0; rotate: 7.5deg; } 38% { translate: 33.6px 0; rotate: 5.8deg; } 40% { translate: 36.4px 0; rotate: 3.7deg; } 42% { translate: 37.8px 0; rotate: 1.3deg; } 44% { translate: 37.8px 0; rotate: -1.3deg; } 46% { translate: 36.4px 0; rotate: -3.7deg; } 48% { translate: 33.6px 0; rotate: -5.8deg; } 50% { translate: 29.6px 0; rotate: -7.5deg; } 52% { translate: 24.9px 0; rotate: -8.6deg; } 54% { translate: 19.7px 0; rotate: -9.0deg; } 56% { translate: 14.4px 0; rotate: -8.7deg; } 58% { translate: 9.5px 0; rotate: -7.8deg; } 60% { translate: 5.3px 0; rotate: -6.3deg; } 62% { translate: 2.2px 0; rotate: -4.2deg; } 64% { translate: 0.4px 0; rotate: -1.9deg; } 66% { translate: 0.0px 0; rotate: 0.0deg; } 68% { translate: 0.0px 0; rotate: 0.0deg; } 70% { translate: 0.0px 0; rotate: 0.0deg; } 72% { translate: 0.0px 0; rotate: 0.0deg; } 74% { translate: 0.0px 0; rotate: 0.0deg; } 76% { translate: 0.0px 0; rotate: 0.0deg; } 78% { translate: 0.0px 0; rotate: 0.0deg; } 80% { translate: 0.0px 0; rotate: 0.0deg; } 82% { translate: 0.0px 0; rotate: 0.0deg; } 84% { translate: 0.0px 0; rotate: 0.0deg; } 86% { translate: 0.0px 0; rotate: 0.0deg; } 88% { translate: 0.0px 0; rotate: 0.0deg; } 90% { translate: 0.0px 0; rotate: 0.0deg; } 92% { translate: 0.0px 0; rotate: 0.0deg; } 94% { translate: 0.0px 0; rotate: 0.0deg; } 96% { translate: 0.0px 0; rotate: 0.0deg; } 98% { translate: 0.0px 0; rotate: 0.0deg; } 100% { translate: 0.0px 0; rotate: 0.0deg; } }
 .slide.active .vg-me .vg-beam { animation: vgBeam 5s infinite; }
-@keyframes vgBeam { 0%, 20%, 54%, 100% { fill: rgb(183 166 255 / .14); } 24%, 50% { fill: rgb(255 107 107 / .32); } }
+@keyframes vgBeam { 0%, 18%, 62%, 100% { fill: rgb(183 166 255 / .14); } 24%, 56% { fill: rgb(255 107 107 / .3); } }
 .slide.active .vg-me .vg-tail { animation: vgTail 5s infinite; }
-@keyframes vgTail { 0%, 22%, 44%, 100% { filter: none; } 26%, 40% { filter: drop-shadow(0 0 8px #ff375f) drop-shadow(0 0 4px #ff375f); } }
+@keyframes vgTail { 0%, 22%, 40%, 100% { filter: none; } 27%, 35% { filter: drop-shadow(0 0 6px #ff375f); } }
 .vg-ped { translate: 196px 128px; opacity: 0; }
 .slide.active .vg-ped { animation-name: vgPed; }
-@keyframes vgPed { 0%, 16% { translate: 196px 128px; opacity: 0; } 20% { opacity: 1; } 30%, 66% { translate: 252px 128px; opacity: 1; } 80%, 100% { translate: 200px 128px; opacity: 0; } }
+@keyframes vgPed { 0%, 14% { translate: 196px 128px; opacity: 0; } 18% { opacity: 1; } 28%, 62% { translate: 248px 128px; opacity: 1; } 78%, 100% { translate: 200px 128px; opacity: 0; } }
 .vg-alert { opacity: 0; transform-box: fill-box; transform-origin: center; }
 .slide.active .vg-alert { animation: vgAlert 5s infinite; }
 @keyframes vgAlert { 0%, 20% { opacity: 0; transform: scale(.6); } 26% { opacity: 1; transform: scale(1.2); } 40% { opacity: 1; transform: scale(1); } 52%, 100% { opacity: 0; transform: scale(1); } }
 .vg-brake { font: 700 22px/1 var(--mono); letter-spacing: .08em; fill: #ff8f7a; opacity: 0; }
 .slide.active .vg-brake { animation: vgBrake 5s infinite; }
-@keyframes vgBrake { 0%, 24% { opacity: 0; } 28%, 54% { opacity: 1; } 58%, 100% { opacity: 0; } }
+@keyframes vgBrake { 0%, 22% { opacity: 0; } 27%, 56% { opacity: 1; } 62%, 100% { opacity: 0; } }
 
 /* the three ticks: each pill arrives, then its circle fills green */
 .ap-chips { display: flex; gap: 18px; margin: 6px 0 10px; }
@@ -350,16 +350,16 @@ h1, h2, h3, p { margin: 0; }
   background: linear-gradient(#110f1c, #09090d) padding-box, linear-gradient(160deg, rgb(167 139 255 / .7), rgb(111 140 255 / .15) 45%, rgb(214 139 255 / .5)) border-box;
   border: 1.5px solid transparent; box-shadow: 0 30px 90px -40px rgb(123 85 255 / .8); }
 .data .viz > div.hot::before { background: linear-gradient(#1a0d10, #0a090c) padding-box, linear-gradient(160deg, rgb(255 107 107 / .8), rgb(255 159 67 / .15) 45%, rgb(255 107 107 / .5)) border-box; box-shadow: 0 30px 90px -40px rgb(255 107 107 / .8); }
-.data[data-step="1"] .viz > div::before { opacity: 1; transform: none; transition-delay: calc(var(--i) * .75s); }
+.data:is([data-step="1"], [data-step="2"]) .viz > div::before { opacity: 1; transform: none; transition-delay: calc(var(--i) * .75s); }
 .vz-say { font: 700 33px/1.15 var(--display); letter-spacing: -.022em; white-space: nowrap; min-height: 1.15em; opacity: 0; clip-path: inset(0 100% 0 0); }
-.data[data-step="1"] .vz-say { animation: wipe .9s var(--ease) calc(var(--i) * .75s + .2s) both; }
+.data:is([data-step="1"], [data-step="2"]) .vz-say { animation: wipe .9s var(--ease) calc(var(--i) * .75s + .2s) both; }
 @keyframes wipe { from { opacity: 1; clip-path: inset(0 100% 0 0); filter: blur(6px); } to { opacity: 1; clip-path: inset(0 -10% 0 0); filter: none; } }
-.data[data-step="1"] .vz { animation: answer .8s var(--ease) calc(var(--i) * .75s + .45s) both; }
+.data:is([data-step="1"], [data-step="2"]) .vz { animation: answer .8s var(--ease) calc(var(--i) * .75s + .45s) both; }
 @keyframes answer { 40% { transform: scale(1.07); filter: brightness(1.35); } }
 /* the details step back so the three lines read as one story */
 .data .viz h3, .data .viz .src { transition: opacity .8s var(--ease) .2s; }
-.data[data-step="1"] .viz h3 { opacity: .6; }
-.data[data-step="1"] .viz .src { opacity: .45; }
+.data:is([data-step="1"], [data-step="2"]) .viz h3 { opacity: .6; }
+.data:is([data-step="1"], [data-step="2"]) .viz .src { opacity: .45; }
 
 /* ---------- s4 market: a small company as a pipeline. AI to juniors is fast; the few seniors are the narrow part, so work queues there ---------- */
 .flow-wrap { position: relative; width: 1320px; display: flex; flex-direction: column; gap: 26px; margin-top: 44px; }
@@ -425,24 +425,89 @@ h1, h2, h3, p { margin: 0; }
 .problem:is([data-step="2"], [data-step="3"]) .facts { transform: translateX(-170px); }
 .problem:is([data-step="2"], [data-step="3"]) .fact p:not(.sol) { transform: scale(.52); }
 .problem:is([data-step="2"], [data-step="3"]) .fact .to, .problem:is([data-step="2"], [data-step="3"]) .fact .sol { opacity: 1; }
-.problem:is([data-step="2"], [data-step="3"]) .fact .to { animation: rise .7s var(--ease) calc(.7s + var(--i) * .35s) backwards; }
-.problem:is([data-step="2"], [data-step="3"]) .fact .sol { animation: solIn .8s var(--ease) calc(.8s + var(--i) * .35s) backwards; }
-/* build 3: the two rules we lead on light up in coral; the other two step back */
-.fact::after { content: ""; position: absolute; left: -26px; width: 1490px; top: -14px; bottom: -14px; border-radius: 18px; opacity: 0; pointer-events: none; transform: scaleX(.7); transform-origin: 0 50%;
-  box-shadow: inset 0 0 0 2px #ff6b6b, 0 0 60px -10px rgb(255 107 107 / .75); background: rgb(255 107 107 / .07); transition: opacity .6s var(--ease), transform .8s var(--ease); }
-.problem[data-step="3"] .fact.hot::after { opacity: 1; transform: none; }
-.fact > * { transition: opacity .6s var(--ease); }
-.problem[data-step="3"] .fact:not(.hot) > * { opacity: .3 !important; }
-.problem[data-step="3"] .fact.hot .sol { background: linear-gradient(95deg, #ff6b6b, #ff9f43); -webkit-background-clip: text; background-clip: text; }
-@keyframes solIn { from { opacity: 0; translate: -30px -50%; filter: blur(8px); } to { opacity: 1; translate: 0 -50%; filter: none; } }
+.problem:is([data-step="2"], [data-step="3"]) .fact .to { animation: arrowIn .5s var(--ease) calc(.9s + var(--i) * .85s) backwards; }
+@keyframes arrowIn { from { opacity: 0; translate: -40px -50%; } to { opacity: 1; translate: 0 -50%; } }
+.problem:is([data-step="2"], [data-step="3"]) .fact .sol { animation: solIn .7s var(--ease) calc(1.25s + var(--i) * .85s) backwards; }
 .problem:is([data-step="2"], [data-step="3"]) .pb-cover { opacity: 1; visibility: visible; transition: opacity .7s var(--ease); }
 .problem:is([data-step="2"], [data-step="3"]) .pb-cover::before, .problem:is([data-step="2"], [data-step="3"]) .pb-cover .eyebrow, .problem:is([data-step="2"], [data-step="3"]) .pb-cover .sub { opacity: 0; }
-.problem:is([data-step="2"], [data-step="3"]) .pb-t { transform: translateY(345px) scale(.36); }
+.problem:is([data-step="2"], [data-step="3"]) .pb-t { animation: shrinkDown 1.2s cubic-bezier(.65, 0, .25, 1) both; }
+@keyframes shrinkDown { from { transform: none; } to { transform: translateY(345px) scale(.36); } }
 .problem[data-step="1"] .facts { opacity: .22; filter: blur(10px); transform: scale(.94); }
 .problem[data-step="1"] .pb-cover { opacity: 1; visibility: visible; transition: opacity .7s var(--ease); }
 .problem[data-step="1"] .pb-t { animation: slamIn 1s cubic-bezier(.2, .9, .25, 1) .1s both; }
 .problem[data-step="1"] .pb-cover .eyebrow, .problem[data-step="1"] .pb-cover .sub { animation: rise 1s var(--ease) .6s both; }
 @keyframes slamIn { from { opacity: 0; transform: scale(1.35); filter: blur(18px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* ---------- s7 four products: each rule (flown in from the table) points at the product it takes ---------- */
+.slide.products { display: block; padding: 0; }
+.pd { position: absolute !important; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 40px; padding: 0 130px; }
+.pd-row { display: grid; grid-template-columns: 640px 90px 1fr; align-items: center; text-align: left; }
+.pd-rule { font: 600 34px/1.15 var(--display); letter-spacing: -.015em; transform-origin: 0 50%; }
+.pd-rule.hr { color: #ff8f7a; }
+.pd-to { font: 500 44px/1 var(--display); color: var(--fg-3); }
+.pd-prod { display: flex; align-items: center; gap: 24px; }
+.pd-prod b { font: 700 48px/1.05 var(--display); letter-spacing: -.03em; }
+.pd-ico { width: 84px; height: 84px; flex: none; display: grid; place-items: center; border-radius: 22px; border: 1.5px solid transparent;
+  background: linear-gradient(#110f1c, #0b0a11) padding-box, var(--grad) border-box; box-shadow: 0 0 50px -12px rgb(123 85 255 / .8); }
+.pd-ico svg { width: 46px; height: 46px; fill: none; stroke: url(#ig); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.pd-to, .pd-prod { opacity: 0; }
+.slide.active.products .pd-to { animation: rise .6s var(--ease) calc(1.1s + var(--i) * .95s) both; }
+.slide.active.products .pd-prod { animation: prodIn .9s cubic-bezier(.34, 1.4, .64, 1) calc(1.25s + var(--i) * .95s) both; }
+@keyframes prodIn { from { opacity: 0; transform: translateX(-24px) scale(.9); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+/* without the hand-off (jumping straight here), the rules rise in on their own */
+.slide.active.products:not(.fly) .pd-rule { animation: rise .8s var(--ease) calc(.2s + var(--i) * .12s) both; }
+.slide.active.products.fly, .slide.active.compare.fly { transition: opacity .25s var(--ease), transform 1.2s var(--ease); }
+.slide.compare.past .cmp .rh { visibility: hidden; }
+
+/* ---------- s8 one product: a flat cube net takes the four products, folds into a cube, and turns ---------- */
+/* each face is nested in the face it folds from, with its hinge as the transform origin, so folding is one rotation per face */
+.slide.onecube { padding: 0; }
+.cube-wrap { width: 260px; height: 260px; perspective: 1900px; }
+.cube-tilt, .cube { position: relative; width: 260px; height: 260px; transform-style: preserve-3d; transform-origin: 50% 50% -130px; }
+.cf { position: absolute; left: 0; top: 0; width: 260px; height: 260px; transform-style: preserve-3d; backface-visibility: hidden; -webkit-backface-visibility: hidden; border-radius: 18px;
+  background: linear-gradient(155deg, rgb(41 34 78 / .96), rgb(12 11 19 / .97) 70%);
+  box-shadow: inset 0 0 0 1.5px rgb(167 139 255 / .75), inset 0 1px 0 2px rgb(255 255 255 / .06), inset 0 0 70px -24px rgb(139 107 255 / .7); }
+.cf.cap { background: radial-gradient(70% 70% at 50% 50%, rgb(139 107 255 / .45), rgb(14 12 24 / .97)); }
+.fL { left: -100%; transform-origin: 100% 50%; --fold: rotateY(-90deg); }
+.fR, .fB { left: 100%; transform-origin: 0 50%; --fold: rotateY(90deg); }
+.fT { top: -100%; transform-origin: 50% 100%; --fold: rotateX(90deg); }
+.fD { top: 100%; transform-origin: 50% 0; --fold: rotateX(-90deg); }
+.cf-in { position: absolute; inset: 0; display: grid; place-items: center; }
+.cf-c { display: flex; flex-direction: column; align-items: center; gap: 18px; text-align: center; }
+.cf-c b { font: 700 30px/1.1 var(--display); letter-spacing: -.02em; max-width: 220px; }
+.cf-c .pd-ico { width: 92px; height: 92px; border-radius: 24px; }
+.cf-c .pd-ico svg { width: 50px; height: 50px; }
+/* the sequence: net lies flat (centred), products land, sides fold up (the back one a beat later), the cube tilts, grows and starts to turn */
+/* past as well as active, so the cube stays folded while the slide fades out instead of flashing the net */
+.slide.onecube:is(.active, .past) .cf:not(.fF) { animation: fold 1.2s cubic-bezier(.6, 0, .2, 1) 1.4s both; }
+.slide.onecube:is(.active, .past) .fB { animation-delay: 1.9s; }
+@keyframes fold { from { transform: none; } to { transform: var(--fold); } }
+.slide.onecube:is(.active, .past) .cube-tilt { animation: settle 1.6s cubic-bezier(.6, 0, .2, 1) 1.5s both; }
+@keyframes settle { from { transform: translateX(-130px); } to { transform: rotateX(-16deg) scale(1.35); } }
+/* one slow turn over 5s, then two turns that speed up, then a steady spin of one turn per 1.2s.
+   The ramp's ends match both speeds: start slope .3 = 72deg/s over its 240deg/s average, end slope 1.25 = 300deg/s */
+.slide.onecube:is(.active, .past) .cube { animation: turnSlow 5s linear 3.4s both, rampUp 3s cubic-bezier(.33, .1, .6, .5) 8.4s forwards, spinFast 1.2s linear 11.4s infinite; }
+@keyframes turnSlow { from { transform: rotateY(0deg); } to { transform: rotateY(-360deg); } }
+@keyframes rampUp { from { transform: rotateY(0deg); } to { transform: rotateY(-720deg); } }
+@keyframes spinFast { from { transform: rotateY(0deg); } to { transform: rotateY(-360deg); } }
+/* without the hand-off the products simply fade onto the net */
+.slide.active.onecube:not(.fly) .cf-c { animation: rise .7s var(--ease) calc(.2s + var(--k) * .12s) both; }
+.slide.active.onecube.fly { transition: opacity .25s var(--ease), transform 1.2s var(--ease); }
+.slide.products.past .pd-prod { visibility: hidden; }
+
+/* ---------- s3 build 2: the data steps back and the audience is named in full, with a light sweeping through the words ---------- */
+.aud-cover { position: absolute !important; inset: 0; z-index: 6 !important; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; text-align: center;
+  opacity: 0; visibility: hidden; transition: opacity .7s var(--ease), visibility 0s linear .7s;
+  background: radial-gradient(75% 75% at 50% 50%, rgb(12 10 22 / .86), rgb(0 0 0 / .95)); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.aud-cover.on { opacity: 1; visibility: visible; transition: opacity .7s var(--ease); }
+.aud-t { font: 700 108px/1.04 var(--display); letter-spacing: -.04em; }
+.aud-t span { --j: 0; display: block; padding: .04em .08em .16em; margin: -.04em -.08em -.16em;
+  background: linear-gradient(100deg, #f5f5f7 0%, #f5f5f7 32%, #c9b8ff 42%, #6f8cff 50%, #ff8f7a 58%, #f5f5f7 68%, #f5f5f7 100%); background-size: 320% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.aud-cover.on .aud-t span { animation: rise .9s var(--ease) calc(.25s + var(--j) * .2s) both, sweep 3.2s cubic-bezier(.45, 0, .25, 1) calc(1s + var(--j) * .25s) infinite; }
+@keyframes sweep { 0% { background-position: 100% 0; } 55%, 100% { background-position: 0% 0; } }
+.aud-cover.on .eyebrow { animation: rise .8s var(--ease) .1s both; }
+.aud-cover.on .sub { animation: rise .8s var(--ease) .8s both; }
 
 /* ---------- s5 Tony (split with a product shot) ---------- */
 .slide.split { flex-direction: row; justify-content: space-between; text-align: left; gap: 70px; }
@@ -490,12 +555,16 @@ h1, h2, h3, p { margin: 0; }
 .cmp .ck { width: 24px; height: 24px; fill: none; stroke: var(--fg-2); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .cmp .dash { color: var(--fg-3); }
 
-/* the two rules we lead on keep their coral from the problem slide */
-.cmp > div.rh.hr { color: #ff8f7a; font-weight: 600; }
+/* build 1: coral bands pop onto the two rules we lead on, and their labels turn coral */
+.hl-band { position: absolute !important; z-index: 2 !important; left: -14px; right: -14px; border-radius: 16px; pointer-events: none; opacity: 0; transform: scale(.97);
+  box-shadow: inset 0 0 0 2px #ff6b6b, 0 0 60px -10px rgb(255 107 107 / .75); background: rgb(255 107 107 / .08); transition: opacity .25s ease-out, transform .45s cubic-bezier(.34, 1.4, .64, 1); }
+.hl-band.on { opacity: 1; transform: none; }
+.cmp > div:not(.hl-band) { transition: opacity .6s var(--ease); }
+.compare[data-step="1"] .cmp > div.rh.hr { color: #ff8f7a; font-weight: 600; }
 /* arriving from the problem slide: the rule cells fly in (script), the rest of the table fades in behind them */
 .cmp .rh { transform-origin: 0 50%; }
 .compare.fly .cmp.in { animation: none; }
-.slide.active.compare.fly .cmp > div:not(.rh) { animation: rise .7s var(--ease) .2s backwards; }
+.slide.active.compare.fly .cmp > div:not(.rh):not(.hl-band) { animation: rise .7s var(--ease) .2s backwards; }
 /* the hand-off: the rules leave the problem slide at once, and the table slide shows up fast enough to catch them */
 .slide.active.compare.fly { transition: opacity .25s var(--ease), transform 1.2s var(--ease); }
 .slide.problem.past .fact .sol, .slide.problem.past .fact .to { visibility: hidden; }
@@ -810,8 +879,9 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
-  .data[data-step="1"] .vz-say { opacity: 1; clip-path: none; }
+  .data:is([data-step="1"], [data-step="2"]) .vz-say { opacity: 1; clip-path: none; }
   .problem:is([data-step="2"], [data-step="3"]) .fact .to, .problem:is([data-step="2"], [data-step="3"]) .fact .sol { opacity: 1; }
+  .products .pd-to, .products .pd-prod { opacity: 1; }
 }
 </style>
 
@@ -954,9 +1024,15 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
           <p class="src">BairesDev Dev Barometer, Q2 2026 · 1,569 developers</p>
         </div>
       </div>
+      <div class="aud-cover" data-f="2">
+        <p class="eyebrow grad">Who we build for</p>
+        <p class="aud-t"><span>Australian small and</span><span style="--j:1">medium-sized enterprises.</span></p>
+        <p class="sub">The businesses Airwallex serves.</p>
+      </div>
       <aside class="notes">
         <p>84% of developers use AI. Juniors love the speed: 75% say it makes them faster. But only 16% of seniors say juniors fully understand the AI code they submit.</p>
         <p>[click: the three cards light up in turn] Everyone builds with AI. Juniors love the speed. Seniors see the gap.</p>
+        <p>[click: the slide dims] So who feels this most? Australian small and medium-sized enterprises. The businesses Airwallex serves.</p>
       </aside>
     </section>
 
@@ -990,9 +1066,9 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     <!-- 5 · problem: four facts, the problem they add up to, then what a fix must do -->
     <section class="slide problem" data-title="The problem" data-speaker="Tony" data-at="1:15">
       <div class="facts">
-        <div class="fact in hot" style="--d:0.30s; --i:0"><span class="fk">Fact 01</span><p>SMEs need <span class="grad">AI’s speed.</span></p><span class="to" aria-hidden="true">→</span><p class="sol">Keep the AI, keep the speed.</p></div>
+        <div class="fact in" style="--d:0.30s; --i:0"><span class="fk">Fact 01</span><p>SMEs need <span class="grad">AI’s speed.</span></p><span class="to" aria-hidden="true">→</span><p class="sol">Keep the AI, keep the speed.</p></div>
         <div class="fact in" style="--d:0.85s; --i:1"><span class="fk">Fact 02</span><p>Juniors ship more, <span class="warn">understand less.</span></p><span class="to" aria-hidden="true">→</span><p class="sol">Make them explain what they ship.</p></div>
-        <div class="fact in hot" style="--d:1.40s; --i:2"><span class="fk">Fact 03</span><p>Seniors review more, <span class="warn">with less time.</span></p><span class="to" aria-hidden="true">→</span><p class="sol">Send seniors only the real gaps.</p></div>
+        <div class="fact in" style="--d:1.40s; --i:2"><span class="fk">Fact 03</span><p>Seniors review more, <span class="warn">with less time.</span></p><span class="to" aria-hidden="true">→</span><p class="sol">Send seniors only the real gaps.</p></div>
         <div class="fact in" style="--d:1.95s; --i:3"><span class="fk">Fact 04</span><p>AI failures are <span class="warn">already common.</span></p><span class="to" aria-hidden="true">→</span><p class="sol">Catch the gap before it merges.</p></div>
       </div>
       <div class="pb-cover" data-f="1">
@@ -1000,12 +1076,11 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         <p class="pb-t">Juniors stop <span class="warn">growing.</span></p>
         <p class="sub">They ship with AI, but never build the skill to take the wheel.</p>
       </div>
-      <i hidden data-f="2"></i><i hidden data-f="3"></i>
+      <i hidden data-f="2"></i>
       <aside class="notes">
         <p>So here's what we know. SMEs need AI's speed. Juniors ship more, and understand less. Seniors review more, with less time. And AI failures are already common.</p>
         <p>[click] Put together: juniors stop growing. And a small company that can't grow its juniors can't grow its next seniors.</p>
         <p>[click: each fact turns into a rule] So a fix has to do four things. SMEs need the speed, so keep the AI. Juniors understand less, so make them explain what they ship. Seniors have no time, so send them only the real gaps. And failures are common, so catch the gap before it merges.</p>
-        <p>[click: two rules light up] The two that matter most: keep the AI, and protect the seniors' time.</p>
         <p>[→ next slide: the four rules fly into the table]</p>
       </aside>
     </section>
@@ -1017,27 +1092,47 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       <p class="src in" style="--d:.5s">From each vendor’s public website and docs, 1 Oct 2026; we did not try the products. — means not offered or not stated.</p>
       <aside class="notes">
         <p>Most tools make you learn by taking AI away. Coding tests like HackerRank and CodeSignal flag AI use, and learning modes like ChatGPT Study Mode hold back the answer. No company will slow its juniors down like that at work. PR quiz tools keep AI, but skip quizzes only by how risky the PR looks.</p>
-        <p>Look at the two in coral. Keeping the AI rules out tests and learning modes. And nobody sends seniors only the real gaps.</p>
+        <p>[click: two rows light up] The two that matter most for a small company. Keeping the AI rules out tests and learning modes. And nobody sends seniors only the real gaps.</p>
+        <p>[→ next slide: the rules fly across]</p>
         <p>Others ask, did you understand this PR? We ask, are you getting better at reading AI's code?</p>
       </aside>
     </section>
 
-    <!-- 12 · back to the car -->
-    <section class="slide" data-title="Keep the autopilot" data-speaker="Tony" data-at="2:05">
-      <span class="ico in" style="width:76px;height:76px"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6"/><path d="M3.2 11.2c3 .1 5.4.3 6.3.8M20.8 11.2c-3 .1-5.4.3-6.3.8M12 14.6V21"/></svg></span>
-      <p class="punch in" style="--d:.15s">Keep the autopilot.</p>
-      <p class="punch grad in" style="--d:.7s">Check the driver.</p>
-      <p class="sub in" style="--d:1.4s">AI does the beginner work now. The new first rung is understanding it.</p>
-      <p class="cap in" style="--d:2.1s">Viva makes every pull request one practice rep, with someone correcting you.</p>
-      <p class="src in" style="--d:2.7s">Anthropic RCT, Jan 2026, n = 52: the biggest gap was debugging; developers who generated code, then asked questions to understand it, kept their learning.<br>Explaining in your own words (Chi et al., 1989) and being tested (Roediger &amp; Karpicke, 2006) both improve learning.</p>
+    <!-- 7 · four products: what each rule takes, said the way a launch would -->
+    <section class="slide products" data-title="Four products" data-speaker="Tony" data-at="2:05">
+      <div class="pd">
+        <div class="pd-row" style="--i:0"><p class="pd-rule hr">Keep the AI, keep the speed.</p><span class="pd-to" aria-hidden="true">→</span><div class="pd-prod"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span><b>An AI-first workflow</b></div></div>
+        <div class="pd-row" style="--i:1"><p class="pd-rule">Make them explain what they ship.</p><span class="pd-to" aria-hidden="true">→</span><div class="pd-prod"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg></span><b>A three-minute viva</b></div></div>
+        <div class="pd-row" style="--i:2"><p class="pd-rule hr">Send seniors only the real gaps.</p><span class="pd-to" aria-hidden="true">→</span><div class="pd-prod"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.2V18l-4 2v-7.8z"/></svg></span><b>A senior triage queue</b></div></div>
+        <div class="pd-row" style="--i:3"><p class="pd-rule">Catch the gap before it merges.</p><span class="pd-to" aria-hidden="true">→</span><div class="pd-prod"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.2c0 4.4-3 8-7 9.6-4-1.6-7-5.2-7-9.6V6z"/><path d="M8.8 12.2l2.2 2.2 4.4-4.6"/></svg></span><b>A merge gate</b></div></div>
+      </div>
       <aside class="notes">
-        <p>Companies don't need to take AI away, just as we don't take the technology out of modern cars. They need to know the person behind it can understand it, explain it and take control.</p>
-        <p>Every expert got good through small work with someone correcting them. AI now does that work, so the bottom rung has moved: the first skill is understanding what AI wrote. Viva makes every pull request one practice rep, with correction.</p>
+        <p>So what would it take? [each product appears] An AI-first workflow, so juniors keep the speed. A three-minute viva, so they explain what they ship. A senior triage queue, so seniors only see the real gaps. And a merge gate, so the gap is caught before it merges.</p>
+      </aside>
+    </section>
+
+    <!-- 8 · one product: the four products land on a flat cube net, which folds itself into one turning cube -->
+    <section class="slide onecube" data-title="One product" data-speaker="Tony" data-at="2:25">
+      <div class="cube-wrap" aria-label="An AI-first workflow, a three-minute viva, a senior triage queue and a merge gate are the four sides of one cube">
+        <div class="cube-tilt"><div class="cube">
+          <div class="cf fF"><div class="cf-in"><div class="cf-c" data-k="0" style="--k:0"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5l1.9 5 5 1.9-5 1.9-1.9 5-1.9-5-5-1.9 5-1.9z"/><path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></svg></span><b>An AI-first workflow</b></div></div>
+            <div class="cf fL"><div class="cf-in"><div class="cf-c" data-k="3" style="--k:3"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.2c0 4.4-3 8-7 9.6-4-1.6-7-5.2-7-9.6V6z"/><path d="M8.8 12.2l2.2 2.2 4.4-4.6"/></svg></span><b>A merge gate</b></div></div></div>
+            <div class="cf fR"><div class="cf-in"><div class="cf-c" data-k="1" style="--k:1"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg></span><b>A three-minute viva</b></div></div>
+              <div class="cf fB"><div class="cf-in"><div class="cf-c" data-k="2" style="--k:2"><span class="pd-ico"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.2V18l-4 2v-7.8z"/></svg></span><b>A senior triage queue</b></div></div></div>
+            </div>
+            <div class="cf fT cap"></div>
+            <div class="cf fD cap"></div>
+          </div>
+        </div></div>
+      </div>
+      <aside class="notes">
+        <p>An AI-first workflow. A three-minute viva. A senior triage queue. A merge gate. [they land on the net, it folds into a cube and spins faster and faster] Are you getting it? These aren't four products. [pause] They're one.</p>
+        <p>[click] And we call it Viva.</p>
       </aside>
     </section>
 
     <!-- 13 · reveal -->
-    <section class="slide reveal" data-title="Introducing Viva" data-speaker="Tony" data-at="2:30" data-glow>
+    <section class="slide reveal" data-title="Introducing Viva" data-speaker="Tony" data-at="2:40" data-glow>
       <div class="halo rise"></div>
       <div class="rv">
         <p class="cap in" style="--d:.3s">Introducing</p>
@@ -1057,13 +1152,13 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
         </div>
       </div>
       <aside class="notes">
-        <p>That's why we created Viva. [pause] Viva checks the coder, not the code.</p>
+        <p>We call it Viva. [pause] Viva checks the coder, not the code.</p>
         <p>[the pull request slides in by itself] It's one more required check on the pull request. Before a junior's PR merges, they explain it.</p>
       </aside>
     </section>
 
     <!-- 5 · audience -->
-    <section class="slide" data-title="Target audience" data-speaker="Tony" data-at="2:45">
+    <section class="slide" data-title="Target audience" data-speaker="Tony" data-at="2:55">
       <h2 class="h2 in">Built for the small company<br>that hires juniors and runs on AI.</h2>
       <p class="sub in" style="--d:.3s">And for the three people inside it.</p>
       <div class="trio">
@@ -1500,13 +1595,18 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       const cls = (ri === CMP.rows.length - 1 ? ' last' : '') + (r[4] ? ' hr' : '');
       html += `<div class="rh${cls}"${r[4] ? ' data-hl' : ''}>${r[0]}</div>` + r.slice(1, 4).map(v => cell(v, cls)).join('');
     });
-    cmp.innerHTML = html;
+    cmp.innerHTML = html + CMP.rows.filter(r => r[4]).map(() => '<div class="hl-band" data-f="1" aria-hidden="true"></div>').join('');
+    // lay a band over each lead row once the grid has sized itself
+    const bands = $$('.hl-band', cmp);
+    $$('[data-hl]', cmp).forEach((row, i) => Object.assign(bands[i].style, { top: row.offsetTop + 'px', height: row.offsetHeight + 'px' }));
   }
 
-  // the four rules on the problem slide fly into the table's first column when you move on to it
-  function flyRules(from, to) {
+  // the four rules travel with you: problem slide -> the table's first column -> the product slide's left column
+  const FLY = [['problem', 'compare', '.sol', '.cmp .rh'], ['compare', 'products', '.cmp .rh', '.pd-rule'], ['products', 'onecube', '.pd-prod', '.cf-c']];
+  function flyRules(from, to, fromSel, toSel) {
     const k = stage.getBoundingClientRect().width / 1600;
-    const sols = $$('.sol', from), heads = $$('.cmp .rh', to);
+    const sols = $$(fromSel, from), heads = $$(toSel, to).sort((m, n) => (m.dataset.k || 0) - (n.dataset.k || 0));
+    if (toSel === '.cf-c') return flyBoxes(sols, heads, k);
     heads.forEach((h, i) => {
       const a = sols[i].getBoundingClientRect(), b = h.getBoundingClientRect();
       const sc = parseFloat(getComputedStyle(sols[i]).fontSize) / parseFloat(getComputedStyle(h).fontSize);
@@ -1514,6 +1614,16 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
       const dx = (a.left - b.left) / k - pad * (sc - 1), dy = (a.top + a.height / 2 - b.top - b.height / 2) / k;
       h.animate([{ transform: `translate(${dx}px, ${dy}px) scale(${sc})`, color: h.classList.contains('hr') ? '#ff8f7a' : '#b7a6ff' }, { transform: 'none', color: getComputedStyle(h).color }],
         { duration: 1100, delay: i * 70, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
+    });
+  }
+
+  // whole blocks (icon and name) move centre to centre and grow from their row size to the face
+  function flyBoxes(src, dst, k) {
+    dst.forEach((d, i) => {
+      const a = src[i].getBoundingClientRect(), b = d.getBoundingClientRect();
+      const dx = (a.left + a.width / 2 - b.left - b.width / 2) / k, dy = (a.top + a.height / 2 - b.top - b.height / 2) / k;
+      d.animate([{ transform: `translate(${dx}px, ${dy}px) scale(${(a.height / b.height).toFixed(3)})` }, { transform: 'none' }],
+        { duration: 1000, delay: i * 90, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
     });
   }
 
@@ -1585,10 +1695,10 @@ body.presenter .viewport { right: 38%; bottom: 30%; }
     step = Math.max(0, Math.min(maxStep(slides[cur]), st));
     const entered = cur !== prev;
     if (entered && cur === prev + 1 && prevStep === 1 && step === 0 && !remote) openScreen(slides[prev]);
-    const fly = entered && cur === prev + 1 && slides[prev].classList.contains('problem') && slides[cur].classList.contains('compare') && !reduced && !isPresenter;
-    slides[cur].classList.toggle('fly', fly);
+    const hop = entered && cur === prev + 1 && !reduced && !isPresenter && FLY.find(([a, b]) => slides[prev].classList.contains(a) && slides[cur].classList.contains(b));
+    if (entered) slides[cur].classList.toggle('fly', !!hop);
     render(entered, entered ? cur > prev : step > prevStep);
-    if (fly) flyRules(slides[prev], slides[cur]);
+    if (hop) flyRules(slides[prev], slides[cur], hop[2], hop[3]);
     if (!remote) broadcast();
   }
 
