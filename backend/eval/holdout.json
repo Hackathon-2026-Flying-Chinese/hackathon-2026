@@ -1,0 +1,8 @@
+[
+  {"repo": "saleor/saleor", "number": 19527, "why": "access control: permission check for attribute update and delete"},
+  {"repo": "pretix/pretix", "number": 6575, "why": "input validation: VAT ID revalidation after a country change"},
+  {"repo": "django-oscar/django-oscar", "number": 4616, "why": "ordering: voucher set usage sorting"},
+  {"repo": "saleor/saleor", "number": 19821, "why": "missing values: checkout payload when the delivery is deleted"},
+  {"repo": "django-oscar/django-oscar", "number": 4594, "why": "concurrency: deadlock between concurrent order placements"},
+  {"repo": "go-gitea/gitea", "number": 39521, "why": "authentication: approving changed OAuth2 scopes (Go)"}
+]

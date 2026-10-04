@@ -1,0 +1,16 @@
+[
+  {"repo": "django-oscar/django-oscar", "number": 4623, "why": "access control: a view that edited any notification by id"},
+  {"repo": "django-oscar/django-oscar", "number": 4455, "why": "money and rounding"},
+  {"repo": "saleor/saleor", "number": 19463, "why": "authentication: confirming a disabled account"},
+  {"repo": "saleor/saleor", "number": 19662, "why": "empty values: all attributes instead of none"},
+  {"repo": "saleor/saleor", "number": 19258, "why": "input validation: weight values"},
+  {"repo": "pretix/pretix", "number": 6201, "why": "escaping in a payment QR code"},
+  {"repo": "pretix/pretix", "number": 6532, "why": "business logic edge case: dependent availabilities"},
+  {"repo": "mealie-recipes/mealie", "number": 8295, "why": "input validation: whitespace-only comments"},
+  {"repo": "mealie-recipes/mealie", "number": 8379, "why": "time: webhooks around midnight"},
+  {"repo": "zulip/zulip", "number": 40233, "why": "access control: group-based metadata access"},
+  {"repo": "documenso/documenso", "number": 3166, "why": "SSRF via IPv4-mapped IPv6 (TypeScript)"},
+  {"repo": "documenso/documenso", "number": 3153, "why": "template variable parsing (TypeScript)"},
+  {"repo": "go-gitea/gitea", "number": 39508, "why": "ordering tiebreaker (Go)"},
+  {"repo": "go-gitea/gitea", "number": 39402, "why": "access control: unblocking a user promoted to admin (Go)"}
+]
