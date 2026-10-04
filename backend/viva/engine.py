@@ -3,17 +3,23 @@ answer key, the run facts and the scoring never reach the browser: a session vie
 task only, and the right answers come back in the assessment after the viva.
 
 Content only: never face, voice tone or expression, and never who wrote the code or how much AI helped.
+
+Every session belongs to a signed-in person and reads one task pack: the sample from tasks.json, or the pack generated
+from the diff of a real pull request (taskgen.py). The concept level is per person and per concept.
 """
 import base64
 import hashlib
 import hmac
+import logging
 import math
 import re
 import secrets
 import time
 from urllib.parse import quote, unquote
 
-from . import ai
+from . import ai, sandbox, stt
+
+log = logging.getLogger("viva.engine")
 
 ITEMS = ("behaviour", "requirement", "evidence")
 CONF = ("low", "medium", "high")
@@ -26,6 +32,13 @@ HEAD = {
 PROBE_LABEL = {"concrete": "Be concrete", "reasoning": "Why this way", "consequence": "What could go wrong"}
 STALE = "This interview has already changed. Reload to continue; nothing was overwritten."
 LINK_TTL = 300
+PR_KEYS = ("repo", "number", "title", "author", "branch", "base", "sha", "files", "url")
+PACK_STATUS = {
+    "generating": "Viva is reading your diff and writing the questions. This takes a minute or two.",
+    "needs_review": "Viva could not verify its questions for this change, so it will not ask them.",
+    "failed": "Viva could not prepare questions for this change.",
+    "skipped": "This change needs no check.",
+}
 
 
 class Fail(Exception):
@@ -168,15 +181,70 @@ def segments_for(text, duration):
     return out
 
 
+def sample_pack(content):
+    """The sample pull request of tasks.json as a pack, the same shape as a generated one."""
+    sc = content["scoring"]
+    return {"id": "sample", "source": "sample", "pr": content["pr"],
+            "concept": {"key": sc["concept"].get("key", "access-control"), "name": sc["concept"]["name"]},
+            "scoring": {"r": sc["r"], "n": sc["n"], "why": sc["why"]},
+            "sets": content["sets"], "predictions": content.get("predictions", [])}
+
+
+class Packs:
+    """Task packs: the sample, and one per pull request head in the store. Only a ready pack is ever served."""
+
+    def __init__(self, store, sample):
+        self.store, self.sample, self.cache = store, sample, {}
+
+    def get(self, pid):
+        if pid == "sample":
+            return self.sample
+        if pid not in self.cache:
+            row = self.store.pack(pid)
+            if not row or row["status"] != "ready":
+                fail(404, "This check is no longer available.")
+            self.cache[pid] = row["pack"]
+        return self.cache[pid]
+
+    def find(self, repo, number, sha=None):
+        return self.store.find_pack(repo, int(number), sha)
+
+    def put(self, pr, status, pack=None, report=None):
+        """Record a pack (or just its status) for the pull request head in pr. Returns the pack id."""
+        # Only what the pages show: the description and the files' whole text were for the generator.
+        pr = {k: v for k, v in pr.items() if k in PR_KEYS}
+        pack = {k: v for k, v in pack.items() if k != "quality"} if pack else None  # the report is kept on its own
+        content = {**pack, "pr": {**{k: v for k, v in (pack.get("pr") or {}).items() if k in PR_KEYS}, **pr}} if pack else {"pr": pr}
+        with self.store.tx():
+            pid = self.store.put_pack(pr["repo"], int(pr["number"]), pr["sha"], status, content, report)
+        self.cache.pop(pid, None)
+        return pid
+
+
 class Engine:
     def __init__(self, store, content, demo=False):
-        self.store, self.C, self.demo = store, content, demo
-        self.L, self.SC = content["limits"], content["scoring"]
+        self.store, self.demo = store, demo
+        self.L, self.SC = content["limits"], content["scoring"]  # the interview limits and the scoring standard, for every pack
+        self.packs = Packs(store, sample_pack(content))
+        self.listeners = []  # fn(event, session), called after a change commits: "finished", "decided", "retake"
+
+    def emit(self, event, s):
+        for fn in list(self.listeners):
+            try:
+                fn(event, s)
+            except Exception:  # a listener (the GitHub check) never breaks the interview
+                log.exception("listener failed on %s", event)
 
     # ---------- task lookups ----------
+    def pack_of(self, s):
+        return self.packs.get(s.get("pack_id") or "sample")
+
+    def concept_of(self, s):
+        return s.get("concept") or self.packs.sample["concept"]
+
     def set_of(self, s):
         """Attempt 1 reads the first task and the retake the second (same concept, different code), so no question repeats."""
-        sets = self.C["sets"]
+        sets = self.pack_of(s)["sets"]
         return sets[min(s["attempt"], len(sets)) - 1]
 
     def task_view(self, s):
@@ -184,7 +252,10 @@ class Engine:
         st = self.set_of(s)
         t = st["task"]
         return {
-            "fn": t["fn"], "file": t["file"], "code": t["code"], "rule": t["rule"], "tests": t["tests"], "retake": t["retake"],
+            "fn": t["fn"], "file": t["file"], "code": t["code"], "rule": t["rule"], "tests": t["tests"],
+            "origin": t.get("origin", "diff"),  # "variant": written for the retake, not code from the pull request
+            # The retake line says whether the code needs fixing, which is question 2's answer: only with the results.
+            "retake": t["retake"] if s["stage"] == "results" else "",
             "items": {k: {"q": t["items"][k]["q"], "options": t["items"][k]["options"]} for k in ITEMS},
             "questions": {k: {"label": v["label"]} for k, v in st["questions"].items()},
         }
@@ -201,56 +272,107 @@ class Engine:
     def band_of(self, n):
         return next(b["key"] for b in self.SC["bands"] if b["from"] <= n <= b["to"])
 
-    def level_events(self, sessions):
-        evs = [{**e, "title": s["pr"]["title"]} for s in sessions for e in s["level_events"]]
+    def level_events(self, sessions, key=None):
+        """One person's level changes, oldest first; with a key, on that concept only."""
+        evs = [{**e, "title": s["pr"]["title"], "concept": self.concept_of(s)["key"]} for s in sessions for e in s["level_events"]
+               if key is None or self.concept_of(s)["key"] == key]
         return sorted(evs, key=lambda e: e["at"])
 
-    def level_of(self, sessions):
+    def level_of(self, sessions, key):
         lv = self.SC["concept"]["start"]
-        for e in self.level_events(sessions):
+        for e in self.level_events(sessions, key):
             lv = self.clamp_level(lv + e["delta"])
         return lv
 
-    def points_for(self, level):
-        g = 1 if level >= 3 else 2 if level == 2 else 3
-        n = self.SC["r"] * self.SC["n"] * g
-        band, floor = self.band_of(n), None
-        if self.SC["r"] == 3 and band == "skip":  # the plan's hard rule for the highest risk
-            band, floor = "light", "Money flow is never skipped."
-        return {"r": self.SC["r"], "n": self.SC["n"], "g": g, "s": n, "band": band, "floor": floor, "level": level}
+    def level_for_login(self, login, key):
+        """The level of a GitHub login on a concept, for a check prepared before its author ever signed in."""
+        with self.store.tx():
+            u = self.store.user_by_login(login) if login else None
+            return self.level_of(self.store.sessions(u["id"]), key) if u else self.SC["concept"]["start"]
 
-    def why(self, level):
-        return {"r": self.SC["why"]["r"], "n": self.SC["why"]["n"], "g": f"{self.SC['concept']['name']} is at level {level} of 3."}
+    def points_for(self, pack, level):
+        r, nov = pack["scoring"]["r"], pack["scoring"]["n"]
+        g = 1 if level >= 3 else 2 if level == 2 else 3
+        n = r * nov * g
+        band, floor = self.band_of(n), None
+        if r == 3 and band == "skip":  # the plan's hard rule for the highest risk
+            band, floor = "light", "Money flow is never skipped."
+        return {"r": r, "n": nov, "g": g, "s": n, "band": band, "floor": floor, "level": level}
+
+    @staticmethod
+    def why(pack, level):
+        w = pack["scoring"]["why"]
+        return {"r": w["r"], "n": w["n"], "g": f"{pack['concept']['name']} is at level {level} of 3."}
 
     def can_retake(self, s):
         return s["stage"] == "results" and bool(s["assessment"]) and s["assessment"]["verdict"] != "shown" and s["attempt"] < self.L["maxAttempts"]
 
     def scoring_view(self, sessions, s):
-        sc, rv = s["scoring"], s["review"]
+        """sessions: the same person's, for the level now and the next similar change."""
+        sc, rv, pack, concept = s["scoring"], s["review"], self.pack_of(s), self.concept_of(s)
         status = ("none" if s["stage"] != "results" else "retake" if not rv or rv["status"] == "not_requested"
                   else "pending" if rv["status"] == "pending" else "earned" if rv.get("verdict") == "correction" else "declined")
         ev = s["level_events"][-1] if s["level_events"] else None
         return {
             **sc, "max": self.SC["max"], "status": status, "points": sc["s"] if status == "earned" else 0,
-            "why": self.why(sc["level"]), "rubric": self.SC["rows"], "bands": self.SC["bands"],
-            "concept": {"name": self.SC["concept"]["name"], "before": sc["level"],
+            "why": self.why(pack, sc["level"]), "rubric": self.SC["rows"], "bands": self.SC["bands"],
+            "concept": {"key": concept["key"], "name": concept["name"], "before": sc["level"],
                         "after": self.clamp_level(sc["level"] + ev["delta"]) if ev else sc["level"], "reason": ev["reason"] if ev else None},
-            "next": self.points_for(self.level_of(sessions)),
+            "next": self.points_for(pack, self.level_of(sessions, concept["key"])),
         }
 
     # ---------- state and views ----------
-    def clean_pr(self, inp=None):
-        d, inp = self.C["pr"], inp or {}
-        def text(v, mx):
-            return v.strip()[:mx] if isinstance(v, str) and v.strip() else None
+    @staticmethod
+    def pr_text(v, mx):
+        return v.strip()[:mx] if isinstance(v, str) and v.strip() else None
+
+    @staticmethod
+    def pr_number(inp):
         try:
             number = int(inp.get("number"))
         except (TypeError, ValueError):
-            number = 0
-        return {"repo": text(inp.get("repo"), 80) or d["repo"], "number": number if number > 0 else d["number"],
+            return 0
+        return number if number > 0 else 0
+
+    def clean_pr(self, inp=None):
+        """The sample pull request, with what the link carries laid over it (a demo can show any PR name)."""
+        d, inp, text = self.packs.sample["pr"], inp or {}, self.pr_text
+        number = self.pr_number(inp)
+        return {"repo": text(inp.get("repo"), 80) or d["repo"], "number": number or d["number"],
                 "title": text(inp.get("title"), 120) or d["title"], "author": text(inp.get("author"), 40) or d["author"],
                 "branch": text(inp.get("branch"), 60) or d["branch"], "base": text(inp.get("base"), 40) or d["base"],
                 "sha": text(inp.get("sha"), 12) or d["sha"], "files": d["files"]}
+
+    def pack_for(self, inp):
+        """The pack a check link points at: (pack, None) for the sample, (pack or None, row) for a generated one. A pack
+        that is not ready comes back as None with its row, so the page can say why. Unknown pull requests get the
+        sample only in demo mode."""
+        inp = inp or {}
+        repo, number = self.pr_text(inp.get("repo"), 120), self.pr_number(inp)
+        sample = self.packs.sample
+        if not repo or not number:
+            return sample, None
+        sha = self.pr_text(inp.get("sha"), 40)
+        row = self.packs.find(repo, number, sha if sha and re.fullmatch(r"[0-9a-fA-F]{7,40}", sha) else None)
+        if row:
+            return (self.packs.get(row["id"]) if row["status"] == "ready" else None), row
+        if self.demo or (repo.lower() == sample["pr"]["repo"].lower() and number == sample["pr"]["number"]):
+            return sample, None
+        fail(404, "Viva has no check for this pull request.")
+
+    def pr_for(self, pack, inp):
+        if pack["source"] == "sample":
+            return self.clean_pr(inp)
+        return {k: v for k, v in pack["pr"].items() if k in PR_KEYS}
+
+    def may_take(self, user, pack):
+        """A generated check is for the author of its pull request; the sample, and every check in demo mode, for anyone."""
+        if pack["source"] != "generated" or self.demo:
+            return True, None
+        author = str(pack["pr"].get("author") or "")
+        if author and user["login"].lower() == author.lower():
+            return True, None
+        return False, f"Only the author of this pull request ({author or 'unknown'}) can take its check."
 
     @staticmethod
     def turn_view(t):
@@ -258,7 +380,7 @@ class Engine:
         return {k: t.get(k) for k in keys}
 
     def view(self, s, presenter=False):
-        sessions = self.store.sessions()
+        sessions = self.store.sessions(s["user_id"])
         results = s["stage"] == "results"
         return {
             "id": s["id"], "stage": s["stage"], "version": s["version"], "created": s["created"],
@@ -283,8 +405,12 @@ class Engine:
     def limits(self):
         return {k: self.L[k] for k in ("minAnswerChars", "clipSeconds", "vivaPass")}
 
-    def get(self, sid):
-        return self.store.session(sid) or fail(404, "Session not found")
+    def get(self, sid, user):
+        """A session, only for the person it belongs to. Anyone else gets the same answer as for no session at all."""
+        s = self.store.session(sid)
+        if not s or s.get("user_id") != user["id"]:
+            fail(404, "Session not found")
+        return s
 
     @staticmethod
     def check_version(s, version):
@@ -339,9 +465,12 @@ class Engine:
         return self.make_turn(s, "probe:" + dim, self.L["standardTurns"] + 1, "follow-up") if dim else None
 
     def stand_in(self, s, key):
-        """Demo only: speaking is answered with a stand-in text until speech-to-text is connected."""
-        profile = self.settings()["voice"]
-        return self.set_of(s)["answers"][profile]["probe" if key.startswith("probe") else key]
+        """Demo only: speaking is answered with a stand-in text when speech-to-text is not available. Generated packs
+        have no stand-ins."""
+        answers = self.set_of(s).get("answers")
+        if not answers:
+            return None
+        return answers[self.settings()["voice"]]["probe" if key.startswith("probe") else key]
 
     def viva_turns(self, s):
         return [{"turn": t["turn"], "question": t["question"], "answer": t["answer_text"]} for t in s["interview"]["turns"] if t["answered"]]
@@ -356,7 +485,43 @@ class Engine:
         return {"file": t["file"], "code": t["code"], "rule": t["rule"], "facts": t["facts"],
                 "rubric": [{"id": p["id"], "text": p["text"]} for p in st["rubric"]], "turns": self.viva_turns(s)}
 
-    def assess(self, s, got):
+    def run_of(self, task):
+        """The sandbox run of a task's behaviour scenario, kept in the store by what ran. None when the task has no
+        harness or no sandbox is available; then the reveal shows the task's own account, labelled simulated."""
+        spec = task.get("run")
+        if not isinstance(spec, dict) or not sandbox.available():
+            return None
+        key = sandbox.key_of(spec.get("lang") or "", spec.get("harness") or "", task.get("code") or "")
+        with self.store.tx():
+            hit = self.store.run(key)
+        if hit:
+            return hit
+        res = sandbox.run_task(task)
+        if res and res["ok"]:
+            with self.store.tx():
+                self.store.put_run(key, res)
+        return res
+
+    @staticmethod
+    def reveal_of(task, run):
+        """What came back: from the run when it ran and printed the keyed option, else the task's own account."""
+        reveal = dict(task["reveal"])
+        if not run:
+            return reveal
+        obs = run.get("observed") or {}
+        agrees = bool(run["ok"]) and obs.get("option") == task["items"]["behaviour"]["correct"]
+        reveal["run"] = {"runner": run["runner"], "image": run.get("image"), "duration_ms": run["duration_ms"], "ok": bool(run["ok"]),
+                         "agrees": agrees, "stdout": (run.get("stdout") or "")[-2000:], "error": run.get("error"), "at": run["at"]}
+        if agrees:
+            for k in ("status", "result", "owner", "note"):
+                if isinstance(obs.get(k), str):
+                    reveal[k] = obs[k][:300]
+            rows = obs.get("rows")
+            if isinstance(rows, list) and all(isinstance(r, list) for r in rows):
+                reveal["rows"] = [[str(c)[:100] for c in r[:8]] for r in rows[:20]]
+        return reveal
+
+    def assess(self, s, got, run=None):
         st = self.set_of(s)
         task, answered = st["task"], [t for t in s["interview"]["turns"] if t["answered"]]
         checks = []
@@ -370,7 +535,7 @@ class Engine:
         return {
             "simulated": viva["source"] != "ai", "score": jsround(right / len(ITEMS) * 100), "verdict": verdict, "headline": HEAD[verdict],
             "checks": checks, "right": right, "confidence": s["predict"]["confidence"], "fn": task["fn"], "rule": task["rule"],
-            "reveal": task["reveal"], "viva": viva, "met": met, "rubric_size": len(st["rubric"]), "viva_pass": self.L["vivaPass"],
+            "reveal": self.reveal_of(task, run), "viva": viva, "met": met, "rubric_size": len(st["rubric"]), "viva_pass": self.L["vivaPass"],
             "questions": [{"turn": t["turn"], "label": t["label"], "question": t["question"], "source": t["source"], "by": t.get("by"),
                            "mode": t["mode"], "answer": t["answer_text"],
                            "segments": quote_marks(t["answer_text"], [p["quote"] for p in viva["points"] if p["met"] and p["turn"] == t["turn"]])}
@@ -378,31 +543,50 @@ class Engine:
         }
 
     # ---------- API ----------
-    def check(self, pr=None):
-        """What the GitHub check links to: the pull request and why it needs a check (Risk x Novelty x Gap at the current level)."""
+    def check(self, user, pr=None):
+        """What the GitHub check links to: the pull request, whether its questions are ready, whether this person may take
+        it, and why it needs a check (Risk x Novelty x Gap at their current level on its concept)."""
         with self.store.tx():
-            sc = self.points_for(self.level_of(self.store.sessions()))
-            return {"pr": self.clean_pr(pr), "scoring": {**sc, "max": self.SC["max"], "why": self.why(sc["level"]), "rubric": self.SC["rows"],
-                                                         "bands": self.SC["bands"], "concept": {"name": self.SC["concept"]["name"], "level": sc["level"]}}}
+            pack, row = self.pack_for(pr)
+            if pack is None:
+                content = row["pack"] or {}
+                return {"pr": self.pr_for({"source": "generated", "pr": content.get("pr") or {"repo": row["repo"], "number": row["number"], "sha": row["sha"]}}, None),
+                        "pack": {"status": row["status"], "source": "generated", "message": PACK_STATUS.get(row["status"], "")},
+                        "can_start": False, "reason": PACK_STATUS.get(row["status"], ""), "scoring": None}
+            ok, reason = self.may_take(user, pack)
+            concept = pack["concept"]
+            sc = self.points_for(pack, self.level_of(self.store.sessions(user["id"]), concept["key"]))
+            return {"pr": self.pr_for(pack, pr), "pack": {"status": "ready", "source": pack["source"], "message": None},
+                    "can_start": ok, "reason": reason,
+                    "scoring": {**sc, "max": self.SC["max"], "why": self.why(pack, sc["level"]), "rubric": self.SC["rows"],
+                                "bands": self.SC["bands"], "concept": {"key": concept["key"], "name": concept["name"], "level": sc["level"]}}}
 
-    def start(self, pr=None):
+    def start(self, user, pr=None):
         with self.store.tx():
+            pack, row = self.pack_for(pr)
+            if pack is None:
+                fail(409, PACK_STATUS.get(row["status"], "This check is not ready."))
+            ok, reason = self.may_take(user, pack)
+            if not ok:
+                fail(403, reason)
             t = now()
-            s = {"id": b64u(24), "stage": "interview", "version": 0, "created": t, "pr": self.clean_pr(pr),
-                 "attempt": 1, "attempts": [], "scoring": self.points_for(self.level_of(self.store.sessions())), "first_score": None,
+            level = self.level_of(self.store.sessions(user["id"]), pack["concept"]["key"])
+            s = {"id": b64u(24), "user_id": user["id"], "pack_id": pack["id"], "concept": dict(pack["concept"]),
+                 "stage": "interview", "version": 0, "created": t, "pr": self.pr_for(pack, pr),
+                 "attempt": 1, "attempts": [], "scoring": self.points_for(pack, level), "first_score": None,
                  "level_events": [], "predict": None, "interview": {"turns": [], "done": False}, "assessment": None, "review": None,
                  "finished": None, "reviewer_token": None, "access_log": [], "media": {}}
             self.store.save(s)
             return self.view(s)
 
-    def session(self, sid, presenter=False):
+    def session(self, user, sid, presenter=False):
         with self.store.tx():
-            return self.view(self.get(sid), presenter)
+            return self.view(self.get(sid, user), presenter)
 
-    def predict(self, sid, body, presenter=False):
+    def predict(self, user, sid, body, presenter=False):
         """Lock the three checks before the viva. Nothing about the right answers comes back until the results."""
         with self.store.tx():
-            s = self.get(sid)
+            s = self.get(sid, user)
             task = self.set_of(s)["task"]
             self.check_version(s, body.get("version"))
             if s["stage"] != "interview":
@@ -420,10 +604,10 @@ class Engine:
             self.store.save(s)
             return self.view(s, presenter)
 
-    def interview_next(self, sid, body, presenter=False):
+    def interview_next(self, user, sid, body, presenter=False):
         """First question, or the open one after a reload."""
         with self.store.tx():
-            s = self.get(sid)
+            s = self.get(sid, user)
             self.check_version(s, body.get("version"))
             if s["stage"] != "interview":
                 fail(409, "The interview is over.")
@@ -439,10 +623,10 @@ class Engine:
             self.store.save(s)
             return {**self.turn_view(t), "view": self.view(s, presenter)}
 
-    def interview_answer(self, sid, body, presenter=False):
+    def interview_answer(self, user, sid, body, presenter=False):
         turn, mode, media_id = body.get("turn"), body.get("mode", "text"), body.get("media_id")
         with self.store.tx():
-            s = self.get(sid)
+            s = self.get(sid, user)
             self.check_version(s, body.get("version"))
             cur = self.open_turn(s, turn)
             answer = str(body.get("text") or "").strip()
@@ -458,7 +642,12 @@ class Engine:
             cur.update(answered=True, answer_text=answer, mode=mode, media_id=m["id"] if m else None)
             if m:
                 m["used"], m["mode"] = True, mode
-                m["segments"] = segments_for(answer, m["duration"]) if mode == "voice" else None
+                # Real segments stay when the answer is the transcript as heard; an edited transcript gets estimated
+                # timings, and the reviewer is told it was edited.
+                heard = mode == "voice" and str(m.get("transcriber") or "").startswith("faster-whisper")
+                kept = heard and " ".join(answer.split()) == " ".join(str(m.get("transcript") or "").split())
+                m["edited"] = heard and not kept
+                m["segments"] = (m["segments"] if kept else segments_for(answer, m["duration"])) if mode == "voice" else None
             n = len(s["interview"]["turns"])
             if n != self.L["standardTurns"]:
                 if n < self.L["standardTurns"]:
@@ -472,7 +661,7 @@ class Engine:
             snap = s
         got = ai.followup(self.followup_body(snap))
         with self.store.tx():
-            s = self.get(sid)
+            s = self.get(sid, user)
             if s["stage"] != "interview" or s["interview"]["done"] or len(s["interview"]["turns"]) != self.L["standardTurns"]:
                 fail(409, STALE)
             nxt = self.follow_up(s, got)
@@ -490,17 +679,18 @@ class Engine:
         if not s["interview"]["done"] or any(not t["answered"] for t in s["interview"]["turns"]):
             fail(409, "Answer every question first.")
 
-    def interview_finish(self, sid, body, presenter=False):
+    def interview_finish(self, user, sid, body, presenter=False):
         version = body.get("version")
         with self.store.tx():
-            snap = self.get(sid)
+            snap = self.get(sid, user)
             self._ready_to_finish(snap, version)
         got = ai.grade(self.grade_body(snap))
+        run = self.run_of(self.set_of(snap)["task"])  # both slow, so both outside the lock
         with self.store.tx():
-            s = self.get(sid)
+            s = self.get(sid, user)
             self._ready_to_finish(s, version)
             t = now()
-            s["assessment"] = self.assess(s, got)
+            s["assessment"] = self.assess(s, got, run)
             passed, last = s["assessment"]["verdict"] == "shown", s["attempt"] >= self.L["maxAttempts"]
             if s["attempt"] == 1:  # only a first attempt counts toward the trend
                 s["first_score"] = {"score": s["assessment"]["score"], "at": t}
@@ -521,12 +711,14 @@ class Engine:
                                           "reason": "The second attempt did not pass. It needs more practice or a person to help."})
             s.update(stage="results", finished=t, version=s["version"] + 1)
             self.store.save(s)
-            return self.view(s, presenter)
+            out = self.view(s, presenter)
+        self.emit("finished", s)
+        return out
 
-    def retake(self, sid, body, presenter=False):
+    def retake(self, user, sid, body, presenter=False):
         """Second chance after a failed first attempt: the same change, a different set of questions."""
         with self.store.tx():
-            s = self.get(sid)
+            s = self.get(sid, user)
             self.check_version(s, body.get("version"))
             if not self.can_retake(s):
                 fail(409, "A second attempt is not available.")
@@ -534,12 +726,21 @@ class Engine:
             s.update(attempt=s["attempt"] + 1, predict=None, interview={"turns": [], "done": False}, assessment=None, review=None,
                      finished=None, stage="interview", version=s["version"] + 1)
             self.store.save(s)
-            return self.view(s, presenter)
+            out = self.view(s, presenter)
+        self.emit("retake", s)
+        return out
 
-    def leave(self, sid):
+    def owned(self, sid, user):
+        """For leave and delete: the session if it is this person's, None if it is gone, 404 if it is someone else's."""
+        s = self.store.session(sid)
+        if s and s.get("user_id") != user["id"]:
+            fail(404, "Session not found")
+        return s
+
+    def leave(self, user, sid):
         """Leave: delete the recordings, keep the answers."""
         with self.store.tx():
-            s = self.store.session(sid)
+            s = self.owned(sid, user)
             ids = list(s["media"]) if s else []
             if s:
                 s["media"] = {}
@@ -550,9 +751,9 @@ class Engine:
                 self.store.delete_media(mid)
         return {"left": True, "media_deleted": len(ids), "failed": self.store.remove_files(ids)}
 
-    def remove(self, sid):
+    def remove(self, user, sid):
         with self.store.tx():
-            s = self.store.session(sid)
+            s = self.owned(sid, user)
             ids = list(s["media"]) if s else []
             if s and s["reviewer_token"]:
                 self.store.delete_token(s["reviewer_token"])
@@ -562,22 +763,31 @@ class Engine:
         return {"deleted": True, "failed": self.store.remove_files(ids)}
 
     # ----- media -----
-    def media_upload(self, sid, turn, kind, duration, mode, mime, write):
+    def media_upload(self, user, sid, turn, kind, duration, mode, mime, write):
         """write(path) stores the upload and returns its size; it runs before the row exists, and the file goes if the row fails."""
         if duration > self.L["clipSeconds"] + 1:
             fail(413, f"A single recording can be at most {self.L['clipSeconds']} seconds.")
         with self.store.tx():
-            self.open_turn(self.get(sid), turn)
+            self.open_turn(self.get(sid, user), turn)
         mid = "m_" + secrets.token_hex(6)
         path = self.store.media_path(mid)
+        # In demo mode the presenter picks a stand-in answer (Specific or Generic) or real transcription; outside it,
+        # a spoken answer is always transcribed on the server when speech-to-text is available.
+        stand_in = self.demo and self.settings()["voice"] != "transcribe"
         try:
             write(path)
+            heard = stt.transcribe(path, duration) if mode == "voice" and not stand_in else None  # slow: outside the lock
             with self.store.tx():
-                s = self.get(sid)
+                s = self.get(sid, user)
                 cur = self.open_turn(s, turn)
-                text = self.stand_in(s, cur["key"]) if mode == "voice" and self.demo else None
+                text, segments, by = None, None, None
+                if heard is not None:
+                    text, segments, by = heard["text"], heard["segments"], heard["model"]
+                elif mode == "voice" and stand_in:
+                    text = self.stand_in(s, cur["key"])
+                    segments, by = (segments_for(text, duration), "simulated") if text else (None, None)
                 m = {"id": mid, "sid": sid, "turn": turn, "attempt": s["attempt"], "kind": kind, "duration": round1(duration), "mode": mode,
-                     "transcript": text, "segments": segments_for(text, duration) if text else None, "created": now(), "used": False}
+                     "transcript": text, "segments": segments, "transcriber": by, "created": now(), "used": False}
                 s["media"][mid] = m
                 self.store.add_media(mid, sid, mime)
                 self.store.save(s)
@@ -585,12 +795,12 @@ class Engine:
             path.unlink(missing_ok=True)
             raise
         return {"media_id": mid, "transcript": m["transcript"], "segments": m["segments"], "duration": m["duration"],
-                "transcriber": "simulated" if m["transcript"] else None}
+                "transcriber": by}
 
-    def media_discard(self, sid, mid):
+    def media_discard(self, user, sid, mid):
         """The learner discarded a recording before submitting (for example "Speak again")."""
         with self.store.tx():
-            s = self.get(sid)
+            s = self.get(sid, user)
             m = s["media"].get(mid)
             if not m:
                 return {"discarded": False}
@@ -605,15 +815,19 @@ class Engine:
     def _sign(self, msg):
         return hmac.new(self.store.setting("secret").encode(), msg.encode(), hashlib.sha256).hexdigest()
 
-    def media_link(self, mid, token=None, sid=None):
+    def media_link(self, mid, token=None, user=None):
+        """A five-minute link to a recording: for the senior through the reviewer token, or for the person who recorded it."""
         exp = int(now() + LINK_TTL)
         with self.store.tx():
             meta = self.store.media(mid) or fail(404, "Recording not found")
-            rt = self.store.token(token) if token else None
-            owner = (rt is not None and rt["sid"] == meta["sid"]) if token else sid == meta["sid"]
+            s = self.store.session(meta["sid"])
+            if token:
+                rt = self.store.token(token)
+                owner = rt is not None and rt["sid"] == meta["sid"]
+            else:
+                owner = user is not None and s is not None and s.get("user_id") == user["id"]
             if not owner:
                 fail(403, "You cannot open this recording.")
-            s = self.store.session(meta["sid"])
             m = s["media"][mid]
             actor = "reviewer:" + token[:6] if token else "learner"
             self.log_access(s, actor, "sign", mid, m["turn"], m["attempt"])
@@ -650,12 +864,16 @@ class Engine:
             turns.append({
                 "turn": t["turn"], "label": t["label"], "question": t["question"], "source": t["source"], "mode": t["mode"], "answer_text": t["answer_text"],
                 "media": {"id": m["id"], "kind": m["kind"], "duration": m["duration"]} if m else None,
+                "transcribed_by": m.get("transcriber") if m and t["mode"] == "voice" else None,
+                "edited": bool(m.get("edited")) if m else False,
                 "segments": [{**sg, "flag": "Generic phrasing." if count(sg["text"], RE["generic"]) else None} for sg in m["segments"]]
                 if t["mode"] == "voice" and m and m.get("segments") else None,
                 "marks": marks or [{"text": t["answer_text"], "kind": None}],
             })
+        u = self.store.user(s["user_id"]) or {}
         return {
             "role": "senior", "banner": "Reviewer link. Not SSO yet.", "token_hint": token[:6],
+            "learner": {"login": u.get("login"), "name": u.get("name") or u.get("login"), "avatar_url": u.get("avatar_url")},
             "pr": s["pr"], "assessment": s["assessment"], "decision": s["review"], "requested": s.get("finished"),
             "attempt": s["attempt"], "max_attempts": self.L["maxAttempts"],
             "previous": [{"attempt": a["attempt"], "score": a["assessment"]["score"], "verdict": a["assessment"]["verdict"]} for a in s["attempts"]],
@@ -689,12 +907,13 @@ class Engine:
                 fail(422, "Write the one-line correction.")
             s["review"] = {"status": "decided", "verdict": verdict, "note": note, "at": now(), "reviewer": token[:6]}
             self.store.save(s)
-            return s["review"]
+        self.emit("decided", s)
+        return s["review"]
 
     # ----- portfolio -----
-    def portfolio(self):
+    def portfolio(self, user):
         with self.store.tx():
-            every = self.store.sessions()
+            every = self.store.sessions(user["id"])
         entries = []
         for s in reversed([x for x in every if x["stage"] == "results" and x["assessment"]]):
             v = self.scoring_view(every, s)
@@ -706,28 +925,47 @@ class Engine:
         firsts = [{"at": s["first_score"]["at"], "score": s["first_score"]["score"], "w": s["scoring"]["r"]} for s in every if s["first_score"]]
         recent, need = firsts[-10:], 5
         value = jsround(sum(p["score"] * p["w"] for p in recent) / sum(p["w"] for p in recent)) if len(recent) >= need else None
-        lv, events = self.SC["concept"]["start"], []
-        for e in self.level_events(every):
-            frm, lv = lv, self.clamp_level(lv + e["delta"])
-            events.append({"at": e["at"], "from": frm, "to": lv, "reason": e["reason"], "title": e["title"]})
+        concepts = [self.concept_view(every, key) for key in self.concept_keys(every)] or [self.concept_view(every, None)]
         return {
             "points": {"total": sum(e["points"] for e in entries), "max_per_change": self.SC["max"],
                        "confirmed": sum(e["status"] == "earned" for e in entries), "entries": entries},
             "score": {"value": value, "n": len(firsts), "needed": need, "real": [{"at": p["at"], "score": p["score"]} for p in firsts]},
-            "concept": {"name": self.SC["concept"]["name"], "level": lv, "max": 3, "events": list(reversed(events)), "next": self.points_for(lv)},
+            "concept": concepts[0], "concepts": concepts,
             "rubric": self.SC["rows"], "bands": self.SC["bands"],
         }
 
+    def concept_keys(self, sessions):
+        """The concepts this person has met, the most recent first."""
+        keys = []
+        for s in reversed(sessions):
+            k = self.concept_of(s)["key"]
+            if k not in keys:
+                keys.append(k)
+        return keys
+
+    def concept_view(self, sessions, key):
+        """Level, history and the next similar change on one concept. key None: the sample concept, before any session."""
+        mine = [s for s in sessions if self.concept_of(s)["key"] == key]
+        pack = self.pack_of(mine[-1]) if mine else self.packs.sample
+        concept = self.concept_of(mine[-1]) if mine else pack["concept"]
+        lv, events = self.SC["concept"]["start"], []
+        for e in self.level_events(mine):
+            frm, lv = lv, self.clamp_level(lv + e["delta"])
+            events.append({"at": e["at"], "from": frm, "to": lv, "reason": e["reason"], "title": e["title"]})
+        return {"key": concept["key"], "name": concept["name"], "level": lv, "max": 3, "events": list(reversed(events)),
+                "next": self.points_for(pack, lv)}
+
     # ----- presenter controls (demo mode only) -----
     def demo_info(self):
-        return {"predictions": self.C["predictions"], "answers": [st["answers"] for st in self.C["sets"]], **self.settings()}
+        sample = self.packs.sample
+        return {"predictions": sample["predictions"], "answers": [st["answers"] for st in sample["sets"]], **self.settings()}
 
     def set_settings(self, body):
         with self.store.tx():
             if "camera_required" in body:
                 self.store.set_setting("camera_required", bool(body["camera_required"]))
             if "voice" in body:
-                self.store.set_setting("voice", "generic" if body["voice"] == "generic" else "specific")
+                self.store.set_setting("voice", body["voice"] if body["voice"] in ("generic", "transcribe") else "specific")
             return self.settings()
 
     def reset(self):

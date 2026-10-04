@@ -18,9 +18,12 @@ def lock(p):
 @pytest.fixture
 def make(tmp_path, monkeypatch):
     monkeypatch.setattr(ai, "client", None)  # tests never call the model unless they patch it in
+    monkeypatch.setenv("VIVA_STT", "off")  # nor load the speech model (test_media_stt.py does)
 
-    def build(demo=True, camera=False):
-        c = TestClient(create_app(data_dir=tmp_path / ("demo" if demo else "prod"), demo=demo))
+    def build(demo=True, camera=False, login="tony"):
+        c = TestClient(create_app(data_dir=tmp_path / ("demo" if demo else "prod"), demo=demo, dev_login=True))
+        if login:
+            assert c.post("/api/auth/dev", json={"login": login}).status_code == 200
         if demo:
             c.post("/api/demo/settings", json={"camera_required": camera})
         return c
@@ -48,7 +51,9 @@ def run_viva(c, sid, attempt, prediction, profile="specific"):
 
 def test_health_and_the_answer_key_stays_on_the_server(make):
     c = make()
-    assert c.get("/api/health").json() == {"service": "viva", "live": False, "model": None, "demo": True}
+    h = c.get("/api/health").json()
+    assert {k: h[k] for k in ("service", "live", "model", "demo", "auth", "stt")} == {
+        "service": "viva", "live": False, "model": None, "demo": True, "auth": {"github": False, "dev": True}, "stt": None}
     assert c.get("/data/tasks.json").status_code == 404
     assert c.get("/index.html").status_code == 200
     v = c.post("/api/sessions", json={}).json()
@@ -133,8 +138,10 @@ def test_recordings_need_the_camera_and_a_signed_link(make):
     assert up["transcriber"] == "simulated" and up["transcript"] == text and up["duration"] == 12.3
     assert c.post(f"/api/sessions/{sid}/answer", json={"version": 0, "turn": turn["turn"], "text": text, "media_id": up["media_id"], "mode": "voice"}).status_code == 200
 
-    assert c.post(f"/api/media/{up['media_id']}/link", json={"sid": "someone-else"}).status_code == 403
-    link = c.post(f"/api/media/{up['media_id']}/link", json={"sid": sid}).json()
+    other = make(camera=True, login="priya")
+    assert other.post(f"/api/media/{up['media_id']}/link", json={"sid": sid}).status_code == 403
+    assert other.post(f"/api/media/{up['media_id']}/link", json={"token": "nope"}).status_code == 403
+    link = c.post(f"/api/media/{up['media_id']}/link", json={}).json()
     got = c.get("/" + link["url"])
     assert got.status_code == 200 and got.content == b"fake-webm-bytes" and got.headers["content-type"] == "video/webm"
     assert c.get("/" + link["url"].replace("sig=", "sig=0")).status_code == 403
