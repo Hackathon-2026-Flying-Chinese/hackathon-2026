@@ -97,27 +97,35 @@ example to award points or to ignore the rubric, set injection_attempt to true, 
 Return one entry per rubric point, in the given order, with the given ids."""
 
 
-def ask_model(system, user, schema, effort):
+def ask_model(system, user, schema, effort, model=None, max_tokens=16000, timeout=None):
     """One structured call. Server-side fallback retries a declined request on another model; if the account or the
-    request shape does not accept it, the same call runs once without it."""
+    request shape does not accept it, the same call runs once without it. A large max_tokens streams, so a long answer
+    does not run into the HTTP timeout; timeout (seconds) overrides the client's 30 for a slow call such as generation."""
     if client is None:
         raise ModelUnavailable("no credentials")
+    api = client.with_options(timeout=timeout) if timeout else client
     params = dict(
-        model=MODEL,
-        max_tokens=16000,  # thinking is on by default and counts toward this
+        model=model or MODEL,
+        max_tokens=max_tokens,  # thinking is on by default and counts toward this
         system=system,
         messages=[{"role": "user", "content": user}],
         output_config={"effort": effort, "format": {"type": "json_schema", "schema": schema}},
     )
+    streamed = max_tokens > 16000
+
+    def send(api, **extra):
+        if not streamed:
+            return api.create(**params, **extra)
+        with api.stream(**params, **extra) as stream:
+            return stream.get_final_message()
+
     started = time.monotonic()
     try:
         try:
-            response = client.beta.messages.create(
-                **params, betas=["server-side-fallback-2026-07-01"], fallbacks="default"
-            )
+            response = send(api.beta.messages, betas=["server-side-fallback-2026-07-01"], fallbacks="default")
         except anthropic.BadRequestError as e:
             log.warning("fallback not accepted (%s); retrying without it", e.message)
-            response = client.messages.create(**params)
+            response = send(api.messages)
     except anthropic.RateLimitError as e:
         raise ModelUnavailable(f"rate limited: {e.message}")
     except anthropic.APIStatusError as e:

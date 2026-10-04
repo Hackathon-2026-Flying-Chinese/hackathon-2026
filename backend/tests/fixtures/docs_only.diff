@@ -1,0 +1,24 @@
+diff --git a/README.md b/README.md
+index c63bc76..d597ed4 100644
+--- a/README.md
++++ b/README.md
+@@ -5,3 +5,7 @@ The HarbourPay billing service: customers, invoices and payments.
+ ## Run
+ 
+     uv run uvicorn app:app
++
++## Invoices
++
++Customers can list their invoices and download each one as a PDF. See docs/invoices.md.
+diff --git a/docs/invoices.md b/docs/invoices.md
+new file mode 100644
+index 0000000..c8fd10e
+--- /dev/null
++++ b/docs/invoices.md
+@@ -0,0 +1,6 @@
++# Invoices
++
++- `GET /invoices` lists the invoices of the signed-in customer.
++- `GET /invoices/{id}/pdf` returns one invoice as a PDF.
++
++Amounts are exact decimals in the customer's currency.
