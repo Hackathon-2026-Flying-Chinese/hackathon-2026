@@ -2,9 +2,10 @@
    Everything here is synthetic: the company, the code, the customers and the invoices. */
 window.Viva = window.Viva || {};
 Viva.data = {
-  // The company the demo runs in (a made-up payments company), and the person using it. The avatar file is assets/avatar.jpg.
+  // The company the demo runs in (a made-up payments company), and the demo person: who the simulator signs in, and the
+  // photo and role shown for that GitHub login on a server. Anyone else signed in shows their own GitHub name and picture.
   org: { name: 'Harbourpay', team: 'Billing Engineering' },
-  me: { name: 'Tony', role: 'Graduate engineer', avatar: 'assets/avatar.jpg' },
+  me: { login: 'tony', name: 'Tony', role: 'Graduate engineer', avatar: 'assets/avatar.jpg' },
   // The senior assigned to review this team's checks. A demo identity: the reviewer page is opened by a token, not SSO.
   reviewer: { name: 'Priya Raman', role: 'Senior engineer, Billing' },
   // Other checks on the same commit, shown in the GitHub preview. They all pass: the tests only ever ask as one customer.

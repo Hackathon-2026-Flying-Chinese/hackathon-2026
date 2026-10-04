@@ -7,6 +7,8 @@
 .pf-role { margin-top: 2px; font-size: .8125rem; color: var(--muted); }
 .pf-note { display: flex; align-items: center; gap: 8px; max-width: 42ch; font-size: .75rem; color: var(--muted); }
 .pf-note .ico { flex: none; }
+.pf-end { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.pf-role .mono { color: var(--ink-2); }
 
 /* three numbers */
 .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
@@ -65,6 +67,7 @@
 .pf-empty { display: grid; gap: 14px; justify-items: start; padding-top: 6px; }
 
 /* concept: the level big, what it means, what comes next, and the moves that got it here */
+.pf-concept .card-h { flex-wrap: wrap; } /* a long concept name from the server drops under the heading */
 .pf-lv { display: flex; align-items: baseline; gap: 8px; }
 .pf-lv b { font: 800 3.25rem/1 var(--font-display); letter-spacing: -.05em; }
 .pf-lv span { font-size: .875rem; font-weight: 650; color: var(--faint); }
@@ -87,6 +90,15 @@
 .pf-moves b { display: inline-flex; align-items: center; gap: 2px; font-weight: 750; color: var(--ink); }
 .pf-moves em { display: block; font-style: normal; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pf-moves time { font-size: .6875rem; color: var(--faint); }
+/* every other concept the person has met: its name, its level and a small meter */
+.pf-others { margin-top: 14px; padding-top: 12px; border-top: 1.5px dashed var(--line); }
+.pf-others ul { display: grid; gap: 12px; margin-top: 10px; }
+.pf-others li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: baseline; }
+.pf-others li b { overflow: hidden; font-size: .8125rem; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.pf-others li > span { font: 800 1.125rem/1 var(--font-display); letter-spacing: -.03em; }
+.pf-others li em { margin-left: 4px; font: 650 .6875rem var(--font-sans); font-style: normal; letter-spacing: 0; color: var(--faint); }
+.pf-others .pf-meter { grid-column: 1 / -1; }
+.pf-others .pf-meter span { height: 6px; background: var(--mint); }
 
 /* how points work: the formula as four tiles, the bands as one bar, the full table on request */
 .pf-how { margin-top: 20px; }

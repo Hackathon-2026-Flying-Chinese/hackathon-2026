@@ -8,13 +8,14 @@
   const presenter = params.get('presenter') === '1';
   const root = $('#app');
 
-  let state = null, home = null, ivCtl = null, poll = 0, busy = false;
+  let state = null, home = null, ivCtl = null, poll = 0, busy = false, signedOut = false;
   let demo = null; // presenter only: stand-in answers and predictions, and the demo settings (from api.demo)
 
   // ---------- helpers ----------
   const arrow = `<span class="arrow">${icon('arrow', 14)}</span>`;
   const opts = () => ({ presenter });
   function fail(e) {
+    if (e && e.status === 401) return; // nobody is signed in: the sign-in screen takes over (viva:signed-out)
     const stale = e && e.status === 409 && /already changed/i.test(e.message);
     V.toast((e && e.message) || 'Something went wrong.', { kind: 'error', action: stale ? { label: 'Reload', run: () => refresh().catch(fail) } : undefined });
   }
@@ -35,12 +36,27 @@
 
   // The GitHub link can carry the pull request. Anything missing falls back to the sample PR.
   const prParams = () => ({ repo: params.get('repo'), number: params.get('pr'), title: params.get('title'), author: params.get('author'), branch: params.get('branch'), sha: params.get('sha') });
+  // the pull request the link names, for a page that has no check to show (sign-in, no check)
+  const prEyebrow = () => {
+    const p = prParams();
+    return p.repo && p.number ? `${icon('pr', 15)}<span class="mono">${esc(p.repo)}</span>Pull request #${esc(p.number)}` : '';
+  };
+
+  // ---------- sign-in: at boot, or when any call says the login has gone (expired, or signed out in another tab) ----------
+  function showSignIn() {
+    if (signedOut) return;
+    signedOut = true;
+    stopStage(); state = null;
+    $('#rail').hidden = true;
+    V.account.signIn(root, { presenter, eyebrow: prEyebrow() }).catch(fail);
+  }
+  addEventListener('viva:signed-out', showSignIn);
 
   // ---------- header: breadcrumb and the three-step rail ----------
   const RAIL = ['Check', 'Interview', 'Results'];
   function paintHeader() {
-    const pr = state ? state.pr : home.pr, repo = String(pr.repo).split('/').pop();
-    $('#crumb').innerHTML = `<span>${esc(repo)}</span><span class="sep" aria-hidden="true">/</span><b>#${Number(pr.number)}</b>`;
+    const pr = state ? state.pr : (home && home.pr) || prParams(), repo = String(pr.repo || '').split('/').pop();
+    $('#crumb').innerHTML = repo && pr.number ? `<span>${esc(repo)}</span><span class="sep" aria-hidden="true">/</span><b>#${Number(pr.number)}</b>` : '';
     const el = $('#rail'), idx = !state ? 0 : state.stage === 'results' ? 2 : 1;
     if (!el.dataset.ready) {
       el.innerHTML = `<ol class="rail-list" style="--n:${RAIL.length}">${RAIL.map((l, i) => `<li class="rail-step"><b>${i + 1}</b>${l}</li>`).join('')}<span class="rail-track"></span><span class="rail-fill"></span></ol>`;
@@ -62,6 +78,7 @@
     V.media.recBar(false);
   }
   async function swap(render) {
+    if (signedOut) return;
     stopStage();
     if (!V.reduced() && root.firstElementChild) {
       await V.settle(root.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-6px)' }], { duration: 160, easing: V.EASE.out, fill: 'forwards' }), 160);
@@ -78,9 +95,13 @@
     if (!state) return;
     await accept(await api.session(state.id, opts()));
   }
+  // The check the link points at. A failure (most often a pull request Viva has no check for) becomes a page, not a toast.
+  async function loadHome() {
+    try { home = await api.check({ pr: prParams() }); } catch (e) { home = { error: e }; }
+  }
   async function goHome() {
     stopStage(); forget(); state = null;
-    home = await api.check({ pr: prParams() });
+    await loadHome();
     await swap(render);
   }
 
@@ -98,14 +119,42 @@
   }
 
   // ---------- check page: what the GitHub check links to. Four steps and one button. ----------
+  // The button waits while Viva writes the questions for a new pull request, and gives way to the reason when this
+  // person cannot take the check (the questions failed their checks, or the check is for the pull request's author).
+  const POLL_PACK = 5000;
+  function ctaHtml() {
+    const pack = home.pack || { status: 'ready' }, user = V.account.user, local = V.account.auth.local;
+    if (pack.status === 'ready' && home.can_start !== false) {
+      return `<button class="btn btn-primary btn-xl" id="start" type="button">Start interview <kbd aria-hidden="true">↵</kbd><span class="arrow">${icon('arrow', 22)}</span></button>`;
+    }
+    if (pack.status === 'generating') {
+      return `<button class="btn btn-primary btn-xl" type="button" disabled>Writing your questions<span class="arrow">${icon('clock', 22)}</span></button>
+        <p class="home-note" role="status"><i class="dot" data-live></i><span>${esc(pack.message || 'Viva is reading your diff and writing the questions.')} This page checks again every ${POLL_PACK / 1000} seconds.</span></p>`;
+    }
+    if (pack.status === 'ready') {
+      const who = user && !local ? ` You are signed in as <b>@${esc(user.login)}</b>.` : '';
+      return `<p class="home-note" role="status">${icon('lock', 16)}<span>${esc(home.reason || 'You cannot take this check.')}${who}${who ? ' <button class="btn-text" type="button" id="switch">Switch account</button>' : ''}</span></p>`;
+    }
+    return `<p class="home-note" role="status">${icon('info', 16)}<span>${esc(pack.message || home.reason || 'This check is not available.')}</span></p>`;
+  }
+  async function waitForPack() {
+    if (state || busy || document.hidden) return;
+    try {
+      const next = await api.check({ pr: prParams() });
+      if (state || (next.pack && next.pack.status === 'generating')) return;
+      home = next;
+      await swap(render);
+      if (next.pack && next.pack.status === 'ready' && next.can_start !== false) V.toast('Your questions are ready.');
+    } catch { /* try again on the next tick */ }
+  }
   function renderHome() {
     document.title = 'Decision check | Viva';
-    const sc = home.scoring;
+    const sc = home.scoring; // null until the questions are ready
     const steps = [
       ['talk', 'Interview', 'Predict what the code does, then a short viva. About 4 minutes.'],
       ['peek', 'Assessment', 'Runs the code, then reads your viva.'],
       ['sage', 'Senior review', `${D.reviewer.name} adds a one-line correction.`],
-      ['yay', 'Check passes', `+${Number(sc.s)} points go to your portfolio.`]
+      ['yay', 'Check passes', home.can_start === false && sc ? 'Points go to the author’s portfolio.' : sc ? `+${Number(sc.s)} points go to your portfolio.` : 'Points go to your portfolio.']
     ];
     root.innerHTML = `
       <section class="home" aria-labelledby="home-title">
@@ -116,13 +165,17 @@
         <ol class="steps" aria-label="How the check works">
           ${steps.map(([m, t, p], i) => `<li class="step" data-step="${i + 1}"><div class="step-art">${V.mascot(m)}</div><div><span class="step-n">${i + 1}</span><h2>${t}</h2><p>${esc(p)}</p></div>${i < steps.length - 1 ? `<span class="step-to" aria-hidden="true">${icon('arrow', 14)}</span>` : ''}</li>`).join('')}
         </ol>
-        <div class="home-cta"><button class="btn btn-primary btn-xl" id="start" type="button">Start interview <kbd aria-hidden="true">↵</kbd><span class="arrow">${icon('arrow', 22)}</span></button></div>
+        <div class="home-cta">${ctaHtml()}</div>
       </section>`;
-    const btn = $('#start');
-    btn.onclick = () => action(async () => {
-      const lift = await V.portal(btn);
-      try { await accept(await api.start({ pr: prParams() })); } finally { lift(); }
-    });
+    const btn = $('#start'), sw = $('#switch');
+    if (btn) {
+      btn.onclick = () => action(async () => {
+        const lift = await V.portal(btn);
+        try { await accept(await api.start({ pr: prParams() })); } finally { lift(); }
+      });
+    }
+    if (sw) sw.onclick = () => V.account.signOut();
+    if (home.pack && home.pack.status === 'generating') poll = setInterval(waitForPack, POLL_PACK);
     if (V.reduced()) return;
     // the cards drop in one by one and land on their tilt, the characters pop, the squiggle draws, the button nudges once
     $$('.step', root).forEach((li, i) => {
@@ -131,8 +184,26 @@
       $('.mascot', li).animate([{ transform: 'scale(.3) rotate(-18deg)' }, { transform: 'none' }], { duration: V.SPRING.bounce.duration, delay: 320 + i * 90, easing: V.SPRING.bounce.easing, fill: 'backwards' });
     });
     $('.sq path', root).animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 700, delay: 450, easing: V.EASE.io, fill: 'backwards' });
-    btn.animate([{ opacity: 0, transform: 'translateY(24px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: V.SPRING.bounce.duration, delay: 560, easing: V.SPRING.bounce.easing, fill: 'backwards' });
-    setTimeout(() => { if (btn.isConnected && !btn.matches(':hover')) btn.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-2.5deg)' }, { transform: 'rotate(2deg)' }, { transform: 'rotate(-1deg)' }, { transform: 'rotate(0)' }], { duration: 620, easing: V.EASE.io }); }, 1700);
+    [...$('.home-cta', root).children].forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(24px) scale(.94)' }, { opacity: 1, transform: 'none' }], { duration: V.SPRING.bounce.duration, delay: 560 + i * 90, easing: V.SPRING.bounce.easing, fill: 'backwards' }));
+    if (btn) setTimeout(() => { if (btn.isConnected && !btn.matches(':hover')) btn.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(-2.5deg)' }, { transform: 'rotate(2deg)' }, { transform: 'rotate(-1deg)' }, { transform: 'rotate(0)' }], { duration: 620, easing: V.EASE.io }); }, 1700);
+  }
+
+  // A check link Viva cannot open: no check for this pull request (404), or the server failed. A page with a way back.
+  function renderProblem() {
+    const e = home.error, missing = e.status === 404, eyebrow = prEyebrow();
+    document.title = `${missing ? 'No check' : 'Check unavailable'} | Viva`;
+    root.innerHTML = `
+      <section class="solo" aria-labelledby="pb-title">
+        <div class="card solo-card" data-enter>
+          <div class="solo-art">${V.mascot('peek')}</div>
+          ${eyebrow ? `<p class="ph-eyebrow">${eyebrow}</p>` : ''}
+          <h1 class="h1" id="pb-title">${missing ? 'No check for this pull request' : 'The check could not be loaded'}</h1>
+          <p class="muted">${esc(e.message || 'Something went wrong.')}${missing ? ' Open Viva from the check on the pull request in GitHub. A new pull request can take a minute to get its check.' : ''}</p>
+          <button class="btn btn-secondary" id="retry" type="button">${icon('refresh', 14)}Try again</button>
+        </div>
+      </section>`;
+    // when finding out who is signed in failed (no user yet), boot again: the session, the presenter drawer and the header come with it
+    $('#retry').onclick = () => (V.account.user ? action(async () => { await loadHome(); await swap(render); }) : location.reload());
   }
   // Enter starts the interview from the check page (the key shown on the button)
   document.addEventListener('keydown', e => {
@@ -224,10 +295,11 @@
 
   // ---------- router ----------
   function render() {
+    if (signedOut) return;
     stopStage();
     document.body.dataset.stage = state ? state.stage : 'home';
     paintHeader();
-    if (!state) { renderHome(); return; }
+    if (!state) { (home.error ? renderProblem : renderHome)(); return; }
     (state.stage === 'results' ? renderResults : renderInterview)();
   }
 
@@ -251,6 +323,8 @@
     const body = answers()[profile][turn.key.startsWith('probe') ? 'probe' : turn.key];
     if (!ivCtl.fill(body)) V.toast('Wait for the answer box to open.');
   }
+  // stand-in answers, or what was really said when the server has speech-to-text
+  const voices = () => [['specific', 'Specific'], ['generic', 'Generic'], ...(demo.stt ? [['transcribe', 'Transcribe']] : [])];
   function mountPresenter() {
     const end = $('.top-end');
     end.insertAdjacentHTML('afterbegin', `<button class="pres-toggle" type="button" aria-expanded="false">Presenter ${icon('chevron', 12)}</button>`);
@@ -265,7 +339,7 @@
         <div class="pres-row"><label class="check"><input type="checkbox" id="pm-cam" ${demo.camera_required ? 'checked' : ''}><span>Camera required</span></label></div>
         <p class="muted pres-help">Untick only if the camera hardware fails. The interview then runs on text. Applies to the next interview.</p>
         <div class="pres-row"><span>Voice answers become</span>
-          <div class="seg pres-seg" data-seg role="radiogroup" aria-label="Voice answers become"><label><input type="radio" name="pm-voice" value="specific" ${demo.voice === 'specific' ? 'checked' : ''}><span>Specific</span></label><label><input type="radio" name="pm-voice" value="generic" ${demo.voice === 'generic' ? 'checked' : ''}><span>Generic</span></label><i class="seg-thumb"></i></div></div>
+          <div class="seg pres-seg" data-seg role="radiogroup" aria-label="Voice answers become">${voices().map(([v, l]) => `<label><input type="radio" name="pm-voice" value="${v}" ${demo.voice === v ? 'checked' : ''}><span>${l}</span></label>`).join('')}<i class="seg-thumb"></i></div></div>
         <div class="pres-row"><span>Fill the three checks</span><span class="pres-btns"><button class="btn btn-secondary btn-sm" id="pm-pred-wrong" type="button">Wrong</button><button class="btn btn-secondary btn-sm" id="pm-pred-right" type="button">Right</button></span></div>
         <div class="pres-row"><span>Fill the open question</span><span class="pres-btns"><button class="btn btn-secondary btn-sm" id="pm-fill-specific" type="button">Specific</button><button class="btn btn-secondary btn-sm" id="pm-fill-generic" type="button">Generic</button></span></div>
         <div class="pres-row"><span>Clear all demo data</span><button class="btn btn-danger btn-sm" id="pm-reset" type="button">Reset</button></div>
@@ -274,7 +348,7 @@
       V.seg(panel);
       const set = (body, msg) => api.demoSettings(body).then(st => { Object.assign(demo, st); V.toast(msg); }).catch(fail);
       $('#pm-cam', panel).onchange = e => set({ camera_required: e.target.checked }, e.target.checked ? 'The camera is required.' : 'The camera is optional for the next interview.');
-      $$('input[name=pm-voice]', panel).forEach(r => { r.onchange = () => set({ voice: r.value }, `Spoken answers will read as ${r.value}.`); });
+      $$('input[name=pm-voice]', panel).forEach(r => { r.onchange = () => set({ voice: r.value }, r.value === 'transcribe' ? 'Spoken answers are transcribed on the server.' : `Spoken answers will read as ${r.value}.`); });
       $('#pm-pred-wrong', panel).onclick = () => fillPredictions('wrong');
       $('#pm-pred-right', panel).onclick = () => fillPredictions('right');
       $('#pm-fill-specific', panel).onclick = () => fillOpenQuestion('specific');
@@ -300,23 +374,32 @@
   // ---------- boot ----------
   async function boot() {
     V.boot();
+    // who is signed in comes first: every check, session and level belongs to one person
+    let user = null;
+    try { user = await V.account.load(); } catch (e) { home = { error: e }; }
+    if (user) await resume();
+    else if (!home) { showSignIn(); return; }
+    if (signedOut) return;
+    render();
+    V.enter($$('[data-enter]', root), { y: 8, step: 50, dur: 480, delay: 40 });
+    V.observe(root);
+    V.seg(root);
+  }
+  // the presenter drawer, then the session in the address or in this browser, else the check the link points at
+  async function resume() {
     if (presenter) {
       // a server outside demo mode has no presenter controls
-      try { demo = await api.demo(); mountPresenter(); } catch { V.toast('Presenter controls need the demo mode (VIVA_DEMO=1).', { kind: 'error' }); }
+      try { demo = { ...await api.demo(), stt: (await api.status()).stt || null }; mountPresenter(); } catch { V.toast('Presenter controls need the demo mode (VIVA_DEMO=1).', { kind: 'error' }); }
     }
     const saved = hashId() || (() => { try { return localStorage.getItem('viva-session'); } catch { return null; } })();
     if (saved) {
       try { state = await api.session(saved, opts()); persist(state.id); } catch (e) {
         state = null;
-        if (e.status === 404) forget(); // an unknown id: drop it. Any other failure keeps the saved pointer.
+        if (e.status === 404) forget(); // an unknown id (or another person's): drop it. Any other failure keeps the saved pointer.
         else fail(e);
       }
     }
-    if (!state) home = await api.check({ pr: prParams() });
-    render();
-    V.enter($$('[data-enter]', root), { y: 8, step: 50, dur: 480, delay: 40 });
-    V.observe(root);
-    V.seg(root);
+    if (!state) await loadHome();
   }
   addEventListener('hashchange', () => {
     const id = hashId();

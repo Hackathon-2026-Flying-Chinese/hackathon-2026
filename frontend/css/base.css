@@ -156,9 +156,10 @@ kbd {
   line-height: 1.55; resize: vertical;
   transition: border-color var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
-.textarea:hover { border-color: var(--faint); }
-.textarea:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus); }
-.textarea::placeholder { color: var(--faint); opacity: 1; }
+.input { display: block; width: 100%; height: 40px; padding: 0 14px; border: 1.5px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface); transition: border-color var(--t) var(--ease), box-shadow var(--t) var(--ease); }
+.textarea:hover, .input:hover { border-color: var(--faint); }
+.textarea:focus, .input:focus { outline: none; border-color: var(--accent); box-shadow: var(--focus); }
+.textarea::placeholder, .input::placeholder { color: var(--faint); opacity: 1; }
 
 .check { display: flex; gap: 10px; align-items: flex-start; margin: 0; font-size: .8125rem; cursor: pointer; }
 .check input { appearance: none; flex: none; width: 18px; height: 18px; margin: 0; border: 1.5px solid var(--faint); border-radius: 6px; background: var(--surface); display: grid; place-content: center; transition: background-color var(--t), border-color var(--t); }

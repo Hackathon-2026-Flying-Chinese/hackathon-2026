@@ -16,6 +16,16 @@
   const VERDICT = { shown: 'Understanding shown', gaps: 'Gaps to close', not_shown: 'Not shown yet' };
   const ACT = { sign: 'requested a signed link for', play: 'played', open_review: 'opened the review page' };
   const who = a => (a === 'learner' ? 'The author' : 'You');
+  // the author of the answers: the signed-in person who took the check (the PR's author on an older server)
+  const learner = () => data.learner || { login: data.pr.author, name: data.pr.author };
+  // who wrote the transcript of a spoken answer, and whether the speaker changed it before submitting
+  function txTags(t) {
+    const by = t.transcribed_by || '', tags = [];
+    if (/^faster-whisper/.test(by)) tags.push(`<span class="tag" title="Speech-to-text on the server (${esc(by)}).">Transcribed</span>`);
+    else if (by === 'simulated') tags.push('<span class="tag" title="A stand-in transcript for the demo, not what was said.">Simulated</span>');
+    if (t.edited) tags.push('<span class="tag" data-tone="lemon" title="The speaker changed the transcript before submitting. The recording has what they said.">Edited by the speaker</span>');
+    return tags.join('');
+  }
   const bub = (tone, name) => `<span class="bub" data-tone="${tone}">${icon(name, 14)}</span>`;
   const marks = segs => segs.map(s => (KINDS.includes(s.kind) ? `<mark data-kind="${s.kind}" class="on">${esc(s.text)}</mark>` : esc(s.text))).join('');
 
@@ -146,7 +156,7 @@
       ? `<ol class="rv-tr">${t.segments.map((s, i) => `<li><button type="button" class="seg-row" data-turn="${Number(t.turn)}" data-i="${i}" ${s.flag ? 'data-flag' : ''}><span class="mono num">${fmtTime(Number(s.start))}</span><span class="seg-body"><span class="seg-text">${esc(s.text)}</span>${s.flag ? `<span class="seg-flag">${icon('flag', 12)}${esc(s.flag)}</span>` : ''}</span></button></li>`).join('')}</ol>`
       : `<blockquote class="rq-a">${marks(t.marks)}</blockquote>`;
     return `<article class="rv-turn">
-      <header><span class="rq-n num">${Number(t.turn)}</span><span class="tag" data-tone="lilac">${esc(t.label)}</span><span class="tag">${MODE[t.mode] || 'Answered'}</span>${t.source === 'follow-up' ? '<span class="tag" data-tone="lemon">Follow-up</span>' : ''}</header>
+      <header><span class="rq-n num">${Number(t.turn)}</span><span class="tag" data-tone="lilac">${esc(t.label)}</span><span class="tag">${MODE[t.mode] || 'Answered'}</span>${t.source === 'follow-up' ? '<span class="tag" data-tone="lemon">Follow-up</span>' : ''}${txTags(t)}</header>
       <p class="rv-q">${esc(t.question)}</p>
       <div class="rv-body${t.media ? '' : ' rv-body-text'}">
         ${t.media ? playerHtml(t.media) : ''}
@@ -166,12 +176,12 @@
     return { tone: 'lemon', live: true, text: 'Waiting for your decision' };
   };
   const logHtml = () => (data.access_log.length
-    ? data.access_log.map(e => `<li><span class="av" data-tone="ink" style="--s:20px">${esc(e.actor === 'learner' ? V.initials(D.me.name) : V.initials(D.reviewer.name))}</span><span><b>${who(e.actor)}</b> ${ACT[e.action] || 'opened'}${e.media_id ? ` the question ${Number(e.turn)} recording` : ''}.</span><time class="mono num">${V.fmtClock(Number(e.at))}</time></li>`).join('')
+    ? data.access_log.map(e => `<li><span class="av" data-tone="ink" style="--s:20px">${esc(V.initials(e.actor === 'learner' ? learner().name || learner().login : D.reviewer.name))}</span><span><b>${who(e.actor)}</b> ${ACT[e.action] || 'opened'}${e.media_id ? ` the question ${Number(e.turn)} recording` : ''}.</span><time class="mono num">${V.fmtClock(Number(e.at))}</time></li>`).join('')
     : '<li class="muted">No entries yet.</li>');
 
   function render() {
     players.forEach(p => p.destroy()); players = [];
-    const pr = data.pr, a = data.assessment, repo = String(pr.repo).split('/').pop(), st = statusOf();
+    const pr = data.pr, a = data.assessment, repo = String(pr.repo).split('/').pop(), st = statusOf(), L = learner();
     document.title = `Review #${Number(pr.number)} | Viva`;
     $('#crumb').innerHTML = `<span>Reviews</span><span class="sep" aria-hidden="true">/</span><b>${esc(repo)} #${Number(pr.number)}</b>`;
     root.innerHTML = `
@@ -181,7 +191,7 @@
           <h1 class="ph-title">${esc(pr.title)}</h1>
           <div class="ph-meta">
             <span class="badge"${st.tone ? ` data-tone="${st.tone}"` : ''} id="rv-status">${st.live ? '<i class="dot" data-live></i>' : ''}${esc(st.text)}</span>
-            <span><span class="av" style="--s:18px"><img src="${esc(D.me.avatar)}" alt=""></span>Author ${esc(pr.author)}</span>
+            <span title="${esc(L.login ? `@${L.login}` : '')}">${V.avatar(L, { size: 18 })}Author ${esc(L.name || L.login)}</span>
             <span>${icon('commit', 14)}<span class="mono">${esc(pr.sha)}</span></span>
             <span>${icon('refresh', 14)}Attempt ${Number(data.attempt)} of ${Number(data.max_attempts)}</span>
             ${data.requested ? `<span>${icon('clock', 14)}Requested at ${V.fmtClock(Number(data.requested))}</span>` : ''}

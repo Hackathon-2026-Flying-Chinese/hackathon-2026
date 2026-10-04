@@ -1,11 +1,12 @@
 # Viva front-end
 
 Dependency-free HTML, CSS and JavaScript. No build step, no CDN. The pages run against the Viva server in `../backend`
-(FastAPI and SQLite), which keeps the answer key, runs the assessment, stores the recordings and asks Claude for the
-follow-up question and the rubric assessment. On a host with no server (a plain file server, the GitHub Pages
-preview) `js/api.js` falls back to the simulator in `js/sim.js`, which runs the same rules in the browser, offline.
+(FastAPI and SQLite), which signs people in, keeps the answer key, runs the code in a sandbox, transcribes spoken
+answers, runs the assessment, stores the recordings and asks Claude for the follow-up question and the rubric
+assessment. On a host with no server (a plain file server, the GitHub Pages preview) `js/api.js` falls back to the
+simulator in `js/sim.js`, which runs the same rules in the browser, offline, for one demo person.
 
-Flow: the GitHub check on a pull request links to the **Check** page, which starts the **Interview**; the interview ends in the **Results**, and the avatar at the top right opens the **Portfolio**. Every page sits inside a company workspace (a made-up payments company, Harbourpay) with a breadcrumb and a Check, Interview, Results rail.
+Flow: the Viva check on a pull request links to the **Check** page (sign in with GitHub first), which starts the **Interview**; the interview ends in the **Results**, and the avatar at the top right opens the **Portfolio**. Every page sits inside a company workspace (a made-up payments company, Harbourpay) with a breadcrumb and a Check, Interview, Results rail.
 
 ## Run
 
@@ -14,21 +15,33 @@ cd backend
 VIVA_DEMO=1 ANTHROPIC_API_KEY=... uv run uvicorn viva.app:app --port 8792
 ```
 
-Open `http://127.0.0.1:8792/?presenter=1` in Chrome. Microphone, camera and the two-window reviewer flow need an http origin.
+Open `http://127.0.0.1:8792/?presenter=1` in Chrome and sign in by GitHub login (the presenter link fills in `tony`).
+Microphone, camera and the two-window reviewer flow need an http origin.
 Without `ANTHROPIC_API_KEY` everything runs and the viva is simulated, labelled so. `VIVA_DEMO=1` turns on the presenter
-drawer, stand-in transcripts and the reviewer link on the learner page; leave it off for real use.
+drawer, stand-in transcripts, the reviewer link on the learner page and the password-free sign-in by GitHub login; leave
+it off for real use. Real sign-in is GitHub (`GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `VIVA_PUBLIC_URL`); the
+GitHub App, speech-to-text and the sandbox are set up in `backend/viva/app.py`, `stt.py` and `sandbox.py`.
 `python3 -m http.server 8790` in this folder still works: the pages then use the simulator in the browser.
-The key stays on the server. The header chip says which backend answered: **Simulated backend**, **Server, viva simulated** or **Live viva**.
+The key stays on the server. The header chip says which backend answered: **Simulated backend**, **Server, viva simulated** or **Live viva**; its tooltip also says whether speech is transcribed and where the code runs.
 
 ## Pages
 
 | Page | What it does |
 |---|---|
 | `index.html` | **Check** (only the title, the four steps of a check and one big Start interview button, filling the screen), **Interview** (a pre-join camera screen that waits on the live picture and a sound bar until you press I'm ready, then the code and three predictions to lock, then the question beside the docked self-view and the question plan, Speak or Type; a penguin in a violet tie by the camera hauls each question in on a rope, tug-of-war style), **Results** (a check report: the flow, the judgment score with the three code checks and the viva, what really happened when the code ran, the viva points with the quoted words, the answers, senior review, GitHub preview, access log, portfolio points) |
-| `portfolio.html` | Points from reviewed checks, judgment score and trend, concept level, work table, who can see it, the scoring standard |
-| `review.html#token` | Senior reviewer: signed video playback beside a clickable transcript, the assessment, decision (pass with a one-line correction, or follow-up), access log |
+| `portfolio.html` | Points from reviewed checks, judgment score and trend, the level on every concept met (the latest one large), work table, who can see it, the scoring standard, Sign out |
+| `review.html#token` | Senior reviewer: signed video playback beside a clickable transcript (marked Transcribed, Simulated or Edited by the speaker), the assessment, decision (pass with a one-line correction, or follow-up), access log. No sign-in: the token is the key |
 
-A GitHub link can carry the PR: `index.html?repo=org/repo&pr=128&title=...&author=...&branch=...&sha=...`. Missing fields fall back to the sample PR.
+On a server, `index.html` and `portfolio.html` show **Sign in to Viva** while nobody is signed in, and again whenever the
+server answers 401: Sign in with GitHub (GitHub sends the person back to the same address, so the pull request and the
+session survive), or in demo mode a sign-in by GitHub login. The header avatar is the signed-in person's GitHub picture
+(the demo photo for `tony`, else their initials).
+
+The check link carries the PR: `index.html?repo=org/repo&pr=128&sha=...&title=...&author=...&branch=...`. A pull request
+with a generated check shows its state on the Check page: questions still being written (the page asks again every
+5 seconds), not verified or failed (no interview, and why), or for its author only (anyone else sees why, and can switch
+account). A pull request Viva has no check for says so. Without `repo` and `pr` the page opens the sample PR; in demo mode
+any PR name opens the sample.
 
 ## Interview (Viva Plan 4.2 to 4.4, Product Architecture 4.3)
 
@@ -44,8 +57,9 @@ is right. Same concept, different code, so the retake is transfer and not the sa
    decides whether a follow-up is needed and writes it; the server drops a question that asks two things, runs long, or
    names an answer the person has not said themselves, and then the template follow-up is used. The model is never sent
    the answer key. Each answer is recorded as one clip for the senior reviewer.
-3. **Reveal and assess.** The code runs on synthetic data (simulated here) and the page shows the prediction beside what
-   came back. The viva is assessed against the concept's three rubric points: every point Claude credits must quote the
+3. **Reveal and assess.** The code runs on synthetic data in a sandbox on the server (a locked-down `python:3.12-slim`
+   container) and the page shows the prediction beside what came back, with the run's output; without a sandbox the
+   result is the task's own account, labelled **Simulated run**. The viva is assessed against the concept's three rubric points: every point Claude credits must quote the
    answer word for word, and the server discards a quote that is not there. Without the model, the rubric's patterns
    are matched on the device, labelled Simulated.
 4. **Pass** = all three checks right and at least `vivaPass` (2) rubric points. The judgment score is the checks alone
@@ -79,17 +93,20 @@ The portfolio is private to the person: a reviewer token cannot read it. Confide
 
 | Real with the server | Still simulated (marked in the UI) |
 |---|---|
-| Camera and microphone capture, waveform, 180 s clip cap, recordings stored on the server, playback with seek | Transcription: stand-in text per question in demo mode, editable, labelled **Simulated**; outside demo mode the person types what they said, labelled **Not transcribed** |
-| Signed 5 minute links (HMAC on the server), expiry, renew, access log | Running the code: the result shown in "What really happened" is fixed task data, labelled **Simulated run** |
-| Predictions, assessment, retake rules, concept level, points, portfolio, in SQLite | The viva without a key: rubric patterns matched on the server, labelled **Simulated** |
-| With a key: the follow-up question and the rubric assessment, by Claude | Reviewer identity (a link token, "Not SSO") and one learner per server; the concept "Access control: whose data" with fixed Risk and Novelty |
+| Sign-in with GitHub; every session, level and point belongs to one person, and a generated check only to its PR's author | Demo sign-in by GitHub login, without a password (demo mode or `VIVA_DEV_LOGIN=1` only) |
+| Camera and microphone capture, waveform, 180 s clip cap, recordings stored on the server, playback with seek | Transcription in demo mode: stand-in text per question, editable, labelled **Simulated**, unless the presenter picks **Transcribe** |
+| Speech-to-text on the server (faster-whisper), editable, labelled **Transcribed**; the reviewer sees if it was edited | A server without speech-to-text: the person types what they said, labelled **Not transcribed** |
+| The code runs in a Docker sandbox, labelled **Ran in a sandbox**, with its output | No sandbox: the result in "What really happened" is fixed task data, labelled **Simulated run** |
+| Signed 5 minute links (HMAC on the server), expiry, renew, access log | The viva without a key: rubric patterns matched on the server, labelled **Simulated** |
+| Predictions, assessment, retake rules, concept levels per person and concept, points, portfolio, in SQLite | Reviewer identity (a link token, "Not SSO") and the assigned senior (a demo identity) |
+| With a key: the follow-up question and the rubric assessment, by Claude; checks generated from a pull request's diff (the GitHub App) | |
 
-Without a server, `js/sim.js` keeps all of this in the browser (localStorage and IndexedDB) and the viva is always simulated.
+Without a server, `js/sim.js` keeps all of this in the browser (localStorage and IndexedDB) for one demo person (`me` in `js/data.js`), always signed in; the viva, the transcripts and the run are always simulated.
 
 ## Presenter drawer (`?presenter=1`)
 
-Button in the header, with the simulator or with a server in demo mode (`VIVA_DEMO=1`). Reviewer link, camera required (untick only if the camera hardware fails), voice stand-in Specific or Generic, fill the three checks (Wrong or Right; also under the checks themselves), fill the open question, reset all demo data, and six copyable answers for the attempt on screen.
-Demo: choose **Generic**, fill the checks **Wrong**, answer, fail, **Take the new task**, choose **Specific**, fill the checks **Right**, pass, open the reviewer link, pass it with a one-line correction, watch the points arrive, open the portfolio.
+Button in the header, with the simulator or with a server in demo mode (`VIVA_DEMO=1`). Reviewer link, camera required (untick only if the camera hardware fails), voice stand-in Specific or Generic (or Transcribe, real speech-to-text, when the server has it), fill the three checks (Wrong or Right; also under the checks themselves), fill the open question, reset all demo data, and six copyable answers for the attempt on screen.
+Demo: sign in as `tony`, choose **Generic**, fill the checks **Wrong**, answer, fail, **Take the new task**, choose **Specific**, fill the checks **Right**, pass, open the reviewer link, pass it with a one-line correction, watch the points arrive, open the portfolio.
 
 ## Server routes
 
@@ -98,32 +115,37 @@ and the view shapes, and `js/sim.js` mirrors them for the offline demo.
 
 | `Viva.api` | Route |
 |---|---|
-| `status()` | `GET /api/health` (whether the model is connected, and demo mode) |
-| `check({pr})` | `POST /api/check` (the pull request and its Risk x Novelty x Gap at the current concept level, before any session) |
+| `status()` | `GET /api/health` (the model, demo mode, how people sign in, the sandbox, speech-to-text, the GitHub App) |
+| `me()`, `devLogin({login, name})`, `logout()` | `GET /api/me` (401 when nobody is signed in), `POST /api/auth/dev` (demo only), `POST /api/auth/logout` |
+| `githubUrl(next)` | `GET /api/auth/github?next=` (a page visit, not a fetch: GitHub sign-in, back to `next`) |
+| `check({pr})` | `POST /api/check` (the pull request, whether its questions are ready and this person may take them, and its Risk x Novelty x Gap at their level on its concept; 404 when Viva has no check for it) |
 | `start({pr})`, `session(sid)` | `POST /api/sessions`, `GET /api/sessions/{sid}` |
 | `predict()` | `POST /api/sessions/{sid}/predict` (the three checks and the confidence; locked once, before the first question) |
 | `interviewNext()`, `interviewAnswer()`, `interviewFinish()` | `POST /api/sessions/{sid}/next`, `/answer`, `/finish` |
 | `retake(sid, {version})` | `POST /api/sessions/{sid}/retake` (only after a failed first attempt; the second task, predictions reset) |
-| `mediaUpload()`, `mediaDiscard()`, `mediaLink()`, `mediaFetch()` | `POST /api/sessions/{sid}/media`, `DELETE /api/sessions/{sid}/media/{id}`, `POST /api/media/{id}/link`, `GET /api/media/{id}?exp=&a=&sig=` |
+| `mediaUpload()`, `mediaDiscard()`, `mediaLink()`, `mediaFetch()` | `POST /api/sessions/{sid}/media` (a spoken clip comes back transcribed), `DELETE /api/sessions/{sid}/media/{id}`, `POST /api/media/{id}/link`, `GET /api/media/{id}?exp=&a=&sig=` |
 | `review(token)`, `decide(token, {verdict, note})` | `GET /api/reviews/{token}`, `POST /api/reviews/{token}/decision` (the role comes from the token, never the body) |
-| `portfolio()` | `GET /api/portfolio` |
+| `portfolio()` | `GET /api/portfolio` (the signed-in person's; every concept they have met) |
 | `leave()`, `remove()` | `POST /api/sessions/{sid}/leave` (delete media, keep answers), `DELETE /api/sessions/{sid}` |
 | `demo()`, `demoSettings()`, `demoReset()` | `GET /api/demo`, `POST /api/demo/settings`, `POST /api/demo/reset` (demo mode only) |
 
-Not built yet: sign-in (the session id and the reviewer token are the only keys, and one server holds one learner's
-portfolio), speech-to-text, running the code for real, and tasks generated from a real pull request. A first failure
-in a Full band change (18 or more) should also go to a senior (the sample PR never reaches it).
+Every learner route answers 401 without a login, and the pages then show the sign-in screen; the reviewer routes take the
+token instead. Writes from another site are refused, so the pages only use relative, same-origin requests.
+The GitHub App (`POST /api/github/webhook`) has no page of its own: it puts the Viva check on the pull request, which
+links here. Not built yet: reviewer sign-in (the reviewer token is still the key), and a first failure in a Full band
+change (18 or more) going to a senior (the sample PR never reaches it).
 
 ## Files
 
 | File | Job |
 |---|---|
 | `index.html`, `portfolio.html`, `review.html` | Learner app, portfolio, senior reviewer page |
-| `js/data.js` | What every page may know: the company, the person, the assigned senior (a demo identity), the CI checks, the synthetic trend |
+| `js/data.js` | What every page may know: the company, the demo person, the assigned senior (a demo identity), the CI checks, the synthetic trend |
 | `data/tasks.json` | The sample PR, its two tasks with the answer key, the rubric and stand-in answers, the scoring standard, the interview limits. Read by the server (never served) and by the simulator |
 | `js/api.js`, `js/http.js` | Picks the server when `api/health` answers, else the simulator; the fetch client for the server |
 | `js/sim.js` | Simulated backend for hosts with no server: sessions, predictions, attempts, assessment, points, levels, media, reviewer |
-| `js/core.js` | DOM helpers, icons, spring and enter motion, word reveal, odometer, theme, toast, dialog |
+| `js/core.js` | DOM helpers, icons, avatars, spring and enter motion, word reveal, odometer, theme, toast, dialog |
+| `js/account.js` | Who is signed in: the header avatar, the sign-in screen, sign out |
 | `js/app.js` | Check page, header and rail, stage routing, results polling, presenter drawer |
 | `js/interview.js`, `js/media.js` | Interview screen and the camera |
 | `js/results.js` | Results page, the flow and the GitHub preview (shared with the check page), the scoring table and scale (shared with the portfolio) |
@@ -132,7 +154,7 @@ in a Full band change (18 or more) should also go to a senior (the sample PR nev
 | `css/base.css`, `css/layout.css` | Controls (buttons, badges, tags, cards, forms), the header, rail, page frame, flow and check page |
 | `css/interview.css`, `css/results.css`, `css/portfolio.css`, `css/review.css` | One file per screen |
 | `assets/logo.svg` | The logo and wordmark for slides |
-| `assets/avatar.jpg` | The avatar shown at the top right (replace the file to change it) |
+| `assets/avatar.jpg` | The demo person's photo, shown for `tony` when GitHub has no picture (replace the file to change it) |
 
 ## Design
 

@@ -12,19 +12,27 @@
   // `code` in task text becomes inline code
   const inline = t => esc(t).replace(/`([^`]+)`/g, '<code>$1</code>');
   const CONF = [['low', 'Guessing'], ['medium', 'Fairly sure'], ['high', 'Certain']];
+  // the label and the hint over the transcript of a spoken answer, by who wrote it
+  const TRANSCRIPT = {
+    real: { tag: 'Transcribed', hint: 'Transcribed on the server. Fix any word it got wrong; the recording is kept for the reviewer.' },
+    simulated: { tag: 'Simulated', hint: 'Simulated transcript: edit it so it matches what you said. The real build transcribes speech on the server.' },
+    none: { tag: 'Not transcribed', hint: 'Speech-to-text is not connected on this server. Type what you said; the recording is kept for the reviewer.' }
+  };
 
   // The three checks, read before the viva. The right answers stay on the server until the results.
   function predictHtml(view, ctx) {
-    const t = view.task, it = t.items;
+    const t = view.task, it = t.items, n = Number(view.pr.number);
+    // A retake can read a variant Viva wrote on the same idea: never present it as the author's own code.
+    const variant = t.origin === 'variant';
     const opts = (key, list) => `<div class="pd-opts" data-n="${list.length}">${list.map(o => `<label class="ev"><input type="radio" name="pd-${key}" value="${esc(o.id)}"><span class="ev-mark"></span><span class="ev-text"><b${/^test_/.test(o.text) ? ' class="mono"' : ''}>${esc(o.text)}</b></span></label>`).join('')}</div>`;
     return `<header class="pd-head">
-        <p class="ph-eyebrow">${icon('file', 15)}<span class="mono">${esc(t.file)}</span><span class="sep" aria-hidden="true">/</span><span class="mono">${esc(t.fn)}</span><span class="sep" aria-hidden="true">/</span>Pull request #${Number(view.pr.number)}</p>
-        <h1 class="pd-title">First, predict what your code does.</h1>
+        <p class="ph-eyebrow">${icon('file', 15)}<span class="mono">${esc(t.file)}</span><span class="sep" aria-hidden="true">/</span><span class="mono">${esc(t.fn)}</span><span class="sep" aria-hidden="true">/</span>${variant ? 'Written for this retake' : `Pull request #${n}`}</p>
+        <h1 class="pd-title">First, predict what ${variant ? 'this' : 'your'} code does.</h1>
         <p class="muted pd-sub">Three quick questions. Your answers lock before the viva, and the code runs on test data after it.</p>
       </header>
       <div class="pd-grid">
         <section class="card pd-code" aria-label="The code">
-          <div class="card-h"><h2>${icon('file', 15)}<span class="mono">${esc(t.fn)}</span></h2><span class="tag">From #${Number(view.pr.number)}</span></div>
+          <div class="card-h"><h2>${icon('file', 15)}<span class="mono">${esc(t.fn)}</span></h2>${variant ? `<span class="tag" data-tone="lilac" title="Viva wrote this code on the same idea as your change. It is not in pull request #${n}, and neither are its tests.">Written for this retake</span>` : `<span class="tag">From #${n}</span>`}</div>
           <pre class="code"><code>${esc(t.code)}</code></pre>
           <p class="label pd-tests-h">Tests in this change. All passing.</p>
           <ul class="pd-tests">${t.tests.map(x => `<li><code>${esc(x.id)}</code><span>${esc(x.note)}</span></li>`).join('')}</ul>
@@ -137,9 +145,10 @@
       </div>`;
   }
 
+  // with the camera off, the card shows the signed-in person's picture (or initials)
   const camHtml = () => `<figure class="cam" data-state="off">
       <video muted playsinline autoplay></video>
-      <span class="cam-empty"><span class="av"><img src="${esc(D.me.avatar)}" alt=""></span><span>Camera off</span></span>
+      <span class="cam-empty">${V.avatar(V.account && V.account.user)}<span>Camera off</span></span>
       <figcaption><span class="cam-dev"></span><span class="cam-rec"><i></i><b>REC</b><span class="mono num cam-time">0:00</span></span><span class="cam-idle">Camera on</span></figcaption>
     </figure>`;
 
@@ -155,7 +164,6 @@
     const camEl = $('.cam', host), video = $('video', camEl), q = $('.iv-q', main);
     const submit = $('#iv-submit', host), done = $('#iv-done', host), text = $('#iv-text', host), tx = $('#iv-tx', host), err = $('#iv-err', host);
     const panes = { speak: $('.iv-speak', host), type: $('.iv-type', host), review: $('.iv-review', host) };
-    $('.cam-empty img', camEl).addEventListener('error', e => { e.target.replaceWith(document.createTextNode(V.initials(D.me.name))); });
 
     const say = m => { err.textContent = m || ''; err.hidden = !m; };
 
@@ -303,9 +311,10 @@
         if (!clip) throw new Error('Nothing was recorded. Try again.');
         upload = await send(clip, 'voice');
         tx.value = upload.transcript || '';
-        // until speech-to-text is connected, a server outside the demo returns no transcript: the person types it
-        $('.iv-review-head .tag', host).textContent = upload.transcriber ? 'Simulated' : 'Not transcribed';
-        $('#iv-tx-hint', host).textContent = upload.transcriber ? 'Simulated transcript: edit it so it matches what you said. The real build transcribes speech on the server.' : 'Speech-to-text is not connected yet. Type what you said; the recording is kept for the reviewer.';
+        // faster-whisper on the server, a demo stand-in, or nothing (a server without speech-to-text): then the person types it
+        const tr = TRANSCRIPT[/^faster-whisper/.test(upload.transcriber || '') ? 'real' : upload.transcriber ? 'simulated' : 'none'];
+        $('.iv-review-head .tag', host).textContent = tr.tag;
+        $('#iv-tx-hint', host).textContent = tr.hint;
         setMode('speak');
         V.enter(panes.review, { y: 6, dur: 420 });
       } catch (e) {

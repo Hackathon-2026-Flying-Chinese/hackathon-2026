@@ -7,8 +7,9 @@
   class HttpError extends Error {
     constructor(status, detail) { super(detail); this.status = status; }
   }
-  // Relative paths, so the app also works under a sub-path
-  async function call(method, path, body, { query, form, timeout = 60000 } = {}) {
+  // Relative paths, so the app also works under a sub-path. A 401 means nobody is signed in (or the login expired): the
+  // pages listen for viva:signed-out and show the sign-in screen. quiet: the caller expects a 401 and handles it itself.
+  async function call(method, path, body, { query, form, timeout = 60000, quiet = false } = {}) {
     const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), timeout);
     const qs = query ? '?' + new URLSearchParams(Object.entries(query).filter(([, v]) => v)).toString() : '';
     let r;
@@ -22,7 +23,10 @@
       throw new HttpError(0, e && e.name === 'AbortError' ? 'The server took too long to answer. Try again.' : 'The server could not be reached. Check your connection.');
     } finally { clearTimeout(timer); }
     const data = await r.json().catch(() => null);
-    if (!r.ok) throw new HttpError(r.status, (data && typeof data.detail === 'string' && data.detail) || `Request failed (${r.status}).`);
+    if (!r.ok) {
+      if (r.status === 401 && !quiet) dispatchEvent(new CustomEvent('viva:signed-out'));
+      throw new HttpError(r.status, (data && typeof data.detail === 'string' && data.detail) || `Request failed (${r.status}).`);
+    }
     return data;
   }
   const sess = sid => `api/sessions/${encodeURIComponent(sid)}`;
@@ -30,6 +34,14 @@
 
   V.httpApi = {
     status: () => call('GET', 'api/health').then(h => ({ ...h, backend: 'server' })),
+
+    // ----- sign-in: the login is an HttpOnly cookie, so the page only ever sees who it belongs to -----
+    me: () => call('GET', 'api/me', undefined, { quiet: true }),
+    devLogin: ({ login, name } = {}) => call('POST', 'api/auth/dev', { login, name }, { quiet: true }),
+    logout: () => call('POST', 'api/auth/logout', {}),
+    // GitHub sign-in is a full-page visit; GitHub sends the person back to next (a path on this site, hash included)
+    githubUrl: next => `api/auth/github?${new URLSearchParams({ next })}`,
+
     check: ({ pr } = {}) => call('POST', 'api/check', { pr }),
     start: ({ pr } = {}) => call('POST', 'api/sessions', { pr }),
     session: (sid, { presenter = false } = {}) => call('GET', sess(sid), undefined, { query: p(presenter) }),

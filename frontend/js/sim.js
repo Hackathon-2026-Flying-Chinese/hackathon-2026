@@ -237,7 +237,7 @@
       ...sc, max: SC.max, status, points: status === 'earned' ? sc.s : 0,
       why: { r: SC.why.r, n: SC.why.n, g: `${SC.concept.name} is at level ${sc.level} of 3.` },
       rubric: SC.rows, bands: SC.bands,
-      concept: { name: SC.concept.name, before: sc.level, after: ev ? clampLevel(sc.level + ev.delta) : sc.level, reason: ev ? ev.reason : null },
+      concept: { key: conceptKey(), name: SC.concept.name, before: sc.level, after: ev ? clampLevel(sc.level + ev.delta) : sc.level, reason: ev ? ev.reason : null },
       next: pointsFor(levelOf(db))
     };
   }
@@ -292,14 +292,18 @@
 
   // ---------- reviewer data ----------
   function reviewView(s, token) {
+    const me = localUser();
     return {
       role: 'senior', banner: 'Demo reviewer role. Not SSO.', token_hint: token.slice(0, 6),
+      learner: { login: me.login, name: me.name, avatar_url: me.avatar_url },
       pr: s.pr, assessment: s.assessment, decision: s.review, requested: s.finished || null,
       attempt: s.attempt, max_attempts: D.maxAttempts, previous: s.attempts.map(a => ({ attempt: a.attempt, score: a.assessment.score, verdict: a.assessment.verdict })),
       turns: s.interview.turns.filter(t => t.answered).map(t => {
-        const m = t.media_id ? s.media[t.media_id] : null;
+        const m = t.media_id ? s.media[t.media_id] : null, spoken = t.mode === 'voice' && m && m.transcript;
         return {
           turn: t.turn, label: t.label, question: t.question, source: t.source, mode: t.mode, answer_text: t.answer_text,
+          // who wrote the transcript, and whether the speaker changed it before submitting
+          transcribed_by: spoken ? 'simulated' : null, edited: spoken ? t.answer_text.trim() !== m.transcript.trim() : false,
           media: m ? { id: m.id, kind: m.kind, duration: m.duration } : null,
           segments: t.mode === 'voice' && m && m.segments ? m.segments.map(sg => ({ ...sg, flag: count(sg.text, RE.generic) ? 'Generic phrasing.' : null })) : null,
           marks: ((s.assessment.questions.find(q => q.turn === t.turn) || {}).segments) || [{ text: t.answer_text, kind: null }]
@@ -311,15 +315,30 @@
 
   // ---------- API ----------
   const LINK_TTL = 300;
+  // One person per browser: the demo person from data.js is always signed in, and there is nothing to sign out of.
+  const LOCAL_AUTH = { github: false, dev: false, local: true };
+  const localUser = () => { const me = V.data.me; return { id: 'local', login: me.login, name: me.name, avatar_url: me.avatar }; };
+  const conceptKey = () => SC.concept.key || 'access-control';
+
   const api = {
     // Same shape as the server's /api/health. The simulator is always a demo, and never has a model.
-    async status() { return { service: 'viva', backend: 'simulator', live: false, model: null, demo: true }; },
+    async status() { return { service: 'viva', backend: 'simulator', live: false, model: null, demo: true, auth: LOCAL_AUTH }; },
+
+    // ----- sign-in (the server's api/me and api/auth/*) -----
+    async me() { return { user: localUser(), auth: LOCAL_AUTH }; },
+    async devLogin() { return { user: localUser() }; },
+    async logout() { return { signed_out: false }; },
+    async githubUrl() { return null; },
 
     // What the GitHub check links to: the pull request and why it needs a check (Risk x Novelty x Gap at the current level).
+    // The simulator only has the sample, so its questions are always ready and anyone may take it.
     async check({ pr } = {}) {
       await ready(); await sleep(80);
       const db = load(), sc = pointsFor(levelOf(db));
-      return { pr: cleanPr(pr), scoring: { ...sc, max: SC.max, why: { r: SC.why.r, n: SC.why.n, g: `${SC.concept.name} is at level ${sc.level} of 3.` }, rubric: SC.rows, bands: SC.bands, concept: { name: SC.concept.name, level: sc.level } } };
+      return {
+        pr: cleanPr(pr), pack: { status: 'ready', source: 'sample', message: null }, can_start: true, reason: null,
+        scoring: { ...sc, max: SC.max, why: { r: SC.why.r, n: SC.why.n, g: `${SC.concept.name} is at level ${sc.level} of 3.` }, rubric: SC.rows, bands: SC.bands, concept: { key: conceptKey(), name: SC.concept.name, level: sc.level } }
+      };
     },
 
     async start({ pr } = {}) {
@@ -570,10 +589,12 @@
         const value = recent.length >= need ? Math.round(recent.reduce((a, p) => a + p.score * p.w, 0) / recent.reduce((a, p) => a + p.w, 0)) : null;
         let lv = SC.concept.start;
         const events = levelEvents(db).map(e => { const from = lv; lv = clampLevel(lv + e.delta); return { at: e.at, from, to: lv, reason: e.reason, title: e.title }; }).reverse();
+        // the sample has one concept; the server lists every concept the person has met, the most recent first
+        const concept = { key: conceptKey(), name: SC.concept.name, level: lv, max: 3, events, next: pointsFor(lv) };
         return {
           points: { total: entries.reduce((a, e) => a + e.points, 0), max_per_change: SC.max, confirmed: entries.filter(e => e.status === 'earned').length, entries },
           score: { value, n: firsts.length, needed: need, real: firsts.map(p => ({ at: p.at, score: p.score })) },
-          concept: { name: SC.concept.name, level: lv, max: 3, events, next: pointsFor(lv) },
+          concept, concepts: [concept],
           rubric: SC.rows, bands: SC.bands
         };
       });

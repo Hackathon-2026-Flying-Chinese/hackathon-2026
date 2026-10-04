@@ -66,6 +66,18 @@
 .reveal-list li, .reveal-note, .viva-flag { display: flex; gap: 10px; align-items: flex-start; }
 .reveal-note { margin-top: 14px; padding: 12px 14px; border-radius: var(--r-3); background: var(--lemon); font-size: .8125rem; color: var(--ink-2); }
 .reveal-note svg, .viva-flag svg { flex: none; margin-top: .15em; }
+/* the code really ran in a sandbox: where and how long, a warning when it failed or disagreed, and what it printed */
+.reveal-run { margin: -6px 0 12px; font-size: .6875rem; color: var(--muted); }
+.reveal-warn { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px; padding: 10px 12px; border-radius: var(--r-2); background: var(--lemon); font-size: .8125rem; color: var(--ink-2); }
+.reveal-warn[data-kind='error'] { background: var(--danger-soft); }
+.reveal-warn svg { flex: none; margin-top: .15em; }
+.reveal-out { margin-bottom: 12px; }
+.reveal-out > summary { display: inline-flex; align-items: center; gap: 6px; list-style: none; cursor: pointer; font-size: .8125rem; font-weight: 650; color: var(--accent-ink); }
+.reveal-out > summary::-webkit-details-marker { display: none; }
+.reveal-out > summary svg { transition: transform 300ms var(--bounce); }
+.reveal-out[open] > summary svg { transform: rotate(90deg); }
+.reveal-out > p { margin-top: 8px; }
+.reveal-pre { max-height: 240px; margin: 8px 0 0; padding: 12px 14px; overflow: auto; border-radius: var(--r-2); background: var(--sunken); font: 500 .75rem/1.6 var(--font-mono); color: var(--ink-2); white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* ---------- the viva: rubric points and the quotes that earned them ---------- */
 .viva-flag { margin-bottom: 12px; padding: 10px 12px; border-radius: var(--r-2); background: var(--lemon); font-size: .8125rem; }

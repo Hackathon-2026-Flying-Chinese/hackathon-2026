@@ -16,6 +16,7 @@
   const ACT = { sign: 'requested a signed link for', play: 'played', open_review: 'opened your review' };
   const POINTS = { pending: 'Pending review', retake: 'Not earned yet', earned: 'Added', declined: 'No points', none: 'Not earned yet' };
   const who = a => (a === 'learner' ? 'You' : D.reviewer.name);
+  const meName = () => { const u = V.account && V.account.user; return u ? u.name || u.login : ''; }; // the signed-in person
   const arrow = `<span class="arrow">${icon('arrow', 14)}</span>`;
   const marks = segs => segs.map(s => (KINDS.includes(s.kind) ? `<mark data-kind="${s.kind}">${esc(s.text)}</mark>` : esc(s.text))).join('');
   const person = () => `<div class="person"><span class="av" data-tone="lemon" style="--s:34px">${esc(V.initials(D.reviewer.name))}</span><div><b>${esc(D.reviewer.name)}</b><span>${esc(D.reviewer.role)}</span></div></div>`;
@@ -136,7 +137,7 @@
     return `<section class="card log" id="log-card">
       <div class="card-h"><h2>${bub('sky', 'eye')}Who watched your recording</h2><span class="meta">${rows.length ? `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}` : ''}</span></div>
       ${rows.length
-        ? `<ul class="log-list">${rows.map(e => `<li><span class="av" data-tone="ink" style="--s:20px">${esc(e.actor === 'learner' ? V.initials(D.me.name) : V.initials(D.reviewer.name))}</span><span><b>${esc(who(e.actor))}</b> ${ACT[e.action] || 'opened'}${e.media_id ? ` the question ${Number(e.turn)} recording${e.attempt > 1 ? ` from attempt ${Number(e.attempt)}` : ''}` : ''}.</span><time class="mono num">${V.fmtClock(Number(e.at))}</time></li>`).join('')}</ul>`
+        ? `<ul class="log-list">${rows.map(e => `<li><span class="av" data-tone="ink" style="--s:20px">${esc(V.initials(e.actor === 'learner' ? meName() : D.reviewer.name))}</span><span><b>${esc(who(e.actor))}</b> ${ACT[e.action] || 'opened'}${e.media_id ? ` the question ${Number(e.turn)} recording${e.attempt > 1 ? ` from attempt ${Number(e.attempt)}` : ''}` : ''}.</span><time class="mono num">${V.fmtClock(Number(e.at))}</time></li>`).join('')}</ul>`
         : '<p class="muted small">Nobody has opened it yet.</p>'}
       <p class="card-foot">Visible only to you. Links expire after 5 minutes and every open is logged.</p>
     </section>`;
@@ -158,15 +159,29 @@
         <p>${a.viva.source === 'ai' ? 'AI-assessed against a fixed rubric.' : 'Simulated: matched to the rubric’s patterns, without the model.'} ${Number(a.viva_pass)} needed.</p>
       </li></ul>`;
   }
+  // The code ran in a sandbox on the server (reveal.run), or the result is fixed task data (no run): say which.
+  const ms = n => (n < 1000 ? `${Math.round(n)} ms` : `${(n / 1000).toFixed(1)} s`);
+  function runHtml(run) {
+    if (!run) return '';
+    const where = [run.image, run.runner === 'local' ? 'local process' : run.runner, Number.isFinite(+run.duration_ms) ? ms(+run.duration_ms) : ''].filter(Boolean).join(' · ');
+    return `${where ? `<p class="reveal-run mono">${esc(where)}</p>` : ''}
+      ${run.ok === false ? `<p class="reveal-warn" data-kind="error">${icon('x', 14)}<span>The run did not finish${run.error ? `: ${esc(run.error)}` : ''}. The result below is the answer the task expects.</span></p>`
+        : run.agrees === false ? `<p class="reveal-warn">${icon('flag', 14)}<span>This run disagreed with the answer the task expects. The result below is the expected one; what the run printed is under Output.</span></p>` : ''}
+      <details class="reveal-out"><summary>${icon('chevron', 13)}Output</summary>${run.stdout ? `<pre class="reveal-pre">${esc(run.stdout)}</pre>` : '<p class="muted small">The run printed nothing.</p>'}</details>`;
+  }
   function revealHtml(a) {
-    const r = a.reveal, by = k => a.checks.find(c => c.key === k), b = by('behaviour'), rq = by('requirement'), ev = by('evidence');
-    const rows = r.rows.length ? `<table class="reveal-rows"><thead><tr><th>Invoice</th><th>Amount</th><th>Status</th></tr></thead><tbody>${r.rows.map(x => `<tr>${x.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '';
+    const r = a.reveal, run = r.run || null, by = k => a.checks.find(c => c.key === k), b = by('behaviour'), rq = by('requirement'), ev = by('evidence');
+    // a run that failed or disagreed leaves the task's expected result in place: never call that what it returned
+    const expected = !!run && (run.ok === false || run.agrees === false);
+    const cols = r.columns && r.columns.length ? r.columns : ['Invoice', 'Amount', 'Status'];
+    const rows = r.rows && r.rows.length ? `<table class="reveal-rows"><thead><tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${r.rows.map(x => `<tr>${x.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '';
     return `<details class="card reveal fold" id="reveal-card" data-ok="${b.ok}" data-reveal>
-      <summary class="card-h"><h2>${bub('sky', 'play')}What really happened</h2><span class="fold-sum"><span>You predicted ${esc(b.chosen_text)}. It returned ${esc(r.status)}.</span><span class="fold-i">${icon('chevron', 14)}</span></span></summary>
-      <p class="reveal-req"><span class="mono">${esc(r.request)}</span><span>${esc(r.as)}</span><span class="tag">Simulated run, synthetic data</span></p>
+      <summary class="card-h"><h2>${bub('sky', 'play')}What really happened</h2><span class="fold-sum"><span>You predicted ${esc(b.chosen_text)}. ${expected ? 'It should return' : 'It returned'} ${esc(b.correct_text)}.</span><span class="fold-i">${icon('chevron', 14)}</span></span></summary>
+      <p class="reveal-req"><span class="mono">${esc(r.request)}</span><span>${esc(r.as)}</span>${run ? '<span class="tag" data-tone="mint">Ran in a sandbox</span>' : '<span class="tag">Simulated run, synthetic data</span>'}</p>
+      ${runHtml(run)}
       <div class="reveal-grid">
         <div class="reveal-box" data-side="you"><p class="label">You predicted</p><b>${esc(b.chosen_text)}</b>${a.confidence ? `<span>You were ${esc(CONF[a.confidence] || a.confidence)}.</span>` : ''}</div>
-        <div class="reveal-box" data-side="run"><p class="label">It returned</p><b><span class="mono">${esc(r.status)}</span>${esc(r.result)}</b>${rows}<span>${esc(r.owner)}</span></div>
+        <div class="reveal-box" data-side="run"><p class="label">${expected ? 'Expected' : 'It returned'}</p><b><span class="mono">${esc(r.status)}</span>${esc(r.result)}</b>${rows}<span>${esc(r.owner)}</span></div>
       </div>
       <ul class="reveal-list">
         <li>${tick(rq.ok)}<span><b>Rule.</b> ${esc(a.rule)} Right answer: ${esc(rq.correct_text)}. You said: ${esc(rq.chosen_text)}.</span></li>

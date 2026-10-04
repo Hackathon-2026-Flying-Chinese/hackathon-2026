@@ -74,8 +74,13 @@
   }
   const SHOWN = 5; // the latest few; the rest are counted, not listed
 
+  // The other concepts this person has met, under the latest one: name, level and the meter, smaller.
+  const meter = (lv, max, cls = '') => `<div class="pf-meter${cls}" role="img" aria-label="Level ${Number(lv)} of ${Number(max)}">${Array.from({ length: max }, (_, i) => `<span data-on="${i < lv}"><i></i></span>`).join('')}</div>`;
+  const otherHtml = list => `<div class="pf-others"><p class="label">Other concepts</p><ul>${list.map(k => `<li><b>${esc(k.name)}</b><span class="num">${Number(k.level)}<em>of ${Number(k.max)}</em></span>${meter(k.level, k.max)}</li>`).join('')}</ul></div>`;
+
   function render(data) {
-    const me = D.me, p = data.points, sc = data.score, c = data.concept, nx = c.next, nxBand = data.bands.find(b => b.key === nx.band);
+    const me = V.account.user, p = data.points, sc = data.score, c = data.concept, nx = c.next, nxBand = data.bands.find(b => b.key === nx.band);
+    const others = (data.concepts || []).slice(1), demoPerson = String(me.login || '').toLowerCase() === D.me.login;
     document.title = 'Portfolio | Viva';
     // only the changes that moved the level, newest first
     const moves = c.events.filter(e => e.from !== e.to);
@@ -83,14 +88,17 @@
     root.innerHTML = `
       <header class="ph pf-head" data-enter>
         <div class="pf-id">
-          <span class="av pf-av" style="--s:56px"><img src="${esc(me.avatar)}" alt=""></span>
+          ${V.avatar(me, { size: 56, cls: 'pf-av' })}
           <div>
             <p class="ph-eyebrow">${icon('lock', 14)}Private to you</p>
-            <h1 class="ph-title">${esc(me.name)}</h1>
-            <p class="pf-role">${esc(me.role)}, ${esc(D.org.team)}</p>
+            <h1 class="ph-title">${esc(me.name || me.login)}</h1>
+            <p class="pf-role">${me.login ? `<span class="mono">@${esc(me.login)}</span>` : ''}${demoPerson ? `${me.login ? ' · ' : ''}${esc(D.me.role)}, ${esc(D.org.team)}` : ''}</p>
           </div>
         </div>
-        <p class="pf-note">${icon('eye', 14)}Nothing here is used to rank or review anyone. A reviewer link cannot open this page.</p>
+        <div class="pf-end">
+          <p class="pf-note">${icon('eye', 14)}Nothing here is used to rank or review anyone. A reviewer link cannot open this page.</p>
+          ${V.account.auth.local ? '' : '<button class="btn btn-secondary btn-sm" id="sign-out" type="button">Sign out</button>'}
+        </div>
       </header>
 
       <section class="kpis">
@@ -106,7 +114,7 @@
         <div class="card kpi" data-enter data-tone="mint">
           <p class="kpi-l">${icon('shield', 14)}${esc(c.name)}</p>
           <p class="kpi-v"><span data-odo="${Number(c.level)}"></span><span class="kpi-of">of ${Number(c.max)}</span></p>
-          <div class="pf-meter" role="img" aria-label="Level ${Number(c.level)} of ${Number(c.max)}">${[1, 2, 3].map(i => `<span data-on="${i <= c.level}"><i></i></span>`).join('')}</div>
+          ${meter(c.level, c.max)}
         </div>
       </section>
 
@@ -135,13 +143,14 @@
 
         <aside class="stack">
           <section class="card pf-concept" data-reveal>
-            <div class="card-h"><h2>${bub('mint', 'shield')}Concept level</h2><span class="tag" data-tone="mint">${esc(c.name)}</span></div>
+            <div class="card-h"><h2>${bub('mint', 'shield')}${others.length ? 'Concept levels' : 'Concept level'}</h2><span class="tag" data-tone="mint">${esc(c.name)}</span></div>
             <p class="pf-lv"><b class="num">${Number(c.level)}</b><span>of ${Number(c.max)}</span></p>
-            <div class="pf-meter pf-meter-lg" role="img" aria-label="Level ${Number(c.level)} of ${Number(c.max)}">${[1, 2, 3].map(i => `<span data-on="${i <= c.level}"><i></i></span>`).join('')}</div>
+            ${meter(c.level, c.max, ' pf-meter-lg')}
             <p class="pf-lv-note">${LEVEL[c.level]}</p>
             <p class="pf-next"><span>Next similar change</span><b>${esc(nxBand.name)} check</b><em class="num">+${Number(nx.s)}</em></p>
             ${moves.length ? `<details class="pf-hist"><summary>${icon('chevron', 13)}Level history<span>${plural(moves.length, 'change')}</span></summary>
               <ul class="pf-moves">${moves.map(e => `<li><b class="num">${Number(e.from)}${icon('arrow', 11)}${Number(e.to)}</b><span>${esc(e.reason)}<em>${esc(e.title)}</em></span><time class="num">${V.fmtDay(Number(e.at))}</time></li>`).join('')}</ul></details>` : ''}
+            ${others.length ? otherHtml(others) : ''}
           </section>
           <section class="card" data-reveal>
             <div class="card-h"><h2>${bub('lemon', 'lock')}Who can see this</h2></div>
@@ -173,13 +182,29 @@
       setTimeout(() => o.set(v, { duration: 1100, stagger: 80 }), 350);
     });
     mountChart($('#chart', root), data);
+    const out = $('#sign-out', root);
+    if (out) out.onclick = () => { out.disabled = true; V.account.signOut(); };
     V.enter($$('[data-enter]', root), { y: 8, step: 50, dur: 480, delay: 40 });
     V.observe(root);
   }
 
+  // The portfolio is the signed-in person's: with nobody signed in (or the login gone), the sign-in screen instead.
+  let signedOut = false;
+  const signIn = () => {
+    if (signedOut) return;
+    signedOut = true;
+    V.account.signIn(root, { presenter: !!keep }).catch(() => {});
+  };
+  addEventListener('viva:signed-out', signIn);
+
   async function boot() {
     V.boot();
-    try { render(await api.portfolio()); } catch (e) {
+    try {
+      if (!await V.account.load()) { signIn(); return; }
+      const data = await api.portfolio();
+      if (!signedOut) render(data);
+    } catch (e) {
+      if (e && e.status === 401) return; // the sign-in screen is on its way
       root.innerHTML = `<p class="lede">${esc((e && e.message) || 'The portfolio could not be loaded.')}</p>`;
     }
   }
