@@ -11,7 +11,9 @@ Environment:
   VIVA_DEV_LOGIN=1    the plain sign-in without demo mode (local use only)
   GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET   sign-in with GitHub
   VIVA_PUBLIC_URL     this server's public address, for the OAuth callback and the links in GitHub checks
+  GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY(_PATH), GITHUB_WEBHOOK_SECRET   the GitHub App (see github.py)
 """
+from concurrent.futures import ThreadPoolExecutor
 import json
 import logging
 import os
@@ -23,7 +25,7 @@ from fastapi import Body, Depends, FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import ai, sandbox, stt
+from . import ai, github, sandbox, stt
 from .auth import Auth
 from .engine import Engine, Fail, fail
 from .store import Store
@@ -36,7 +38,20 @@ MAX_UPLOAD = 100 * 1024 * 1024  # a 180-second clip is well under this
 logging.basicConfig(level=logging.INFO, format="[viva] %(message)s")
 
 
-def create_app(data_dir=None, demo=None, content=None, dev_login=None, auth_http=None):
+def generator(engine):
+    """Task generation for a pull request the GitHub App saw: the pack, and what it is worth to its author right now."""
+    def generate(pr, diff, novelty):
+        from . import taskgen  # imported on first use: only a server with the GitHub App generates
+        out = taskgen.build_pack(pr, diff, novelty=novelty)
+        if out.get("status") == "ready":
+            pack = out["pack"]
+            out["scoring"] = engine.points_for(pack, engine.level_for_login(pr.get("author"), pack["concept"]["key"]))
+        return out
+    return generate
+
+
+def create_app(data_dir=None, demo=None, content=None, dev_login=None, auth_http=None, github_app=None, generate=None,
+               submit=None, notify=None):
     demo = os.environ.get("VIVA_DEMO") == "1" if demo is None else demo
     store = Store(data_dir or os.environ.get("VIVA_DATA") or HERE.parent / "data")
     engine = Engine(store, content or json.loads(TASKS.read_text()), demo=demo)
@@ -44,6 +59,13 @@ def create_app(data_dir=None, demo=None, content=None, dev_login=None, auth_http
     app = FastAPI(title="Viva", docs_url=None, redoc_url=None)
     app.state.engine, app.state.auth = engine, auth
     user = auth.require  # the signed-in person, or 401
+    gh = github_app or (github.GitHubApp(cfg) if (cfg := github.Config.from_env()).enabled else None)
+    if gh:  # the webhook, and the check that follows each interview
+        # Generation runs in a small pool; check updates in one worker, so a pull request's states land in order.
+        submit = submit or ThreadPoolExecutor(max_workers=4, thread_name_prefix="viva-generate").submit
+        notify = notify or ThreadPoolExecutor(max_workers=1, thread_name_prefix="viva-check").submit
+        app.include_router(github.make_router(engine, gh, generate or generator(engine), submit))
+        engine.listeners.append(github.listener(engine, gh, notify))
     public = urlsplit(os.environ.get("VIVA_PUBLIC_URL") or "").netloc
 
     @app.exception_handler(Fail)
@@ -74,7 +96,7 @@ def create_app(data_dir=None, demo=None, content=None, dev_login=None, auth_http
     @app.get("/api/health")
     def health():
         return {"service": "viva", **ai.status(), "demo": demo, "auth": auth.status(), "sandbox": sandbox.runner_name(),
-                "stt": stt.name()}
+                "stt": stt.name(), "github_app": gh is not None}
 
     app.include_router(auth.router())
 
