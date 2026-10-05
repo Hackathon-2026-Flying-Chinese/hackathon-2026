@@ -72,9 +72,10 @@ so, write it.
 Ask a follow-up only when an answer stays vague, skips the reason, or never says what could go wrong. If both answers are \
 specific and explain why, set needs_follow_up to false and leave question empty.
 
-The follow-up is one question of under 30 words that asks one thing and can be answered in a few sentences. Anchor it in \
-their code or their own words. Set target to what it probes: concrete (an exact input and result), reasoning (why this way), \
-or consequence (what could go wrong, for whom).
+The follow-up is one question of under 30 words that asks one thing and can be answered in a few sentences. Do not add a \
+second ask after "and" or "or" (not "what comes back, and which line decides it?", nor "what could go wrong, and who \
+would be affected?"); pick the one that matters most. Anchor it in their code or their own words. Set target to what it \
+probes: concrete (an exact input and result), reasoning (why this way), or consequence (what could go wrong, for whom).
 
 The engineer locked predictions about what the code returns before this viva, and they are checked afterwards. Never state \
 or hint what the code returns, whether it meets the rule, or which test proves it.
@@ -158,27 +159,41 @@ def norm(s):
     return re.sub(r"\s+", " ", s).strip().lower()
 
 
-def _followup(body):
-    turns = body["turns"]
-    user = f"{task_block(body)}\n<viva>\n{turns_block(turns)}\n</viva>"
-    out, model = ask_model(FOLLOWUP_SYSTEM, user, FOLLOWUP_SCHEMA, "low")
-    if not out["needs_follow_up"]:
-        return {"needs_follow_up": False, "model": model}
-    q = out["question"].strip()
-    said = norm(" ".join(t["answer"] for t in turns))
-    # Checked in code, not left to the prompt: one question, short, and it must not give away a checked answer.
-    leak = next((w for w in body.get("leak_terms", []) if norm(w) in norm(q) and norm(w) not in said), None)
-    reason = (
+# A second ask joined on: "..., and what does the user get back?", "..., and from which line?". "What could go wrong,
+# and for whom" is one ask ("whom" is not "who").
+SECOND_ASK = re.compile(
+    r"\b(and also|as well as)\b|\b(and|or) ((from|in|at|on|for|with) )?(who|what|why|how|which|where|when|whether)\b", re.I)
+MAX_WORDS = 30
+
+
+def filter_reason(q, said, leak_terms):
+    """Checked in code, not left to the prompt: one question, short, and it must not give away a checked answer."""
+    leak = next((w for w in leak_terms if norm(w) in norm(q) and norm(w) not in said), None)
+    return (
         "empty" if not q
-        else "more than one question" if q.count("?") != 1 or re.search(r"\b(and also|as well as)\b", q, re.I)
-        else "too long" if len(q) > 240
+        else "more than one question" if q.count("?") > 1 or SECOND_ASK.search(q)  # "Walk us through ..." has none
+        else "too long" if len(q.split()) > MAX_WORDS
         else f"gives away '{leak}'" if leak
         else None
     )
-    if reason:
+
+
+def _followup(body):
+    turns = body["turns"]
+    user = f"{task_block(body)}\n<viva>\n{turns_block(turns)}\n</viva>"
+    said = norm(" ".join(t["answer"] for t in turns))
+    for attempt in (1, 2):  # a filtered question is sent back once, with the reason
+        out, model = ask_model(FOLLOWUP_SYSTEM, user, FOLLOWUP_SCHEMA, "low")
+        if not out["needs_follow_up"]:
+            return {"needs_follow_up": False, "model": model, "attempts": attempt}
+        q = out["question"].strip()
+        reason = filter_reason(q, said, body.get("leak_terms", []))
+        if not reason:
+            return {"needs_follow_up": True, "question": q, "target": out["target"], "model": model, "attempts": attempt}
         log.info("follow-up filtered: %s: %s", reason, q)
-        return {"needs_follow_up": True, "question": None, "filter_reason": reason, "model": model}
-    return {"needs_follow_up": True, "question": q, "target": out["target"], "model": model}
+        user += (f"\n<rejected reason=\"{reason}\">{q}</rejected>\nThat follow-up was rejected ({reason}). Write it "
+                 f"again: one ask, under {MAX_WORDS} words, nothing joined on with \"and\" or \"or\".")
+    return {"needs_follow_up": True, "question": None, "filter_reason": reason, "model": model, "attempts": 2}
 
 
 def _grade(body):
