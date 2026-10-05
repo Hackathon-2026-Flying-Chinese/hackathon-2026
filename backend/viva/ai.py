@@ -89,6 +89,10 @@ engineer's answers make that point, in substance.
 long answer that does not, does not.
 - A point is met only if what the engineer says is correct for this code. The facts section says what the code really did \
 when it ran. Saying the opposite of the facts does not meet a point.
+- Credit only what the engineer's own words say. The code and the facts are there to check that what they say is \
+correct, never to fill in what they left out. If a point needs a claim that the answers do not make, it is not met, even \
+when the code or the facts show the claim is true: naming where a value comes from is not saying who controls it, and \
+saying that a check exists is not saying what it compares.
 - For every point you mark as met, copy the exact words from one answer that make it (a clause or a sentence, verbatim, \
 without changing a character) into quote, and give that answer's turn number. If no words in the answers make the point, \
 mark it not met, with an empty quote and turn 0.
