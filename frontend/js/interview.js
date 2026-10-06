@@ -1,5 +1,5 @@
 /* window.VivaInterview: the interview. First the person reads the code and locks three predictions (what it returns,
-   whether it meets the rule, which test backs it); then the viva: two questions and at most one follow-up, spoken or
+   whether it meets the rule, which test tries the case); then the viva: two questions and at most one follow-up, spoken or
    typed, each answer recorded for the senior reviewer. The code runs and the answers are checked after the viva. */
 (() => {
   'use strict';

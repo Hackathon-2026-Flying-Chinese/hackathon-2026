@@ -479,9 +479,10 @@ RULES = [
     ("question 1 holds its answer", _beh(0, q=RAW["sets"][0]["behaviour"]["q"] + " Customer 17's invoices, or not?"), "q_gives_answer"),
     ("the requirement key is not yes or no", lambda r: r["sets"][0]["requirement"].update(correct="maybe"), "correct_missing"),
     ("the evidence key is not an option", lambda r: r["sets"][0]["evidence"].update(correct="test_owner_gets_pdf"), "correct_missing"),
-    ("an evidence option is not one of the tests", lambda r: r["sets"][0]["evidence"]["options"].append("test_owner_gets_pdf"), "evidence_unknown_test"),
-    ("a test that is not in the diff", lambda r: (r["sets"][0]["tests"].append({"id": "test_made_up", "note": "Made up."}),
-                                                   r["sets"][0]["evidence"]["options"].append("test_made_up")), "test_not_in_diff"),
+    ("one test is too few for question 3", lambda r: r["sets"][0].update(tests=r["sets"][0]["tests"][:1]), "tests_count"),
+    ("five tests are too many for question 3", lambda r: r["sets"][0]["tests"].append({"id": "test_owner_gets_pdf", "note": "Customer 42 asks for a PDF."}),
+     "tests_count"),
+    ("a test that is not in the diff", lambda r: r["sets"][0]["tests"].append({"id": "test_made_up", "note": "Made up."}), "test_not_in_diff"),
     ("the first attempt is a variant", lambda r: _set(r, 0, origin="variant"), "origin"),
     ("the code was edited", lambda r: _set(r, 0, code=CODE1.replace("customer_id = :cid", "customer_id = :cid AND 1=1")), "code_not_in_diff"),
     ("the code is said to be in another file", lambda r: _set(r, 0, file="test_invoices.py"), "code_wrong_file"),
@@ -507,7 +508,7 @@ RULES = [
     ("an empty field", lambda r: _set(r, 0, facts=" "), "empty"),
     ("an unknown concept", lambda r: r.update(concept="made-up"), "concept_unknown"),
     ("one set", lambda r: r["sets"].pop(), "sets_count"),
-    ("only 'none' to choose from", lambda r: r["sets"][0]["evidence"].update(options=[]), "evidence_trivial"),
+    ("only 'none' to choose from", lambda r: r["sets"][0].update(tests=[]), "evidence_trivial"),
     ("the retake names the first attempt's function", lambda r: _set(r, 1, fn="list_invoices"), "retake_same_fn"),
     ("the retake is the first attempt less a line", lambda r: _set(r, 1, code="\n".join(CODE1.splitlines()[1:]), fn="rows"), "retake_similar_code"),
     ("a variant in a file of another language", lambda r: _set(r, 1, origin="variant", file="invoices"), "variant_file_lang"),
@@ -632,7 +633,6 @@ def test_a_solver_that_cannot_settle_on_one_answer_sends_it_to_review(local_sand
 def test_one_repair_round_fixes_what_the_checks_found(local_sandbox):
     bad = raw()
     bad["sets"][1]["tests"][0]["id"] = "test_made_up"
-    bad["sets"][1]["evidence"]["options"][0] = "test_made_up"
     calls = []
     out = tg.build_pack(PR, DIFF, call_model=model(gen=bad, repaired=raw(), calls=calls))
     rep = out["report"]["repair"]
@@ -648,9 +648,8 @@ def test_one_repair_round_fixes_what_the_checks_found(local_sandbox):
 
 def test_relaxed_rules_for_what_real_pull_requests_do():
     r = raw()  # a parametrized case of a test in the diff
-    r["sets"][0]["tests"][0]["id"] = r["sets"][0]["evidence"]["options"][0] = r["sets"][0]["tests"][0]["id"] + "[case-1]"
-    if r["sets"][0]["evidence"]["correct"] not in r["sets"][0]["evidence"]["options"] + ["none"]:
-        r["sets"][0]["evidence"]["correct"] = "none"
+    r["sets"][0]["tests"][0]["id"] += "[case-1]"
+    r["sets"][0]["evidence"]["correct"] = "none"
     assert "test_not_in_diff" not in errors(tg.validate(tg.to_pack(r, PR, files=FILES), FILES))
     r = raw()  # a variant retake may keep the function's name when its code differs
     r["sets"][1].update(origin="variant", fn=r["sets"][0]["fn"], file=r["sets"][0]["file"])
@@ -830,3 +829,51 @@ def test_cli_generate_fetches_and_generates(monkeypatch, capsys, local_sandbox):
     monkeypatch.setattr(ai, "ask_model", model())
     assert tg.main(["generate", "--repo", "harbourpay/billing", "--pr", "214"]) == 0
     assert json.loads(capsys.readouterr().out)["status"] == "ready"
+
+
+def test_question_3_offers_every_listed_test_and_asks_whether_the_case_is_tried():
+    pack = tg.to_pack(raw(), PR, files=FILES)
+    for st in pack["sets"]:
+        t, ev = st["task"], st["task"]["items"]["evidence"]
+        assert ev["q"] == tg.EVIDENCE_Q and [o["id"] for o in ev["options"]] == [x["id"] for x in t["tests"]] + ["none"]
+    assert "tries the scenario" in tg.GEN_SYSTEM and "near misses" in tg.GEN_SYSTEM
+    assert "with a different input" in tg.SOLVE_SYSTEM
+    # a hand-written pack (the sample) must offer the same: every listed test, and nothing else
+    hand = copy.deepcopy(pack)
+    ev = hand["sets"][0]["task"]["items"]["evidence"]
+    ev["options"] = ev["options"][1:]
+    assert "evidence_left_out" in errors(tg.validate(hand, FILES))
+    ev["options"].insert(0, {"id": "test_somewhere_else", "text": "test_somewhere_else"})
+    assert "evidence_unknown_test" in errors(tg.validate(hand, FILES))
+
+
+def test_the_sample_pack_offers_every_listed_test():
+    for st in TASKS["sets"]:
+        opts = [o["id"] for o in st["task"]["items"]["evidence"]["options"]]
+        assert opts == [x["id"] for x in st["task"]["tests"]] + ["none"]
+
+
+def test_a_pack_still_holds_until_the_checked_code_or_its_tests_change():
+    pack = tg.to_pack(raw(), PR, files=FILES)
+    assert tg.still_holds(pack, PR, DIFF) == []
+    # another line of the same file changed: the checked functions did not
+    assert tg.still_holds(pack, PR, DIFF.replace('CENTS = Decimal("0.01")', 'CENTS = Decimal("0.001")')) == []
+    changed = tg.still_holds(pack, PR, DIFF.replace("WHERE customer_id = :cid", "WHERE customer_id = :cid AND NOT deleted"))
+    assert changed == ["Set 1: list_invoices in invoices.py is no longer the same."]
+    gone = tg.still_holds(pack, PR, DIFF.replace("def test_requires_login(", "def test_needs_login("))
+    assert "Set 1: the test test_requires_login is no longer in the pull request." in gone
+    # a variant retake does not come from the diff, so only set 1 is looked for
+    var = copy.deepcopy(pack)
+    var["sets"][1]["task"]["origin"] = "variant"
+    assert tg.still_holds(var, PR, DIFF.replace("inv.customer_id != user.customer_id", "inv.owner_id != user.customer_id")) == []
+    assert tg.still_holds(pack, PR, DIFF.replace("inv.customer_id != user.customer_id", "inv.owner_id != user.customer_id")) \
+        == ["Set 2: invoice_pdf in invoices.py is no longer the same."]
+
+
+def test_build_pack_reports_what_its_model_calls_cost(monkeypatch, local_sandbox):
+    def counted(system, user, schema, effort, **kw):
+        ai._count(kw.get("model") or "fake", type("U", (), {"input_tokens": len(user) // 4, "output_tokens": 100})(), 0.5)
+        return model()(system, user, schema, effort, **kw)
+    out = tg.build_pack(PR, DIFF, call_model=counted)
+    usage = out["report"]["usage"]
+    assert out["status"] == "ready" and usage[tg.GEN_MODEL]["calls"] >= 3 and usage[tg.GEN_MODEL]["output_tokens"] >= 300

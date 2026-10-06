@@ -50,7 +50,7 @@ from the request and never checks it against the login (broken access control); 
 is right. Same concept, different code, so the retake is transfer and not the same question again.
 
 1. **Predict, then lock.** The person reads the code and its tests and answers three checks: what it returns for a request
-   as another customer (with how sure they are), whether it meets the rule, and which test backs the answer. The right
+   as another customer (with how sure they are), whether it meets the rule, and which test, if any, tries that case. The right
    answers live in `data/tasks.json`, never in a model. The server never serves that file and puts only the question
    side of the task in the session view, so none of the answers reaches the page before the results.
 2. **Viva.** Two questions, how it works and why, spoken or typed, then at most one follow-up. With the model, Claude

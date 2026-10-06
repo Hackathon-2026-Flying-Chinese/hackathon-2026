@@ -34,7 +34,7 @@ STALE = "This interview has already changed. Reload to continue; nothing was ove
 LINK_TTL = 300
 PR_KEYS = ("repo", "number", "title", "author", "branch", "base", "sha", "files", "url")
 PACK_STATUS = {
-    "generating": "Viva is reading your diff and writing the questions. This takes a minute or two.",
+    "generating": "Viva is reading your diff and writing the questions. This takes a few minutes.",
     "needs_review": "Viva could not verify its questions for this change, so it will not ask them.",
     "failed": "Viva could not prepare questions for this change.",
     "skipped": "This change needs no check.",
@@ -354,6 +354,8 @@ class Engine:
             return sample, None
         sha = self.pr_text(inp.get("sha"), 40)
         row = self.packs.find(repo, number, sha if sha and re.fullmatch(r"[0-9a-fA-F]{7,40}", sha) else None)
+        if row and row["status"] == "carried":  # a push that left the checked code alone: the earlier commit's pack
+            row = self.store.pack((row["report"] or {}).get("from")) or row
         if row:
             return (self.packs.get(row["id"]) if row["status"] == "ready" else None), row
         if self.demo or (repo.lower() == sample["pr"]["repo"].lower() and number == sample["pr"]["number"]):

@@ -40,6 +40,7 @@ uv run pytest -q             # the tests never call the model; the audio and doc
 | `VIVA_SOLVE_MODEL` | The blind solver that checks a generated pack (`claude-opus-5-5`) |
 | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | Sign-in with GitHub. The GitHub App's own client id and secret work |
 | `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` or `GITHUB_APP_PRIVATE_KEY_PATH`, `GITHUB_WEBHOOK_SECRET` | The GitHub App. All three turn it on |
+| `VIVA_PUSH_WAIT` | Seconds a push waits before Viva reads it, so a burst of pushes is read once (`90`; `0` reads it at once) |
 | `GITHUB_API`, `GITHUB_WEB` | For GitHub Enterprise (`https://api.github.com`, `https://github.com` by default) |
 | `VIVA_SANDBOX` | `docker` (default when the daemon answers and `python:3.12-slim` is present), `local` (a plain subprocess, not isolation: development only), `off` |
 | `VIVA_STT` | `off` turns speech-to-text off; on by default when faster-whisper is installed |
@@ -56,7 +57,7 @@ webhook is the one exception, and it is signed.
 
 1. Create the app from the manifest: `uv run python -c "import json; from viva.github import manifest; print(json.dumps(manifest('https://viva.example')))"` gives the settings (permissions: checks write, pull requests and contents read; events: pull request, check run; webhook `$VIVA_PUBLIC_URL/api/github/webhook`). Or enter the same values by hand on GitHub's "New GitHub App" page.
 2. On the app's page, generate a private key and set a webhook secret. Set `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY_PATH` and `GITHUB_WEBHOOK_SECRET`, and `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` from the same page for sign-in.
-3. Install the app on a repository. Opening a pull request creates the check "Preparing questions from your diff"; a background job reads the diff, the changed files whole at the head commit, and the author's history on them, generates the pack, and the check then links to the interview, or says plainly why there is none. The interview moves the same check along: a second attempt is available, waiting for a senior, passed with the senior's correction.
+3. Install the app on a repository. Opening a pull request creates the check "Preparing questions from your diff"; a background job reads the diff, the changed files whole at the head commit, and the author's history on them, generates the pack, and the check then links to the interview, or says plainly why there is none. The interview moves the same check along: a second attempt is available, waiting for a senior, passed with the senior's correction. A later push that leaves the checked code and its tests unchanged (`taskgen.still_holds()`) carries the check over to the new commit, with its pack and wherever the author got to, and makes no model call; a push that changes them prepares a new check. Re-run always prepares a new one.
 
 ## Task generation
 

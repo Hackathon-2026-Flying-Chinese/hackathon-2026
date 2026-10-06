@@ -66,8 +66,11 @@ VIVA_PASS = 2  # rubric points needed to pass the viva (limits.vivaPass)
 ITEMS = ("behaviour", "requirement", "evidence")
 ANSWER_KEYS = ("implementation", "rationale", "probe")
 YES_NO = ({"id": "yes", "text": "Yes, it meets the rule"}, {"id": "no", "text": "No, it breaks the rule"})
-EVIDENCE_Q = "Which test backs up your answer to question 1?"
-NONE_TEXT = "None of these tests covers this case"  # the same for every check, so its wording never points at the key
+# Question 3 asks whether the case of question 1 is tested at all. Which test tries a case can be told from what the
+# test sets up, so the notes never need to say what a test expects (which would give question 1 away).
+EVIDENCE_Q = "Which of these tests tries the case in question 1?"
+NONE_TEXT = "None of these tests tries this case"  # the same for every check, so its wording never points at the key
+MIN_TESTS, MAX_TESTS = 2, 4  # every listed test is an option: one test makes "none" never credible, five read badly
 QUESTION_LABELS = {"implementation": "How it works", "rationale": "Why this way"}
 SPECIFIC_LABEL = "Be concrete"
 REASONING_LABELS = ("What could go wrong", "How you know", "Why this way")
@@ -517,13 +520,19 @@ description and the code, for example "A customer can only see their own invoice
 what the code does. correct is "yes" when this code meets the rule and "no" when it breaks it. noun is what the code \
 is, as in "Does this endpoint meet the rule?". Across the two sets, when the change allows, let one set's code meet \
 the rule and the other break it, so this question tells understanding from guessing.
-- evidence: tests lists 2 to 4 tests about this code from the diff, names copied exactly (the text after a block's \
-second "@@" names the function the block sits in, so a test named there is in the file too). For a parametrized \
-test, give the function's name. Each note, under 15 words, says what the test sets up and which case it covers, never \
-what it expects: no status, value, error or outcome, for example "Customer 42 asks for customer 17's invoices." \
-evidence.options holds 2 or 3 of those test names (an extra option "none" is added for you, and none_text is replaced \
-by a fixed text). correct is the name of the test that really checks the behaviour scenario, or "none" when no test \
-does. For a variant, write the tests it would plausibly have.
+- evidence: question 3 asks "Which of these tests tries the case in question 1?", that is, whether the behaviour \
+scenario is tested at all. tests lists 2 to 4 tests about this code from the diff, names copied exactly (the text \
+after a block's second "@@" names the function the block sits in, so a test named there is in the file too). For a \
+parametrized test, give the function's name. Every listed test is an option, and an option "None of these tests tries \
+this case" is added for you. Include the test that tries the scenario, if there is one, and the tests of the same code \
+with a different input or a different actor: those near misses are what the question is about. Each note, under 20 \
+words, says what the test sets up and does, in the terms question 1 uses (who acts, with which input, on which data), \
+so a careful reader can tell whether it is the same case; never what it expects or checks: no status, value, error, \
+outcome or verdict, for example "Customer 42 asks for customer 17's invoices." correct is the name of the test whose \
+setup is question 1's scenario in every detail that decides the outcome (the same actor, the same kind of input, the \
+same data condition), or "none" when no listed test tries it. A test that only passes through the same code on the \
+way to something else, or tries a similar case with a different input, is not this case. For a variant, write the \
+tests it would plausibly have, in the same way.
 
 ## What only the assessor sees (the engineer sees it after the predictions are locked)
 - facts: two or three sentences: what the code returned in the behaviour scenario, and which line decides it.
@@ -628,7 +637,7 @@ SET_SCHEMA = _obj({
     "rule": _S,
     "behaviour": _obj({"q": _S, "options": _arr(_obj({"id": _S, "text": _S})), "correct": _S}),
     "requirement": _obj({"noun": {"type": "string", "enum": list(NOUNS)}, "correct": {"type": "string", "enum": ["yes", "no"]}}),
-    "evidence": _obj({"options": _arr(_S), "none_text": _S, "correct": _S}),
+    "evidence": _obj({"correct": _S}),
     "harness": _S,
     "facts": _S,
     "reveal": _obj({"request": _S, "as": _S, "status": _S, "result": _S, "columns": _arr(_S), "rows": _arr(_arr(_S)),
@@ -663,7 +672,6 @@ def retake_text(fn):
 
 def to_set(s, first):
     """One set of the model's answer in the tasks.json set shape."""
-    ev = s["evidence"]
     task = {
         "fn": s["fn"],
         "file": s["file"],
@@ -675,8 +683,9 @@ def to_set(s, first):
                           "correct": s["behaviour"]["correct"]},
             "requirement": {"q": f"Does this {s['requirement']['noun']} meet the rule?", "options": [dict(o) for o in YES_NO],
                             "correct": s["requirement"]["correct"]},
-            "evidence": {"q": EVIDENCE_Q, "options": [{"id": t, "text": t} for t in ev["options"] if t != "none"]
-                         + [{"id": "none", "text": NONE_TEXT}], "correct": ev["correct"]},
+            # every listed test is an option, so the options and the tests the learner reads always match
+            "evidence": {"q": EVIDENCE_Q, "options": [{"id": t["id"], "text": t["id"]} for t in s["tests"] if t["id"] != "none"]
+                         + [{"id": "none", "text": NONE_TEXT}], "correct": s["evidence"]["correct"]},
         },
         "reveal": {k: s["reveal"][k] for k in ("request", "as", "status", "result", "rows", "owner", "note")},
         "facts": s["facts"],
@@ -931,14 +940,17 @@ def _check_set(no, st, files, add):
         add(no, "task.items.evidence.correct", "correct_missing", f"The key '{e['correct']}' is not one of the options.")
     if not [x for x in eids if x != "none"]:
         add(no, "task.items.evidence.options", "evidence_trivial", "No test to choose from: this question checks nothing.")
-    if not 1 <= len(test_ids) <= 6:
-        add(no, "task.tests", "tests_count", f"{len(test_ids)} tests listed; 1 to 6 read well.", "warn")
+    elif not MIN_TESTS <= len(test_ids) <= MAX_TESTS:
+        add(no, "task.tests", "tests_count", f"{len(test_ids)} tests listed; question 3 needs {MIN_TESTS} to {MAX_TESTS}.")
+    left_out = [x for x in test_ids if x not in eids]
+    if left_out:
+        add(no, "task.items.evidence.options", "evidence_left_out", f"Every listed test is an option of question 3; "
+            f"{', '.join(left_out)} is not.")
     if origin == "diff":
         # The text after a block's second "@@" names the function the block sits in: a test named there is in the file.
-        shown = "\n".join([new_side_text(f) for f in files] + [h.get("section") or "" for f in files if f["is_test"] for h in f["hunks"]])
+        shown = tests_shown(files)
         for x in test_ids:
-            base = re.split(r"[\[/]", x, maxsplit=1)[0]  # test_name[case] (pytest) and TestName/case (Go) are cases of base
-            if not re.search(rf"(?<!\w){re.escape(base)}(?!\w)", shown):
+            if not test_in(x, shown):
                 add(no, "task.tests", "test_not_in_diff", f"The test '{x}' is not in the diff.")
 
     # what the learner reads before the results must not give an answer away (the code and the options may)
@@ -1171,8 +1183,10 @@ carefully.
 - behaviour: what this code really does for the input in the question, as written, not what it should do. Trace it \
 line by line.
 - requirement: "yes" if the code meets the rule, "no" if it breaks it.
-- evidence: the id of the listed test that checks the behaviour scenario, or "none" if no listed test does. Judge from \
-the test names and notes.
+- evidence: the id of the listed test that tries the behaviour scenario itself, the same actor, the same kind of \
+input and the same data condition that decide the outcome, or "none" if no listed test does. A test of the same code \
+with a different input, or one that only passes through the code on the way to something else, is not this case. \
+Judge from the test names and notes.
 
 Answer with the option ids exactly as given. confidence is how sure you are about behaviour. why is one or two \
 sentences on what decides the behaviour answer. If a question has no single right answer from what you can see, say \
@@ -1311,6 +1325,14 @@ def build_pack(pr, diff, novelty=None, call_model=None, run=None, solve=True, re
     are read with whole functions around each change. call_model defaults to ai.ask_model and run to sandbox.run_task
     (both looked up at call time). solve=False leaves out the blind solve (offline checks); require_run=False lets a
     Python set without a run through."""
+    with ai.tally() as usage:
+        out = _build_pack(pr, diff, novelty, call_model, run, solve, require_run, concepts)
+    # Tokens per model, for what a check costs; empty when the answers came from elsewhere (an eval's replay).
+    out["report"]["usage"] = usage
+    return out
+
+
+def _build_pack(pr, diff, novelty, call_model, run, solve, require_run, concepts):
     started = time.monotonic()
     call_model = call_model or ai.ask_model
     run = run or sandbox.run_task
@@ -1474,6 +1496,43 @@ def build_pack(pr, diff, novelty=None, call_model=None, run=None, solve=True, re
             # The solver is told to answer "low" when what the learner sees has no single right answer.
             report["reasons"].append(f"Set {s['set']}: the blind solver found no single right answer from what the learner sees.")
     return done("needs_review" if report["reasons"] else "ready", pack)
+
+
+# ---------- a later push ----------
+def tests_shown(files):
+    """The text in which the tests a set names must appear: the new side of the diff, and the function names after
+    each test hunk's second "@@" (a test named there is in the file)."""
+    return "\n".join([new_side_text(f) for f in files] + [h.get("section") or "" for f in files if f["is_test"] for h in f["hunks"]])
+
+
+def test_in(test_id, shown):
+    base = re.split(r"[\[/]", test_id, maxsplit=1)[0]  # test_name[case] (pytest) and TestName/case (Go) are cases of base
+    return bool(re.search(rf"(?<!\w){re.escape(base)}(?!\w)", shown))
+
+
+def still_holds(pack, pr, diff):
+    """Whether a pack written for an earlier head of a pull request still asks about this one. Every set read from the
+    diff must find its code, unchanged, in the same file of the new diff (set 1 still where the pull request changed
+    something), and every test it names must still be there; a variant set depends on the code of set 1 only. Returns
+    what changed, one line each: empty when the pack holds, so a push that leaves the checked code alone keeps the
+    check and its viva, with no model call. pr["contents"] widens the diff as in build_pack."""
+    files = parse_diff(diff)
+    contents = pr.get("contents") or {}
+    for f in _wanted(files):
+        if isinstance(contents.get(f["path"]), str):
+            widen(f, contents[f["path"]])
+    shown, changed = tests_shown(files), []
+    for no, st in enumerate(pack.get("sets") or [], 1):
+        t = st["task"]
+        if t.get("origin", "diff") != "diff":
+            continue
+        hits = [h for h in locate(t["code"], files) if h["path"] == t["file"]]
+        if not hits:
+            changed.append(f"Set {no}: {t['fn']} in {t['file']} is no longer the same.")
+        elif no == 1 and not any(h["added"] or h["removed"] for h in hits):
+            changed.append(f"Set {no}: the pull request no longer changes {t['fn']}.")
+        changed += [f"Set {no}: the test {x['id']} is no longer in the pull request." for x in t["tests"] if not test_in(x["id"], shown)]
+    return changed
 
 
 # ---------- CLI ----------

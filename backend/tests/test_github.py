@@ -147,7 +147,7 @@ def inline(fn, *a):  # the job runs inline
     fn(*a)
 
 
-def make_world(tmp_path, pem, submit=inline, **config):
+def make_world(tmp_path, pem, submit=inline, push_wait=0, **config):
     clock = Clock()
     fake = FakeGitHub(clock)
     cfg = gh.Config(**{"app_id": "42", "private_key": pem, "webhook_secret": SECRET, "api": API, "public_url": PUBLIC, **config})
@@ -157,7 +157,7 @@ def make_world(tmp_path, pem, submit=inline, **config):
         engine.store.conn.execute("INSERT INTO users (id, login, created) VALUES ('u_mia', 'Mia', 0)")
     gen = Generate()
     fast = FastAPI()
-    fast.include_router(gh.make_router(engine, app, gen, submit=submit))
+    fast.include_router(gh.make_router(engine, app, gen, submit=submit, push_wait=push_wait))
     return SimpleNamespace(fake=fake, app=app, engine=engine, gen=gen, clock=clock, client=TestClient(fast),
                            checks=gh.CheckStore(engine.store))
 

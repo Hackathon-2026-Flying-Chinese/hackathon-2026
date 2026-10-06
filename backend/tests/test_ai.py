@@ -51,3 +51,23 @@ def test_filtered_question_is_asked_again_once(monkeypatch):
     got = ai._followup(BODY)
     assert got["question"] == "Which line handles it?" and got["attempts"] == 2
     assert 'reason="more than one question"' in sent[1] and "Which line handles it, and what comes back?" in sent[1]
+
+
+def test_tally_adds_up_the_tokens_of_each_model(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    def create(**params):
+        usage = NS(input_tokens=1000, output_tokens=200, cache_read_input_tokens=50, cache_creation_input_tokens=0)
+        return NS(stop_reason="end_turn", model=params["model"], usage=usage, content=[NS(type="text", text='{"ok": true}')])
+    fake = NS(beta=NS(messages=NS(create=create)), messages=NS(create=create))
+    fake.with_options = lambda **_: fake
+    monkeypatch.setattr(ai, "client", fake)
+    schema = {"type": "object"}
+    ai.ask_model("s", "u", schema, "low", model="m-big")  # outside a tally: counted nowhere
+    with ai.tally() as outer:
+        ai.ask_model("s", "u", schema, "low", model="m-big")
+        with ai.tally() as inner:
+            ai.ask_model("s", "u", schema, "low", model="m-small")
+    assert set(inner) == {"m-small"} and inner["m-small"]["input_tokens"] == 1000
+    assert outer["m-big"]["calls"] == 1 and outer["m-small"]["output_tokens"] == 200
+    assert outer["m-big"]["cache_read_input_tokens"] == 50

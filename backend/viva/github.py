@@ -5,8 +5,12 @@ reads the diff, works out how new the change is to its author (the Novelty of Ri
 task generation; the check then links to the interview, or says plainly why there is none. The engine's events
 (finished, decided, retake) move the same check along, so the pull request always shows where its author is.
 
+A push is cheap: the job waits a little first (VIVA_PUSH_WAIT seconds), so a burst of pushes is read once, and when the
+code an earlier check asks about is still there unchanged, the new commit carries that check over, with its pack and
+wherever its author got to, and no model call. Only a push that changes the checked code prepares a new check.
+
 Every call to GitHub goes through GitHubApp: an app JWT, installation tokens cached until shortly before they expire,
-and failures raised as GitHubError. Nothing here reads an answer key or talks to the model.
+and failures raised as GitHubError. Nothing here talks to the model.
 
 Environment:
   GITHUB_APP_ID                  the app's id
@@ -14,6 +18,7 @@ Environment:
   GITHUB_WEBHOOK_SECRET          the webhook secret; deliveries without a matching signature are refused
   GITHUB_API                     https://api.github.com by default (GitHub Enterprise: https://host/api/v3)
   VIVA_PUBLIC_URL                where Viva is served, for the check's details link (e.g. https://viva.example)
+  VIVA_PUSH_WAIT                 seconds a push waits before it is read (90 by default; 0 reads it at once)
 """
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
@@ -54,6 +59,7 @@ HISTORY_PATHS = 5
 NO_HISTORY = "Could not check your history on these files."
 SUPERSEDED = "A newer commit is on this pull request. Viva checks that one instead."
 TOO_LARGE = "This change is too large for Viva to read. Review it as usual."
+PUSH_WAIT = float(os.environ.get("VIVA_PUSH_WAIT") or 90)
 PR_ACTIONS = ("opened", "reopened", "synchronize", "ready_for_review")
 
 # A changed dependency list makes a change new to anyone. A lock file alone is a refresh, not a new dependency.
@@ -274,6 +280,9 @@ class GitHubApp:
     def update_check(self, inst, repo, run_id, payload):
         return self.request("PATCH", f"/repos/{repo}/check-runs/{run_id}", inst, json=payload).json()
 
+    def get_check(self, inst, repo, run_id):
+        return self.request("GET", f"/repos/{repo}/check-runs/{run_id}", inst).json()
+
     # ---------- novelty ----------
     def novelty(self, inst, repo, author, files, before_iso):
         """How new the change is to its author, from their own commits before the pull request: (n, why). 3 for a changed
@@ -347,8 +356,25 @@ def points_line(sc):
 
 def preparing(base, pr, pack_id=None):
     return check_payload(base, pr, "Preparing questions from your diff",
-                         "Viva is reading this change and writing a few questions about it. This usually takes a minute or two.",
-                         pack_id=pack_id)
+                         "Viva is reading this change and writing a few questions about it. This usually takes a few minutes; "
+                         "after a push, a check whose code did not change carries over.", pack_id=pack_id)
+
+
+def carried(run, old_sha):
+    """An earlier commit's check, as it stands, for a new commit that left the checked code alone."""
+    out = run.get("output") or {}
+    p = {"name": CHECK_NAME, "status": "completed" if run.get("conclusion") else "in_progress",
+         "output": {"title": out.get("title") or "Viva",
+                    "summary": (out.get("summary") or "").rstrip()
+                    + f"\n\nCarried over from {old_sha[:7]}: this push did not change the code the questions are about."}}
+    if run.get("conclusion"):
+        p["conclusion"] = run["conclusion"]
+    if out.get("text"):
+        p["output"]["text"] = out["text"]
+    for k in ("details_url", "external_id"):
+        if run.get(k):
+            p[k] = run[k]
+    return p
 
 
 def ready(base, pr, pack_id=None, concept=None, scoring=None, why=None):
@@ -403,6 +429,7 @@ PRESENTERS = {"preparing": preparing, "ready": ready, "skipped": skipped, "super
 IN_PROGRESS = ("preparing", "waiting_review")  # every other state is a completed run, which GitHub will not reopen
 OUTCOME = {"ready": "ready", "needs_review": "not_verified", "failed": "failed", "skipped": "skipped"}
 PREPARE_AGAIN = ("failed", "superseded")  # a pull request event for a commit in any other state leaves its check as it is
+CARRY = ("ready", "waiting_review", "retake", "passed", "followup", "not_verified")  # states with a pack behind them
 
 
 # ---------- the check runs Viva created ----------
@@ -449,6 +476,17 @@ class CheckStore:
     def run(self, check_run_id):
         return self._one("check_run_id = ?", (check_run_id,))
 
+    def for_pack(self, repo, number, pack_id):
+        """The newest run of a pull request that shows this pack: after a push that carried the check over, the new
+        commit's."""
+        return self._one("repo = ? AND number = ? AND pack_id = ?", (repo, int(number), pack_id))
+
+    def carry_source(self, repo, number, sha):
+        """The newest run of another commit of this pull request that has a pack behind it."""
+        marks = ", ".join("?" * len(CARRY))
+        return self._one(f"repo = ? AND number = ? AND sha != ? AND pack_id IS NOT NULL AND state IN ({marks})",
+                         (repo, int(number), sha.lower(), *CARRY))
+
     def preparing(self, before):
         """Runs still Preparing that were created before a time."""
         with self.store.tx():
@@ -458,8 +496,36 @@ class CheckStore:
 
 
 # ---------- the job: from a pull request to a pack ----------
-def run_job(engine, app, generate, checks, inst, pr, run_id):
-    """Read the pull request, ask for a pack, and finish the check. Never raises: a failure ends in a neutral check."""
+def default_holds(pack, pr, diff):
+    from . import taskgen  # only a server with the GitHub App reads diffs
+    return taskgen.still_holds(pack, pr, diff)
+
+
+def carry_over(engine, app, checks, holds, inst, meta, diff, run_id):
+    """Carry an earlier commit's check over to this one when its pack still holds here. True when it did."""
+    src = checks.carry_source(meta["repo"], meta["number"], meta["sha"])
+    if not src:
+        return False
+    with engine.store.tx():
+        got = engine.store.pack(src["pack_id"])
+    if not got or got["status"] not in ("ready", "needs_review") or not got["pack"]:
+        return False
+    changed = holds(got["pack"], meta, diff)
+    if changed:
+        log.info("%s#%s %s: new check, %s", meta["repo"], meta["number"], meta["sha"][:7], " ".join(changed))
+        return False
+    payload = carried(app.get_check(src["installation_id"], src["repo"], src["check_run_id"]), src["sha"])
+    # This commit's own pack row points at the pack it carries, so a link to this commit opens the same check.
+    engine.packs.put(meta, "carried", None, {"from": src["pack_id"], "from_sha": src["sha"]})
+    app.update_check(inst, meta["repo"], run_id, payload)
+    checks.set(run_id, src["state"], src["pack_id"])
+    log.info("%s#%s %s: carried over %s from %s", meta["repo"], meta["number"], meta["sha"][:7], src["state"], src["sha"][:7])
+    return True
+
+
+def run_job(engine, app, generate, checks, inst, pr, run_id, fresh=False, holds=default_holds):
+    """Read the pull request, carry an earlier check over or ask for a pack, and finish the check. fresh (a re-run)
+    always asks for a new pack. Never raises: a failure ends in a neutral check."""
     base, repo, number = app.config.public_url, pr["repo"], pr["number"]
     pack_id, stored = None, False
 
@@ -487,6 +553,8 @@ def run_job(engine, app, generate, checks, inst, pr, run_id):
         if state:  # recorded, so the check's link says why rather than "still preparing"
             pack_id, stored = engine.packs.put(meta, "skipped", None, {"reason": reason}), True
             kw = {"reason": reason}
+        elif not fresh and carry_over(engine, app, checks, holds, inst, meta, diff, run_id):
+            return
         else:
             out = generate(meta, diff, app.novelty(inst, repo, meta["author"], meta["files"], pull.get("created_at"))) or {}
             status, pack, report = out.get("status"), out.get("pack"), out.get("report")
@@ -552,23 +620,32 @@ class Deliveries:
             self.ids.pop(d, None)
 
 
-def make_router(engine, app, generate, submit=None):
+def make_router(engine, app, generate, submit=None, push_wait=None, holds=default_holds):
     """POST /api/github/webhook. generate(pr, diff, (n, why)) -> {"status", "pack", "report", "scoring"?} runs in the
-    background through submit(fn, *args) (a small thread pool by default). A check a restart left Preparing is failed
-    in the background first, so its author can re-run it."""
+    background through submit(fn, *args) (a small thread pool by default). A push waits push_wait seconds before its
+    job is queued (PUSH_WAIT by default). A check a restart left Preparing (or waiting) is failed in the background
+    first, so its author can re-run it."""
     router, checks, seen = APIRouter(), CheckStore(engine.store), Deliveries()
+    push_wait = PUSH_WAIT if push_wait is None else push_wait
     if submit is None:
         submit = ThreadPoolExecutor(max_workers=4, thread_name_prefix="viva-github").submit
     if app and app.config.enabled:
         submit(sweep, engine, app, checks, time.time())
 
-    def start(inst, pr):
-        """The Preparing check first, so the pull request shows Viva at once; then the job."""
+    def start(inst, pr, wait=0, fresh=False):
+        """The Preparing check first, so the pull request shows Viva at once; then the job, after wait seconds. A push
+        that lands in the meantime makes the job find a newer head and stop before it reads anything."""
         run = app.create_check(inst, pr["repo"], pr["sha"], preparing(app.config.public_url, pr))
         try:
             pid = engine.packs.put(pr, "generating")
             checks.add(pr["repo"], pr["number"], pr["sha"], inst, run["id"], pid, "preparing")
-            submit(run_job, engine, app, generate, checks, inst, pr, run["id"])
+            args = (run_job, engine, app, generate, checks, inst, pr, run["id"], fresh, holds)
+            if wait > 0:
+                timer = threading.Timer(wait, submit, args)
+                timer.daemon = True
+                timer.start()
+            else:
+                submit(*args)
         except Exception:
             app.update_check(inst, pr["repo"], run["id"], failed(app.config.public_url, pr))  # never leave it spinning
             raise
@@ -593,7 +670,7 @@ def make_router(engine, app, generate, submit=None):
             row = checks.latest(pr["repo"], pr["number"], pr["sha"])
             if row and row["state"] not in PREPARE_AGAIN:
                 return 200, {"unchanged": row["state"], "check_run_id": row["check_run_id"]}
-            return start(inst, pr)
+            return start(inst, pr, wait=push_wait if action == "synchronize" else 0)
         if event == "check_run" and inst:
             run = data.get("check_run") or {}
             if action != "rerequested" or run.get("name") != CHECK_NAME:
@@ -603,7 +680,7 @@ def make_router(engine, app, generate, submit=None):
             number = prs[0]["number"] if prs else (checks.run(run["id"]) or {}).get("number")
             if not number:
                 return 202, {"ignored": "check_run without a pull request"}
-            return start(inst, {**pr_meta(app.pull(inst, repo, number)), "sha": run["head_sha"]})
+            return start(inst, {**pr_meta(app.pull(inst, repo, number)), "sha": run["head_sha"]}, fresh=True)
         return 202, {"ignored": event}
 
     @router.post("/api/github/webhook")
@@ -684,7 +761,10 @@ def listener(engine, app, submit=None):
         pr = s.get("pr") or {}
         if not (pr.get("repo") and pr.get("number") and pr.get("sha")):
             return
-        row = checks.latest(pr["repo"], pr["number"], pr["sha"])
+        # The commit that shows this session's pack now: after a push carried the check over, the new one. Its newest
+        # run is the one to move along, as for the session's own commit.
+        carrier = checks.for_pack(pr["repo"], pr["number"], s["pack_id"]) if s.get("pack_id") else None
+        row = checks.latest(pr["repo"], pr["number"], carrier["sha"] if carrier else pr["sha"])
         state, kw = state_for(event, s)
         if not row or not state or (state == "retake" and row["state"] == "retake") or not by_author(s, pr):
             return

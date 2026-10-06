@@ -166,7 +166,7 @@
             "correct": "no"
           },
           "evidence": {
-            "q": "Which test backs up your answer to question 1?",
+            "q": "Which of these tests tries the case in question 1?",
             "options": [
               {
                 "id": "test_list_invoices_returns_own",
@@ -181,8 +181,12 @@
                 "text": "test_amounts_are_decimal"
               },
               {
+                "id": "test_new_customer_gets_empty_list",
+                "text": "test_new_customer_gets_empty_list"
+              },
+              {
                 "id": "none",
-                "text": "None of them asks for another customer's invoices"
+                "text": "None of these tests tries this case"
               }
             ],
             "correct": "none"
@@ -347,7 +351,7 @@
             "correct": "yes"
           },
           "evidence": {
-            "q": "Which test backs up your answer to question 1?",
+            "q": "Which of these tests tries the case in question 1?",
             "options": [
               {
                 "id": "test_owner_gets_pdf",
@@ -362,8 +366,12 @@
                 "text": "test_requires_login"
               },
               {
+                "id": "test_pdf_shows_total",
+                "text": "test_pdf_shows_total"
+              },
+              {
                 "id": "none",
-                "text": "None of them asks for another customer's invoice"
+                "text": "None of these tests tries this case"
               }
             ],
             "correct": "test_other_customer_gets_404"

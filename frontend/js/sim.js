@@ -351,7 +351,7 @@
       return tx(db => view(db, getSession(db, sid), nowS(), { presenter }));
     },
 
-    // Lock the three checks before the viva: what the code returns, whether it meets the rule, which test backs it.
+    // Lock the three checks before the viva: what the code returns, whether it meets the rule, which test tries the case.
     // Nothing about the right answers comes back until the results.
     async predict(sid, { version, answers = {}, confidence = null }, { presenter = false } = {}) {
       await ready(); await sleep(200);

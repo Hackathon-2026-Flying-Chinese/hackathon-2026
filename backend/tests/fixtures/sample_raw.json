@@ -57,12 +57,6 @@
         "correct": "no"
       },
       "evidence": {
-        "options": [
-          "test_list_invoices_returns_own",
-          "test_requires_login",
-          "test_amounts_are_decimal"
-        ],
-        "none_text": "None of them asks for another customer's invoices",
         "correct": "none"
       },
       "harness": "import json\nimport textwrap\n\n\nclass HTTPException(Exception):\n    def __init__(self, status_code, detail=None):\n        super().__init__(status_code)\n        self.status_code = status_code\n\n\nclass Router:\n    def get(self, path):\n        return lambda fn: fn\n\n\nclass User:\n    def __init__(self, customer_id):\n        self.customer_id = customer_id\n\n\ndef current_user():\n    raise HTTPException(401)\n\n\nINVOICES = [\n    {\"id\": \"INV-1701\", \"customer_id\": 42, \"amount\": \"AUD 410.00\", \"status\": \"paid\"},\n    {\"id\": \"INV-1702\", \"customer_id\": 42, \"amount\": \"AUD 96.20\", \"status\": \"due\"},\n    {\"id\": \"INV-1703\", \"customer_id\": 17, \"amount\": \"AUD 1,240.00\", \"status\": \"paid\"},\n    {\"id\": \"INV-1711\", \"customer_id\": 17, \"amount\": \"AUD 385.50\", \"status\": \"due\"},\n    {\"id\": \"INV-1729\", \"customer_id\": 17, \"amount\": \"AUD 2,016.00\", \"status\": \"due\"},\n]\nOWNER = {r[\"id\"]: r[\"customer_id\"] for r in INVOICES}\n\n\nclass DB:\n    \"\"\"Runs the one query shape the code uses: the selected columns, filtered by customer_id when the query asks.\"\"\"\n\n    def execute(self, sql, params):\n        cols = [c.strip() for c in sql.split(\"SELECT\", 1)[1].split(\"FROM\", 1)[0].split(\",\")]\n        rows = [r for r in INVOICES if \"customer_id = :cid\" not in sql or r[\"customer_id\"] == params[\"cid\"]]\n        return [{c: r[c] for c in cols} for r in rows]\n\n\nns = {\"router\": Router(), \"Depends\": lambda dep: dep, \"User\": User, \"current_user\": current_user, \"db\": DB(),\n      \"HTTPException\": HTTPException}\nexec(textwrap.dedent(open(\"subject.py\").read()), ns)\n\n# Logged in as customer 42, asking for customer 17.\ntry:\n    out = ns[\"list_invoices\"](customer_id=17, user=User(42))\nexcept HTTPException as e:\n    names = {401: \"401 Unauthorized\", 403: \"403 Forbidden\"}\n    print(json.dumps({\"option\": str(e.status_code), \"status\": names.get(e.status_code, str(e.status_code)), \"rows\": []}))\nelse:\n    owners = {OWNER[r[\"id\"]] for r in out}\n    option = \"empty\" if not out else \"others\" if owners - {42} else \"own\"\n    rows = [[r[\"id\"], r[\"amount\"], r[\"status\"]] for r in out]\n    print(json.dumps({\"option\": option, \"status\": \"200 OK\", \"result\": f\"{len(rows)} invoices\", \"rows\": rows}))\n",
@@ -202,12 +196,6 @@
         "correct": "yes"
       },
       "evidence": {
-        "options": [
-          "test_owner_gets_pdf",
-          "test_other_customer_gets_404",
-          "test_requires_login"
-        ],
-        "none_text": "None of them asks for another customer's invoice",
         "correct": "test_other_customer_gets_404"
       },
       "harness": "import json\nimport textwrap\n\n\nclass HTTPException(Exception):\n    def __init__(self, status_code, detail=None):\n        super().__init__(status_code)\n        self.status_code = status_code\n\n\nclass Router:\n    def get(self, path):\n        return lambda fn: fn\n\n\nclass User:\n    def __init__(self, customer_id):\n        self.customer_id = customer_id\n\n\ndef current_user():\n    raise HTTPException(401)\n\n\nclass Invoice:\n    def __init__(self, id, customer_id, total):\n        self.id, self.customer_id, self.total = id, customer_id, total\n\n\nROWS = {1701: Invoice(1701, 42, \"AUD 410.00\"), 1703: Invoice(1703, 17, \"AUD 1,240.00\")}\n\n\nclass DB:\n    def get(self, model, key):\n        return ROWS.get(key) if model is Invoice else None\n\n\ndef render_pdf(inv):\n    return b\"%PDF-1.7 invoice \" + str(inv.id).encode()\n\n\nns = {\"router\": Router(), \"Depends\": lambda dep: dep, \"User\": User, \"current_user\": current_user, \"db\": DB(),\n      \"Invoice\": Invoice, \"HTTPException\": HTTPException, \"render_pdf\": render_pdf}\nexec(textwrap.dedent(open(\"subject.py\").read()), ns)\n\n# Logged in as customer 42, asking for invoice 1703, which belongs to customer 17.\ntry:\n    out = ns[\"invoice_pdf\"](invoice_id=1703, user=User(42))\nexcept HTTPException as e:\n    names = {403: \"403 Forbidden\", 404: \"404 Not Found\"}\n    print(json.dumps({\"option\": str(e.status_code), \"status\": names.get(e.status_code, str(e.status_code)), \"result\": \"No PDF.\", \"rows\": []}))\nexcept Exception as e:\n    print(json.dumps({\"option\": \"500\", \"status\": \"500 Server Error\", \"result\": type(e).__name__, \"rows\": []}))\nelse:\n    option = \"pdf\" if isinstance(out, bytes) and out.startswith(b\"%PDF\") else \"other\"\n    print(json.dumps({\"option\": option, \"status\": \"200 OK\", \"result\": \"A PDF\", \"rows\": []}))\n",
