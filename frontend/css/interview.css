@@ -25,6 +25,30 @@ body[data-stage='interview'] main { padding-top: 32px; }
 .iv-gate[data-state='ready'] .gate-art { animation: wave-hi 1.4s var(--ease-io) 2; }
 @keyframes wave-hi { 0%, 100% { transform: rotate(-6deg); } 25% { transform: rotate(8deg) translateY(-4px); } 50% { transform: rotate(-10deg); } 75% { transform: rotate(6deg) translateY(-2px); } }
 
+/* ---------- predictions: read the code, lock three answers ---------- */
+.iv-predict { max-width: 1140px; margin: 0 auto; }
+.pd-title { margin: 8px 0 8px; font: 800 2.125rem/1.1 var(--font-display); letter-spacing: -.04em; text-wrap: balance; }
+.pd-sub { max-width: 60ch; font-size: .9375rem; }
+.pd-grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(20px, 3vw, 36px); align-items: start; margin-top: 24px; }
+.pd-code { position: sticky; top: calc(var(--top-h) + 20px); }
+.pd-code .card-h h2 { font-size: .875rem; }
+.code { margin: 0; padding: 16px 18px; overflow-x: auto; border-radius: var(--r-3); background: var(--sunken); font: 500 .8125rem/1.65 var(--font-mono); tab-size: 4; white-space: pre; }
+.pd-tests-h { margin: 18px 0 8px; }
+.pd-tests { display: grid; gap: 6px; }
+.pd-tests li { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 4px 12px; align-items: baseline; font-size: .8125rem; color: var(--ink-2); }
+.pd-tests code, .pd-q legend code { font: 600 .78rem/1.4 var(--font-mono); color: var(--ink); }
+.pd-q { min-width: 0; margin: 0 0 22px; padding: 0; border: 0; }
+.pd-q legend { display: flex; gap: 10px; align-items: baseline; margin-bottom: 12px; padding: 0; font: 700 1rem/1.4 var(--font-display); letter-spacing: -.015em; }
+.pd-n { flex: none; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 9px; background: var(--accent); color: #fff; font: 800 .75rem/1 var(--font-display); transform: rotate(-6deg) translateY(4px); }
+.pd-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.pd-opts .ev-text b { font-weight: 600; }
+.pd-opts .ev-text b.mono { font-size: .75rem; word-break: break-all; }
+.pd-rule { display: flex; gap: 8px; align-items: flex-start; margin: -2px 0 12px; padding: 10px 12px; border-radius: var(--r-2); background: var(--lemon); font-size: .8125rem; color: var(--ink-2); }
+.pd-rule svg { flex: none; margin-top: .15em; color: var(--lemon-ink); }
+.pd-conf { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 12px; }
+.pd-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 6px; }
+.pd-fill { display: inline-flex; gap: 14px; font-size: .8125rem; }
+
 /* ---------- session ---------- */
 .iv-main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: clamp(28px, 4vw, 52px); align-items: start; max-width: 1140px; margin: 0 auto; }
 .iv-col { min-width: 0; }
@@ -160,6 +184,8 @@ body[data-stage='interview'] main { padding-top: 32px; }
 .an-card .hint { margin-top: 18px; padding-top: 14px; border-top: 1.5px dashed var(--line); }
 
 @media (max-width: 960px) {
+  .pd-grid { grid-template-columns: minmax(0, 1fr); }
+  .pd-code { position: static; }
   .gate-grid { grid-template-columns: minmax(0, 1fr); min-height: 0; gap: 24px; }
   .gate-preview { max-width: 520px; }
   .iv-main { grid-template-columns: minmax(0, 1fr); gap: 20px; }
@@ -170,6 +196,8 @@ body[data-stage='interview'] main { padding-top: 32px; }
   .cam-dev { display: none; }
 }
 @media (max-width: 560px) {
+  .pd-opts { grid-template-columns: minmax(0, 1fr); }
+  .pd-title { font-size: 1.75rem; }
   .gate-title { font-size: 1.75rem; }
   .iv-answer-h { flex-direction: column; align-items: stretch; }
   .iv-tabs { width: 100%; }

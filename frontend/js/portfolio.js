@@ -1,4 +1,4 @@
-/* window.VivaPortfolio: the person's portfolio. Points from confirmed reviews, the understanding score and its trend,
+/* window.VivaPortfolio: the person's portfolio. Points from reviewed checks, the judgment score and its trend,
    the concept level, and the work behind them. Private to the person: a reviewer link cannot read any of it. */
 (() => {
   'use strict';
@@ -9,9 +9,9 @@
 
   const LEVEL = ['Needs more practice or a person to help.', 'Not proven yet. Every concept starts here.', 'Proven once on a new task.', 'Proven more than once, recently.'];
   const ROW = {
-    earned: { chip: 'Confirmed', tone: 'mint', sub: 'points' },
-    pending: { chip: 'Waiting for a senior', tone: 'lemon', sub: 'if confirmed' },
-    retake: { chip: 'Second attempt open', tone: '', sub: 'if confirmed' },
+    earned: { chip: 'Reviewed', tone: 'mint', sub: 'points' },
+    pending: { chip: 'Waiting for a senior', tone: 'lemon', sub: 'after review' },
+    retake: { chip: 'Second attempt open', tone: '', sub: 'after review' },
     declined: { chip: 'Follow-up asked', tone: '', sub: 'points' }
   };
   const bub = (tone, name) => `<span class="bub" data-tone="${tone}">${icon(name, 14)}</span>`;
@@ -41,7 +41,7 @@
   function mountChart(host, data) {
     const synth = D.syntheticHistory, real = data.score.real.map(p => p.score);
     host.setAttribute('role', 'img');
-    host.setAttribute('aria-label', `Understanding score trend. A synthetic illustration in dashed grey${real.length ? `, then your first attempts: ${real.join(', ')}` : '. Your first attempts will appear after it'}.`);
+    host.setAttribute('aria-label', `Judgment score trend. A synthetic illustration in dashed grey${real.length ? `, then your first attempts: ${real.join(', ')}` : '. Your first attempts will appear after it'}.`);
     const draw = () => { host.innerHTML = chartSvg(Math.round(host.clientWidth), synth, real); };
     draw();
     let last = host.clientWidth;
@@ -97,10 +97,10 @@
         <div class="card kpi" data-enter data-tone="lilac">
           <p class="kpi-l">${icon('award', 14)}Portfolio points</p>
           <p class="kpi-v"><span data-odo="${Number(p.total)}"></span></p>
-          <p class="kpi-s">${plural(p.confirmed, 'confirmed review')}. Up to ${Number(p.max_per_change)} per change.</p>
+          <p class="kpi-s">${plural(p.confirmed, 'reviewed check')}. Up to ${Number(p.max_per_change)} per change.</p>
         </div>
         <div class="card kpi" data-enter data-tone="sky">
-          <p class="kpi-l">${icon('trend', 14)}Understanding score</p>
+          <p class="kpi-l">${icon('trend', 14)}Judgment score</p>
           ${sc.value != null ? `<p class="kpi-v"><span data-odo="${Number(sc.value)}"></span><span class="kpi-of">of 100</span></p><p class="kpi-s">Average of your last ${Math.min(10, sc.n)} first attempts, weighted by risk.</p>` : `<p class="kpi-v kpi-none">Not enough evidence</p><p class="kpi-s"><span class="pf-dots" aria-hidden="true">${dots}</span>${sc.n} of ${sc.needed} first attempts. Retakes do not count.</p>`}
         </div>
         <div class="card kpi" data-enter data-tone="mint">
@@ -124,12 +124,12 @@
           </section>
 
           <section class="card pf-work" data-reveal>
-            <div class="card-h"><h2>${bub('lilac', 'list')}Work</h2><span class="meta">${plural(p.confirmed, 'confirmed review')}</span></div>
+            <div class="card-h"><h2>${bub('lilac', 'list')}Work</h2><span class="meta">${plural(p.confirmed, 'reviewed check')}</span></div>
             ${p.entries.length
               ? `<ul class="pf-list">${p.entries.slice(0, SHOWN).map(entryHtml).join('')}</ul>
                  ${p.entries.length > SHOWN ? `<p class="pf-more">and ${p.entries.length - SHOWN} older ${p.entries.length - SHOWN === 1 ? 'check' : 'checks'}</p>` : ''}
                  <div class="pf-total"><span>Total points</span><b class="num">${Number(p.total)}</b></div>`
-              : `<div class="pf-empty"><p class="muted">No reviews yet. When a senior confirms a check, its points appear here.</p><a class="btn btn-primary btn-sm" href="index.html${keep}">Open the check <span class="arrow">${icon('arrow', 14)}</span></a></div>`}
+              : `<div class="pf-empty"><p class="muted">No reviews yet. When a senior passes a check, its points appear here.</p><a class="btn btn-primary btn-sm" href="index.html${keep}">Open the check <span class="arrow">${icon('arrow', 14)}</span></a></div>`}
           </section>
         </div>
 
@@ -160,7 +160,7 @@
           <span data-tone="lilac"><b>Risk</b><em>What a mistake costs</em><i>×</i></span>
           <span data-tone="sky"><b>Novelty</b><em>How new this is to you</em><i>×</i></span>
           <span data-tone="lemon"><b>Gap</b><em>How little you have proven</em><i>=</i></span>
-          <span data-tone="mint"><b>Points</b><em>1 to ${Number(p.max_per_change)}, once a senior confirms</em></span>
+          <span data-tone="mint"><b>Points</b><em>1 to ${Number(p.max_per_change)}, once a senior passes the check</em></span>
         </div>
         <ol class="how-bands" aria-label="Check bands">${data.bands.map(b => `<li style="flex:${b.to - b.from + 1}" title="${esc(b.note)}"><i></i><b>${esc(b.name)}</b><span class="num">${Number(b.from)} to ${Number(b.to)}</span></li>`).join('')}</ol>
         <details class="how-more"><summary>${icon('chevron', 13)}See the full scoring table</summary>${V.results.rubricHtml(data.rubric, null, null)}</details>
