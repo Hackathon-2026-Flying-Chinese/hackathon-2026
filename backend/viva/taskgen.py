@@ -52,7 +52,9 @@ GEN_EFFORT = os.environ.get("VIVA_GEN_EFFORT", "high")
 GEN_CALL = {"model": GEN_MODEL, "max_tokens": 32000, "timeout": 600}
 SOLVE_MODEL = os.environ.get("VIVA_SOLVE_MODEL", "claude-opus-5-5")
 SOLVE_EFFORT = "medium"
-SOLVE_CALL = {"model": SOLVE_MODEL, "max_tokens": 8000, "timeout": 180}
+# 8000 cut off 2 of 6 solver and probe answers on a real pull request (medium effort thinks past it); 16000 is still
+# answered in one response, not streamed (see ai.ask_model).
+SOLVE_CALL = {"model": SOLVE_MODEL, "max_tokens": 16000, "timeout": 300}
 
 PROMPT_CAP = 60_000  # characters of diff in the prompt
 LONG_HUNK = 80  # a source hunk longer than this is cut to this many lines when the diff does not fit

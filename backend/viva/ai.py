@@ -15,6 +15,7 @@ import time
 
 try:
     import anthropic
+    import httpx2  # the SDK's HTTP client
 except ImportError:  # the engine still runs, with the simulated viva
     anthropic = None
 
@@ -40,8 +41,9 @@ USAGE_KEYS = ("input_tokens", "output_tokens", "cache_read_input_tokens", "cache
 
 @contextmanager
 def tally():
-    """Adds up every model call this thread makes inside the block: {model: {"calls", "seconds", *USAGE_KEYS}}. Blocks
-    nest; an inner one's calls count in the outer one too."""
+    """Adds up every model call this thread makes inside the block: {model: {"calls", "seconds", "stop_reasons",
+    *USAGE_KEYS}}, where stop_reasons counts how the answers ended ({"end_turn": 3, "max_tokens": 1}). Blocks nest; an
+    inner one's calls count in the outer one too."""
     t, outer = {}, getattr(_tally, "stack", None)
     _tally.stack = (outer or []) + [t]
     try:
@@ -50,11 +52,12 @@ def tally():
         _tally.stack = outer
 
 
-def _count(model, usage, seconds):
+def _count(model, usage, seconds, stop_reason=None):
     for t in getattr(_tally, "stack", None) or []:
-        m = t.setdefault(model, {"calls": 0, "seconds": 0.0, **{k: 0 for k in USAGE_KEYS}})
+        m = t.setdefault(model, {"calls": 0, "seconds": 0.0, "stop_reasons": {}, **{k: 0 for k in USAGE_KEYS}})
         m["calls"] += 1
         m["seconds"] = round(m["seconds"] + seconds, 2)
+        m["stop_reasons"][str(stop_reason)] = m["stop_reasons"].get(str(stop_reason), 0) + 1
         for k in USAGE_KEYS:
             m[k] += int(getattr(usage, k, 0) or 0)
 
@@ -165,6 +168,13 @@ def ask_model(system, user, schema, effort, model=None, max_tokens=16000, timeou
         raise ModelUnavailable(f"API error {e.status_code}: {e.message}")
     except anthropic.APIConnectionError:
         raise ModelUnavailable("network error")
+    except httpx2.TransportError as e:  # the connection closed partway through a stream, which the SDK does not wrap
+        raise ModelUnavailable(f"network error: {type(e).__name__} partway through the answer")
+    seconds = time.monotonic() - started
+    # A declined or cut-off answer is billed too.
+    _count(response.model, getattr(response, "usage", None), seconds, response.stop_reason)
+    if response.stop_reason is None:  # a stream that ended before its last event: the answer is cut short
+        raise ModelUnavailable("network error: the stream ended before the answer did")
     if response.stop_reason == "refusal":
         raise ModelUnavailable("the model declined")
     if response.stop_reason == "max_tokens":
@@ -172,8 +182,6 @@ def ask_model(system, user, schema, effort, model=None, max_tokens=16000, timeou
     text = next((b.text for b in response.content if b.type == "text"), None)
     if text is None:
         raise ModelUnavailable("no text in the response")
-    seconds = time.monotonic() - started
-    _count(response.model, getattr(response, "usage", None), seconds)
     log.info("%s answered in %.1fs", response.model, seconds)
     return json.loads(text), response.model
 

@@ -71,3 +71,57 @@ def test_tally_adds_up_the_tokens_of_each_model(monkeypatch):
     assert set(inner) == {"m-small"} and inner["m-small"]["input_tokens"] == 1000
     assert outer["m-big"]["calls"] == 1 and outer["m-small"]["output_tokens"] == 200
     assert outer["m-big"]["cache_read_input_tokens"] == 50
+
+
+def test_a_cut_off_answer_still_counts_its_tokens(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    def create(**params):
+        usage = NS(input_tokens=900, output_tokens=32000, cache_read_input_tokens=0, cache_creation_input_tokens=0)
+        return NS(stop_reason="max_tokens", model=params["model"], usage=usage, content=[NS(type="text", text='{"ok":')])
+    fake = NS(beta=NS(messages=NS(create=create)), messages=NS(create=create))
+    fake.with_options = lambda **_: fake
+    monkeypatch.setattr(ai, "client", fake)
+    with ai.tally() as t, pytest.raises(ai.ModelUnavailable, match="cut off"):
+        ai.ask_model("s", "u", {"type": "object"}, "low", model="m")
+    assert t["m"]["output_tokens"] == 32000 and t["m"]["stop_reasons"] == {"max_tokens": 1}
+
+
+def test_a_stream_cut_off_partway_is_a_network_error(monkeypatch):
+    import httpx2
+    from types import SimpleNamespace as NS
+
+    class Stream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get_final_message(self):
+            raise httpx2.RemoteProtocolError("peer closed connection without sending complete message body")
+    fake = NS(beta=NS(messages=NS(stream=lambda **_: Stream())))
+    fake.with_options = lambda **_: fake
+    monkeypatch.setattr(ai, "client", fake)
+    with pytest.raises(ai.ModelUnavailable, match="^network error: RemoteProtocolError"):
+        ai.ask_model("s", "u", {"type": "object"}, "high", max_tokens=32000, timeout=600)
+
+
+def test_a_stream_that_ends_without_a_stop_reason_is_a_network_error(monkeypatch):
+    from types import SimpleNamespace as NS
+
+    class Stream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get_final_message(self):  # what a relay's early end looks like: text cut short, no stop_reason
+            usage = NS(input_tokens=9924, output_tokens=1, cache_read_input_tokens=0, cache_creation_input_tokens=0)
+            return NS(stop_reason=None, model="m", usage=usage, content=[NS(type="text", text='{"sets": [{"code": "de')])
+    fake = NS(beta=NS(messages=NS(stream=lambda **_: Stream())))
+    fake.with_options = lambda **_: fake
+    monkeypatch.setattr(ai, "client", fake)
+    with pytest.raises(ai.ModelUnavailable, match="^network error: the stream ended"):
+        ai.ask_model("s", "u", {"type": "object"}, "high", max_tokens=32000, timeout=600)
