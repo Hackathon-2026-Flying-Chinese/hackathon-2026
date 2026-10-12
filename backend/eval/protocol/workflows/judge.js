@@ -14,10 +14,11 @@ const SET = {
     key_notes: { type: 'string', description: 'how you checked each key (read the code, ran it), and what is wrong if anything' },
     question_quality: { type: 'integer', enum: [1, 2, 3, 4, 5] },
     ambiguous: { type: 'boolean', description: 'a careful engineer could defend a different behaviour option' },
-    leak: { type: 'boolean', description: 'what the learner reads before locking the predictions gives a prediction answer away' },
+    ambiguous_item: { type: 'array', items: { type: 'string', enum: ['behaviour', 'requirement', 'evidence', 'none'] }, description: 'each question where a careful engineer could defend an option other than the key; ["none"] if no question' },
+    leak:{ type: 'boolean', description: 'what the learner reads before locking the predictions gives a prediction answer away' },
     leak_note: { type: 'string' },
   },
-  required: ['set', 'behaviour_key_correct', 'requirement_key_correct', 'evidence_key_correct', 'key_notes', 'question_quality', 'ambiguous', 'leak', 'leak_note'],
+  required: ['set', 'behaviour_key_correct', 'requirement_key_correct', 'evidence_key_correct', 'key_notes', 'question_quality', 'ambiguous', 'ambiguous_item', 'leak', 'leak_note'],
 }
 const SCHEMA = {
   type: 'object',
