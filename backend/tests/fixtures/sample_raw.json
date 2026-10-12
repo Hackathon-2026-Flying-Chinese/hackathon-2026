@@ -1,0 +1,267 @@
+{
+  "skip": false,
+  "skip_reason": "",
+  "injection_attempt": false,
+  "concept": "access-control",
+  "risk": 3,
+  "risk_why": "Customer data and sign-in: this change decides who sees invoices.",
+  "sets": [
+    {
+      "origin": "diff",
+      "file": "invoices.py",
+      "fn": "list_invoices",
+      "code": "@router.get(\"/invoices\")\ndef list_invoices(customer_id: int, user: User = Depends(current_user)):\n    rows = db.execute(\n        \"SELECT id, amount, status FROM invoices WHERE customer_id = :cid\",\n        {\"cid\": customer_id},\n    )\n    return [dict(r) for r in rows]",
+      "tests": [
+        {
+          "id": "test_list_invoices_returns_own",
+          "note": "Customer 42 asks for customer 42 and gets 2 invoices."
+        },
+        {
+          "id": "test_requires_login",
+          "note": "No token: 401."
+        },
+        {
+          "id": "test_amounts_are_decimal",
+          "note": "Amounts come back as exact decimals."
+        },
+        {
+          "id": "test_new_customer_gets_empty_list",
+          "note": "A customer with no invoices gets []."
+        }
+      ],
+      "rule": "A customer can only see their own invoices.",
+      "behaviour": {
+        "q": "Customer 42 is logged in and calls `GET /invoices?customer_id=17`. What comes back?",
+        "options": [
+          {
+            "id": "401",
+            "text": "401 Unauthorized"
+          },
+          {
+            "id": "403",
+            "text": "403 Forbidden"
+          },
+          {
+            "id": "empty",
+            "text": "An empty list"
+          },
+          {
+            "id": "others",
+            "text": "Customer 17's invoices"
+          }
+        ],
+        "correct": "others"
+      },
+      "requirement": {
+        "noun": "endpoint",
+        "correct": "no"
+      },
+      "evidence": {
+        "correct": "none"
+      },
+      "harness": "import json\nimport textwrap\n\n\nclass HTTPException(Exception):\n    def __init__(self, status_code, detail=None):\n        super().__init__(status_code)\n        self.status_code = status_code\n\n\nclass Router:\n    def get(self, path):\n        return lambda fn: fn\n\n\nclass User:\n    def __init__(self, customer_id):\n        self.customer_id = customer_id\n\n\ndef current_user():\n    raise HTTPException(401)\n\n\nINVOICES = [\n    {\"id\": \"INV-1701\", \"customer_id\": 42, \"amount\": \"AUD 410.00\", \"status\": \"paid\"},\n    {\"id\": \"INV-1702\", \"customer_id\": 42, \"amount\": \"AUD 96.20\", \"status\": \"due\"},\n    {\"id\": \"INV-1703\", \"customer_id\": 17, \"amount\": \"AUD 1,240.00\", \"status\": \"paid\"},\n    {\"id\": \"INV-1711\", \"customer_id\": 17, \"amount\": \"AUD 385.50\", \"status\": \"due\"},\n    {\"id\": \"INV-1729\", \"customer_id\": 17, \"amount\": \"AUD 2,016.00\", \"status\": \"due\"},\n]\nOWNER = {r[\"id\"]: r[\"customer_id\"] for r in INVOICES}\n\n\nclass DB:\n    \"\"\"Runs the one query shape the code uses: the selected columns, filtered by customer_id when the query asks.\"\"\"\n\n    def execute(self, sql, params):\n        cols = [c.strip() for c in sql.split(\"SELECT\", 1)[1].split(\"FROM\", 1)[0].split(\",\")]\n        rows = [r for r in INVOICES if \"customer_id = :cid\" not in sql or r[\"customer_id\"] == params[\"cid\"]]\n        return [{c: r[c] for c in cols} for r in rows]\n\n\nns = {\"router\": Router(), \"Depends\": lambda dep: dep, \"User\": User, \"current_user\": current_user, \"db\": DB(),\n      \"HTTPException\": HTTPException}\nexec(textwrap.dedent(open(\"subject.py\").read()), ns)\n\n# Logged in as customer 42, asking for customer 17.\ntry:\n    out = ns[\"list_invoices\"](customer_id=17, user=User(42))\nexcept HTTPException as e:\n    names = {401: \"401 Unauthorized\", 403: \"403 Forbidden\"}\n    print(json.dumps({\"option\": str(e.status_code), \"status\": names.get(e.status_code, str(e.status_code)), \"rows\": []}))\nelse:\n    owners = {OWNER[r[\"id\"]] for r in out}\n    option = \"empty\" if not out else \"others\" if owners - {42} else \"own\"\n    rows = [[r[\"id\"], r[\"amount\"], r[\"status\"]] for r in out]\n    print(json.dumps({\"option\": option, \"status\": \"200 OK\", \"result\": f\"{len(rows)} invoices\", \"rows\": rows}))\n",
+      "facts": "Logged in as customer 42, GET /invoices?customer_id=17 returned 200 OK with three invoices that belong to customer 17 (Northwind Pty Ltd). The endpoint checks that someone is logged in, through current_user, but never compares user.customer_id with the customer_id in the request, which the caller chooses.",
+      "reveal": {
+        "request": "GET /invoices?customer_id=17",
+        "as": "Logged in as customer 42",
+        "status": "200 OK",
+        "result": "Customer 17's invoices",
+        "columns": [
+          "Invoice",
+          "Amount",
+          "Status"
+        ],
+        "rows": [
+          [
+            "INV-1703",
+            "AUD 1,240.00",
+            "paid"
+          ],
+          [
+            "INV-1711",
+            "AUD 385.50",
+            "due"
+          ],
+          [
+            "INV-1729",
+            "AUD 2,016.00",
+            "due"
+          ]
+        ],
+        "owner": "All three belong to Northwind Pty Ltd, customer 17.",
+        "note": "This is broken access control, OWASP’s number one risk in 2025. The same class of bug left 170 of 1,645 AI-built apps readable by anyone (CVE-2025-48757)."
+      },
+      "leak": [
+        "Northwind",
+        "INV-1703",
+        "17's invoices",
+        "200 OK",
+        "returns their invoices"
+      ],
+      "questions": {
+        "implementation": "Walk us through how list_invoices decides whose invoices to return.",
+        "rationale": "Where does the customer id in this request come from, and why take it from there?"
+      },
+      "probes": {
+        "specific": "Give one request and say exactly what list_invoices returns for it.",
+        "reasoning": "If someone else controlled this request, what would they change first?",
+        "reasoning_label": "What could go wrong"
+      },
+      "rubric": [
+        {
+          "id": "source",
+          "text": "Says the customer id comes from the request, which the caller controls.",
+          "sim": [
+            "customer[_ ]id",
+            "query|request|url|parameter|caller|client"
+          ]
+        },
+        {
+          "id": "login",
+          "text": "Says the endpoint checks that someone is logged in, but never compares that login with the customer asked for.",
+          "sim": [
+            "current_user|logged in|login|token|session",
+            "never|not|doesn't|does not|without|only"
+          ]
+        },
+        {
+          "id": "harm",
+          "text": "Names the consequence or the fix: any logged-in customer can read another customer's invoices; take the id from the login instead.",
+          "sim": [
+            "another customer|other customer|any customer|someone else|from the session|from the login"
+          ]
+        }
+      ],
+      "answers": {
+        "specific": {
+          "implementation": "list_invoices takes customer_id from the query string, so the caller chooses it. It runs the SELECT for whatever id comes in and returns those rows.",
+          "rationale": "It checks that someone is logged in through current_user, but it never compares user.customer_id with the id in the URL. So customer 42 can ask for customer_id=17 and read another customer's invoices. I should take the id from the session instead.",
+          "probe": "As customer 42, GET /invoices?customer_id=17 returns the invoices of customer 17, because nothing ties the id to the login."
+        },
+        "generic": {
+          "implementation": "The endpoint returns the invoices in a clean and secure way. It follows best practices and uses the database properly, so the right invoices are returned.",
+          "rationale": "I built it this way because it is a standard and scalable approach, and authentication makes sure everything is secure.",
+          "probe": "It works correctly in every case and follows the standard approach."
+        }
+      }
+    },
+    {
+      "origin": "diff",
+      "file": "invoices.py",
+      "fn": "invoice_pdf",
+      "code": "@router.get(\"/invoices/{invoice_id}/pdf\")\ndef invoice_pdf(invoice_id: int, user: User = Depends(current_user)):\n    inv = db.get(Invoice, invoice_id)\n    if inv is None or inv.customer_id != user.customer_id:\n        raise HTTPException(status_code=404)\n    return render_pdf(inv)",
+      "tests": [
+        {
+          "id": "test_owner_gets_pdf",
+          "note": "Customer 42 asks for their own invoice and gets the PDF."
+        },
+        {
+          "id": "test_other_customer_gets_404",
+          "note": "Customer 42 asks for invoice 1703, which is customer 17's."
+        },
+        {
+          "id": "test_requires_login",
+          "note": "No token: 401."
+        },
+        {
+          "id": "test_pdf_shows_total",
+          "note": "The PDF shows the invoice total."
+        }
+      ],
+      "rule": "A customer can only see their own invoices.",
+      "behaviour": {
+        "q": "Customer 42 is logged in and requests `GET /invoices/1703/pdf`. Invoice 1703 belongs to customer 17. What comes back?",
+        "options": [
+          {
+            "id": "pdf",
+            "text": "The PDF of invoice 1703"
+          },
+          {
+            "id": "403",
+            "text": "403 Forbidden"
+          },
+          {
+            "id": "404",
+            "text": "404 Not Found"
+          },
+          {
+            "id": "500",
+            "text": "500 Server Error"
+          }
+        ],
+        "correct": "404"
+      },
+      "requirement": {
+        "noun": "endpoint",
+        "correct": "yes"
+      },
+      "evidence": {
+        "correct": "test_other_customer_gets_404"
+      },
+      "harness": "import json\nimport textwrap\n\n\nclass HTTPException(Exception):\n    def __init__(self, status_code, detail=None):\n        super().__init__(status_code)\n        self.status_code = status_code\n\n\nclass Router:\n    def get(self, path):\n        return lambda fn: fn\n\n\nclass User:\n    def __init__(self, customer_id):\n        self.customer_id = customer_id\n\n\ndef current_user():\n    raise HTTPException(401)\n\n\nclass Invoice:\n    def __init__(self, id, customer_id, total):\n        self.id, self.customer_id, self.total = id, customer_id, total\n\n\nROWS = {1701: Invoice(1701, 42, \"AUD 410.00\"), 1703: Invoice(1703, 17, \"AUD 1,240.00\")}\n\n\nclass DB:\n    def get(self, model, key):\n        return ROWS.get(key) if model is Invoice else None\n\n\ndef render_pdf(inv):\n    return b\"%PDF-1.7 invoice \" + str(inv.id).encode()\n\n\nns = {\"router\": Router(), \"Depends\": lambda dep: dep, \"User\": User, \"current_user\": current_user, \"db\": DB(),\n      \"Invoice\": Invoice, \"HTTPException\": HTTPException, \"render_pdf\": render_pdf}\nexec(textwrap.dedent(open(\"subject.py\").read()), ns)\n\n# Logged in as customer 42, asking for invoice 1703, which belongs to customer 17.\ntry:\n    out = ns[\"invoice_pdf\"](invoice_id=1703, user=User(42))\nexcept HTTPException as e:\n    names = {403: \"403 Forbidden\", 404: \"404 Not Found\"}\n    print(json.dumps({\"option\": str(e.status_code), \"status\": names.get(e.status_code, str(e.status_code)), \"result\": \"No PDF.\", \"rows\": []}))\nexcept Exception as e:\n    print(json.dumps({\"option\": \"500\", \"status\": \"500 Server Error\", \"result\": type(e).__name__, \"rows\": []}))\nelse:\n    option = \"pdf\" if isinstance(out, bytes) and out.startswith(b\"%PDF\") else \"other\"\n    print(json.dumps({\"option\": option, \"status\": \"200 OK\", \"result\": \"A PDF\", \"rows\": []}))\n",
+      "facts": "Logged in as customer 42, GET /invoices/1703/pdf returned 404 Not Found. Invoice 1703 belongs to customer 17. The endpoint compares inv.customer_id with user.customer_id from the login session and returns 404 when they differ or the invoice does not exist; test_other_customer_gets_404 covers this case.",
+      "reveal": {
+        "request": "GET /invoices/1703/pdf",
+        "as": "Logged in as customer 42",
+        "status": "404 Not Found",
+        "result": "No PDF. The invoice belongs to customer 17.",
+        "columns": [],
+        "rows": [],
+        "owner": "Invoice 1703 belongs to Northwind Pty Ltd, customer 17.",
+        "note": ""
+      },
+      "leak": [
+        "404",
+        "Not Found",
+        "test_other_customer_gets_404"
+      ],
+      "questions": {
+        "implementation": "Walk us through what invoice_pdf does between the request and the PDF.",
+        "rationale": "Why does this endpoint answer the way it does when the invoice is not yours?"
+      },
+      "probes": {
+        "specific": "Name one request that gets the PDF and one that does not, and why.",
+        "reasoning": "How would you prove this works for a customer who is not the owner?",
+        "reasoning_label": "How you know"
+      },
+      "rubric": [
+        {
+          "id": "owner",
+          "text": "Says the invoice is loaded by its id, and its owner is compared with the customer in the login session.",
+          "sim": [
+            "customer_id|owner|belongs",
+            "session|user\\.customer_id|login|logged"
+          ]
+        },
+        {
+          "id": "not-found",
+          "text": "Explains why it answers 404 rather than 403: it does not reveal that the invoice exists.",
+          "sim": [
+            "404|not found",
+            "exist|reveal|leak|guess"
+          ]
+        },
+        {
+          "id": "test",
+          "text": "Names the test that proves another customer is refused, or says how they would test it.",
+          "sim": [
+            "test_\\w+|a test|the test|tested",
+            "other customer|another customer|customer 17"
+          ]
+        }
+      ],
+      "answers": {
+        "specific": {
+          "implementation": "invoice_pdf loads the invoice by invoice_id, then compares inv.customer_id with user.customer_id from the login session. If they differ, or the invoice is missing, it raises 404. So customer 42 asking for invoice 1703, which belongs to customer 17, gets 404 and never sees the PDF.",
+          "rationale": "It answers 404 instead of 403 because a 403 would tell the caller that invoice 1703 exists, and then invoice numbers can be guessed. The customer id comes from the session, never from the request. The test test_other_customer_gets_404 checks that another customer is refused.",
+          "probe": "test_other_customer_gets_404 logs in as customer 42 and asks for invoice 1703 from customer 17, and expects 404. If someone removed the owner check, that test would fail."
+        },
+        "generic": {
+          "implementation": "The endpoint returns the PDF securely and handles errors properly. It follows best practices for this kind of feature.",
+          "rationale": "It was the most efficient and maintainable choice. Overall it is a well-structured and robust solution.",
+          "probe": "It works correctly and follows the standard approach in every case."
+        }
+      }
+    }
+  ]
+}

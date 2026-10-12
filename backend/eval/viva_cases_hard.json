@@ -1,0 +1,211 @@
+[
+  {
+    "id": "list-source-half",
+    "set": 0,
+    "note": "says the id is a parameter, not that the caller controls it",
+    "answers": [
+      "customer_id is a parameter of the endpoint. The function passes it into the SELECT and returns the rows it finds.",
+      "That is how the route was specified in the ticket, so I kept the signature the same as the other endpoints."
+    ],
+    "gold": {
+      "source": false,
+      "login": false,
+      "harm": false
+    },
+    "follow_up": true,
+    "borderline": [
+      "source"
+    ]
+  },
+  {
+    "id": "list-login-implicit",
+    "set": 0,
+    "note": "says nothing compares the invoices with the caller, without the login half",
+    "answers": [
+      "It takes customer_id from the query string and selects every invoice with that customer_id.",
+      "There is no check anywhere that the invoices belong to whoever is calling; it just trusts the number it is given."
+    ],
+    "gold": {
+      "source": false,
+      "login": false,
+      "harm": false
+    },
+    "follow_up": true,
+    "borderline": [
+      "source"
+    ]
+  },
+  {
+    "id": "list-fix-only",
+    "set": 0,
+    "note": "names the fix, not the consequence",
+    "answers": [
+      "Right now the customer id comes from the URL, and the function runs the query for that id.",
+      "Really the id should come from user.customer_id, the logged-in user, instead of from the URL."
+    ],
+    "gold": {
+      "source": false,
+      "login": false,
+      "harm": true
+    },
+    "follow_up": true
+  },
+  {
+    "id": "list-hedged",
+    "set": 0,
+    "note": "the right idea, hedged and unsure",
+    "answers": [
+      "It gets customer_id from the URL I think, and then it selects the invoices for it.",
+      "I guess maybe someone could change the id in the URL? I am not sure, I assumed the frontend would handle that."
+    ],
+    "gold": {
+      "source": true,
+      "login": false,
+      "harm": false
+    },
+    "follow_up": true,
+    "borderline": [
+      "source",
+      "harm"
+    ]
+  },
+  {
+    "id": "list-vague-harm",
+    "set": 0,
+    "note": "a consequence, but vague about who could do it",
+    "answers": [
+      "The id comes in on the request and it relies on the frontend to send the right number.",
+      "If the number were wrong you would end up seeing somebody else's invoices, which would be bad."
+    ],
+    "gold": {
+      "source": false,
+      "login": false,
+      "harm": true
+    },
+    "follow_up": true,
+    "borderline": [
+      "source",
+      "harm"
+    ]
+  },
+  {
+    "id": "list-self-corrected",
+    "set": 0,
+    "note": "claims a comparison, then corrects themself in the next turn",
+    "answers": [
+      "It checks the logged-in user matches the customer_id from the query string and then returns that customer's invoices.",
+      "Actually, looking again, there is no comparison. It only checks that someone is logged in with current_user, so any customer can pass any customer_id."
+    ],
+    "gold": {
+      "source": true,
+      "login": true,
+      "harm": true
+    },
+    "follow_up": true,
+    "borderline": [
+      "harm"
+    ]
+  },
+  {
+    "id": "pdf-owner-no-session",
+    "set": 1,
+    "note": "the owner check, without saying where the user's id comes from",
+    "answers": [
+      "It loads the invoice by its id and checks that the customer matches, otherwise it raises an error.",
+      "If it does not match the user gets an error and not the PDF."
+    ],
+    "gold": {
+      "owner": false,
+      "not-found": false,
+      "test": false
+    },
+    "follow_up": true
+  },
+  {
+    "id": "pdf-404-half",
+    "set": 1,
+    "note": "a 404 reason that only implies the invoice's existence stays hidden",
+    "answers": [
+      "It loads the invoice by id and compares inv.customer_id with user.customer_id from the session.",
+      "For someone else's invoice they just see not found, exactly the same as for an id that does not exist."
+    ],
+    "gold": {
+      "owner": true,
+      "not-found": true,
+      "test": false
+    },
+    "follow_up": true,
+    "borderline": [
+      "not-found"
+    ]
+  },
+  {
+    "id": "pdf-404-security-generic",
+    "set": 1,
+    "note": "says 404 is safer, without saying why",
+    "answers": [
+      "It loads the invoice by id and compares inv.customer_id with user.customer_id from the session.",
+      "404 is safer than 403 for security, that is the recommended practice."
+    ],
+    "gold": {
+      "owner": true,
+      "not-found": false,
+      "test": false
+    },
+    "follow_up": true,
+    "borderline": [
+      "not-found"
+    ]
+  },
+  {
+    "id": "pdf-test-minimal",
+    "set": 1,
+    "note": "how they would test it, in one short clause",
+    "answers": [
+      "It loads the invoice by id and compares inv.customer_id with user.customer_id from the session.",
+      "It says 404 so it does not reveal the invoice exists. I'd test with another user's invoice."
+    ],
+    "gold": {
+      "owner": true,
+      "not-found": true,
+      "test": true
+    },
+    "follow_up": false,
+    "borderline": [
+      "test"
+    ]
+  },
+  {
+    "id": "pdf-wrong-test",
+    "set": 1,
+    "note": "names a real test, but not the one that proves another customer is refused",
+    "answers": [
+      "It loads the invoice by id and compares inv.customer_id with user.customer_id from the session.",
+      "It answers 404 so a stranger cannot tell the invoice exists. test_requires_login proves that another customer is refused."
+    ],
+    "gold": {
+      "owner": true,
+      "not-found": true,
+      "test": false
+    },
+    "follow_up": true,
+    "borderline": [
+      "test"
+    ]
+  },
+  {
+    "id": "pdf-spanish",
+    "set": 1,
+    "note": "every point but the test, in Spanish",
+    "answers": [
+      "Carga la factura por invoice_id y compara inv.customer_id con user.customer_id de la sesión del usuario.",
+      "Devuelve 404 y no 403 porque así no revela que la factura existe, y no se pueden adivinar los números de factura."
+    ],
+    "gold": {
+      "owner": true,
+      "not-found": true,
+      "test": false
+    },
+    "follow_up": true
+  }
+]

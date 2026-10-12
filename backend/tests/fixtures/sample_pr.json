@@ -1,0 +1,11 @@
+{
+  "repo": "harbourpay/billing",
+  "number": 214,
+  "title": "Let customers download their invoices",
+  "author": "tony",
+  "branch": "tony/invoice-download",
+  "base": "main",
+  "sha": "b7e21f4",
+  "url": "https://github.com/harbourpay/billing/pull/214",
+  "description": "Customers asked to see and download their invoices in the portal.\n\n- GET /invoices lists a customer's invoices\n- GET /invoices/{id}/pdf downloads one as a PDF\n\nBoth need a login."
+}

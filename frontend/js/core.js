@@ -1,4 +1,4 @@
-/* Shared helpers: DOM, icons, motion primitives (spring, enter, word reveal, odometer), theme, toast, dialog. */
+/* Shared helpers: DOM, icons, avatars, motion primitives (spring, enter, word reveal, odometer), theme, toast, dialog. */
 (() => {
   'use strict';
   const V = (window.Viva = window.Viva || {});
@@ -15,6 +15,19 @@
   const fmtClock = ts => { const d = new Date(ts * 1000); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
   const fmtDay = ts => new Date(ts * 1000).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   const initials = name => String(name || '?').trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+
+  // ---------- people ----------
+  // A person's picture: their GitHub avatar, else the demo photo for the demo login (data.js), else none (initials show).
+  const photo = u => {
+    if (!u) return '';
+    if (u.avatar_url) return u.avatar_url;
+    const me = V.data && V.data.me;
+    return me && String(u.login || '').toLowerCase() === me.login ? me.avatar : '';
+  };
+  // A round avatar: the initials, covered by the picture when there is one. A picture that fails to load is removed
+  // (the capture listener below), so the initials show instead. Decoration only: every use has the name next to it.
+  const avatar = (u, { size = 0, cls = '' } = {}) => `<span class="av${cls ? ` ${cls}` : ''}"${size ? ` style="--s:${size}px"` : ''} aria-hidden="true">${esc(initials(u && (u.name || u.login)))}${photo(u) ? `<img src="${esc(photo(u))}" alt="" data-av>` : ''}</span>`;
+  document.addEventListener('error', e => { if (e.target instanceof HTMLImageElement && e.target.hasAttribute('data-av')) e.target.remove(); }, true);
 
   // ---------- icons (composed from simple strokes; no icon font or CDN so the demo works offline) ----------
   const ICONS = {
@@ -362,16 +375,7 @@
     // the company from data.js, so the header and the fixtures never disagree
     $$('[data-org]').forEach(el => { el.textContent = D.org.name; });
     $$('[data-org-initial]').forEach(el => { el.textContent = D.org.name.charAt(0); });
-    // the person's photo in the header; an initial shows if the file is missing
-    const me = D.me, av = $('.avatar');
-    if (av && me) {
-      av.dataset.initial = initials(me.name).charAt(0);
-      const img = $('img', av);
-      if (img) {
-        img.addEventListener('error', () => img.remove());
-        if (img.complete && !img.naturalWidth) img.remove();
-      }
-    }
+    // the header avatar shows the signed-in person once the page knows who that is (account.js)
     // a presenter session keeps its flag when it moves between pages
     if (new URLSearchParams(location.search).get('presenter') === '1') $$('a.brand, a.avatar').forEach(a => { a.href = `${a.getAttribute('href')}?presenter=1`; });
     if (linearOk()) {
@@ -379,6 +383,20 @@
       document.documentElement.style.setProperty('--bounce', SPRING.bounce.easing);
     }
     eyes();
+    // the chip and the footers say where the data lives, once the page knows whether a server answered
+    if (V.api) V.api.status().then(st => {
+      if (st.backend !== 'server') return;
+      const chip = $('#sim-chip');
+      if (chip) {
+        chip.innerHTML = st.live ? 'Live<span class="more"> viva</span>' : 'Server<span class="more">, viva simulated</span>';
+        chip.title = [
+          st.live ? `The Viva server runs the checks; ${st.model} asks the follow-up and reads the viva.` : 'The Viva server runs the checks. No model is connected, so the viva is matched to the rubric’s patterns.',
+          st.stt ? `Spoken answers are transcribed on the server (${st.stt}).` : '',
+          st.sandbox === 'docker' ? 'The code runs in a Docker sandbox.' : st.sandbox === 'local' ? 'The code runs as a local process, for development only.' : ''
+        ].filter(Boolean).join(' ');
+      }
+      $$('[data-server]').forEach(el => { el.textContent = el.dataset.server; });
+    }).catch(() => {});
     const tt = $('#theme-toggle');
     if (tt) {
       const paint = () => { const dark = document.documentElement.dataset.theme === 'dark'; tt.innerHTML = icon(dark ? 'sun' : 'moon', 16); tt.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme'); };
@@ -387,5 +405,5 @@
     }
   }
 
-  Object.assign(V, { $, $$, esc, sleep, settle, reduced, fmtTime, fmtClock, fmtDay, initials, icon, mascot, confetti, portal, EASE, SPRING, spring, enter, observe, typeWords, odometer, seg, setTheme, toast, confirmDialog, copy, pulse, boot });
+  Object.assign(V, { $, $$, esc, sleep, settle, reduced, fmtTime, fmtClock, fmtDay, initials, photo, avatar, icon, mascot, confetti, portal, EASE, SPRING, spring, enter, observe, typeWords, odometer, seg, setTheme, toast, confirmDialog, copy, pulse, boot });
 })();

@@ -1,0 +1,22 @@
+[
+  {"repo": "django-oscar/django-oscar", "number": 4624, "kind": "core", "why": "missing values: reordering a line whose product has several option variants, or no stock record left"},
+  {"repo": "saleor/saleor", "number": 19891, "kind": "core", "why": "concurrency: two adds of the same variant at once make one checkout line, not two"},
+  {"repo": "pretix/pretix", "number": 6498, "kind": "core", "why": "money: a PayPal sale counts as paid only once it has at least one capture"},
+  {"repo": "mealie-recipes/mealie", "number": 8298, "kind": "core", "why": "input validation: a recipe PUT without a name answers 422, not 500"},
+  {"repo": "zulip/zulip", "number": 40226, "kind": "core", "why": "access control: a deactivated user can no longer post to a channel by email"},
+  {"repo": "documenso/documenso", "number": 3326, "kind": "core", "why": "input validation: a bulk-send CSV is checked before the background job (TypeScript)"},
+  {"repo": "documenso/documenso", "number": 3277, "kind": "core", "why": "input validation: admin search prefixes and ids past the int4 range (TypeScript)"},
+  {"repo": "go-gitea/gitea", "number": 39399, "kind": "core", "why": "access control: approving a fork pull request's workflow run (Go)"},
+  {"repo": "netbox-community/netbox", "number": 23347, "kind": "core", "why": "empty values: __empty lookups on numeric and date filters no longer fail"},
+  {"repo": "netbox-community/netbox", "number": 23301, "kind": "core", "why": "time zones: datetime custom fields shown in the configured time zone"},
+  {"repo": "inventree/InvenTree", "number": 12927, "kind": "core", "why": "numbers: parameter values compared with a tolerance after unit conversion"},
+  {"repo": "inventree/InvenTree", "number": 12689, "kind": "core", "why": "access control: the attachment API hides what the user may not view"},
+  {"repo": "paperless-ngx/paperless-ngx", "number": 14189, "kind": "core", "why": "concurrency: overlapping mail fetches guarded by a lock that expires"},
+  {"repo": "paperless-ngx/paperless-ngx", "number": 14065, "kind": "core", "why": "state: refreshing a cached document keeps the user's unsaved edits (TypeScript)"},
+  {"repo": "goauthentik/authentik", "number": 26682, "kind": "core", "why": "access control: an unauthenticated object request is denied, not a server error"},
+  {"repo": "goauthentik/authentik", "number": 26420, "kind": "core", "why": "error handling: the LDAP outpost keeps its cached directory when a refresh fails (Go)"},
+  {"repo": "pretix/pretix", "number": 6448, "kind": "no-tests", "why": "stress, no tests: a password reset token could be used twice at once"},
+  {"repo": "mealie-recipes/mealie", "number": 8200, "kind": "large", "why": "stress, large and multi-language (1,696 lines, Python, TypeScript, Vue): token refresh and revocation"},
+  {"repo": "labring/FastGPT", "number": 7890, "kind": "non-english", "why": "stress, Chinese title and description: a logged-in share link filters knowledge bases as the visitor (TypeScript)"},
+  {"repo": "go-gitea/gitea", "number": 39719, "kind": "docs-or-refactor", "why": "stress, refactor only: secret and variable scope passed as a struct, no behaviour change (Go)"}
+]
